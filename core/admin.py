@@ -1,15 +1,16 @@
 from django.contrib import admin
 from .models import BienPatrimonial, Expediente
 from sistema_bienes.admin import custom_admin_site  # Sitio de admin personalizado (en lugar del admin por defecto)
+from .models import EmpleadoHospital
 
 
 # Registro del modelo Expediente en el admin personalizado
 @admin.register(Expediente, site=custom_admin_site)
 class ExpedienteAdmin(admin.ModelAdmin):
     # Columnas que se muestran en la lista de expedientes
-    list_display = ['numero_expediente', 'organismo_origen', 'numero_compra']
+    list_display = ['numero_expediente', 'organismo_origen', 'numero_compra', 'proveedor']
     # Campos por los que se puede buscar (incluye coincidencias parciales)
-    search_fields = ['numero_expediente', 'organismo_origen', 'numero_compra']
+    search_fields = ['numero_expediente', 'organismo_origen', 'numero_compra', 'proveedor']
     # Orden por defecto en la vista de lista
     ordering = ['numero_expediente']
 
@@ -59,9 +60,30 @@ class BienPatrimonialAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         """
-        Al guardar desde el admin, forzamos las validaciones del modelo:
-        - Ejecuta clean() y los validators antes de hacer el save.
-        - Si hay errores, se muestran en el formulario del admin.
+        Al guardar desde el admin, forzamos las validaciones del modelo.
         """
-        obj.full_clean()  # dispara clean() + validators de fields
+        obj.full_clean()
         super().save_model(request, obj, form, change)
+
+
+# =========================
+# FUTURO (Sprint siguiente):
+# Admin para EmpleadoHospital
+# Lo dejamos comentado para no afectarlo ahora.
+# =========================
+"""
+from .models import EmpleadoHospital
+
+@admin.register(EmpleadoHospital, site=custom_admin_site)
+class EmpleadoHospitalAdmin(admin.ModelAdmin):
+    # Columnas visibles
+    list_display = ("apellido", "nombre", "legajo", "dni", "cargo", "estado")
+    # Filtros laterales
+    list_filter = ("estado", "cargo")
+    # Buscador
+    search_fields = ("apellido", "nombre", "dni", "legajo", "email")
+    # Orden por defecto
+    ordering = ("apellido", "nombre")
+    # Solo lectura (timestamps)
+    readonly_fields = ("fecha_creacion", "fecha_actualizacion")
+"""
