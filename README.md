@@ -9,6 +9,8 @@ Sistema web desarrollado en Django para la gestión y control de bienes patrimon
 - Gestión de mantenimientos y estados
 - Informes y reportes personalizados
 - Múltiples ambientes (Desarrollo, Producción)
+- Carga masiva desde archivos Excel
+- Sistema de bajas y restauración de bienes
 
 ## 👥 Equipo de Desarrollo
 - **Docentes**: Karina Alvarez, Alejandra , Felipe Morales, Fernando Diego Santolaria
@@ -19,8 +21,37 @@ Sistema web desarrollado en Django para la gestión y control de bienes patrimon
 - SQLite (Desarrollo, Testing, Produccion)
 - Bootstrap 5
 - JavaScript ES6+
+- Pandas (procesamiento de datos)
+- Crispy Forms (formularios mejorados)
 
-## 📦 Instalación
+## 📚 Documentación del Backend
+
+La documentación completa del backend está disponible en los siguientes documentos:
+
+- **[BACKEND.md](BACKEND.md)** - Documentación completa del backend (arquitectura, modelos, vistas, configuración)
+- **[docs/BACKEND_API.md](docs/BACKEND_API.md)** - Referencia de API y endpoints
+- **[docs/BACKEND_ARCHITECTURE.md](docs/BACKEND_ARCHITECTURE.md)** - Diagramas y arquitectura del sistema
+- **[docs/BACKEND_QUICK_REFERENCE.md](docs/BACKEND_QUICK_REFERENCE.md)** - Guía rápida de referencia
+
+### Resumen del Backend
+
+El backend está construido con **Django 4.2.7** siguiendo el patrón MVT (Model-View-Template):
+
+**Modelos principales**:
+- `BienPatrimonial`: Gestión de bienes patrimoniales con estados y seguimiento de bajas
+- `Expediente`: Expedientes administrativos asociados a compras
+- `Usuario`: Sistema de autenticación personalizado con roles (admin/empleado)
+- `Operador`: Perfil extendido para operadores del sistema
+
+**Funcionalidades clave**:
+- CRUD completo de bienes patrimoniales
+- Carga masiva desde Excel con validaciones robustas
+- Sistema de búsqueda y filtros avanzados
+- Sistema de bajas con registro de motivos y reversibilidad
+- Autenticación basada en sesiones con control de roles
+- Panel de administración personalizado
+
+## 📦 Instalación Rápida
 
 ### 1. Clonar repositorio
 ```bash
