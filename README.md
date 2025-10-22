@@ -20,6 +20,14 @@ Sistema web desarrollado en Django para la gestión y control de bienes patrimon
 - Bootstrap 5
 - JavaScript ES6+
 
+## 📚 Documentación del Backend
+
+Para comprender mejor la arquitectura y funcionamiento del backend, consulta:
+
+- **[📖 Guía Completa del Backend](docs/BACKEND.md)** - Documentación detallada de arquitectura, modelos, vistas y lógica de negocio
+- **[🎤 Guía de Presentación](docs/PRESENTACION_BACKEND.md)** - Cómo explicar el sistema a tus compañeros paso a paso
+- **[⚡ Referencia Rápida](docs/QUICK_REFERENCE.md)** - Comandos y patrones comunes para desarrollo diario
+
 ## 📦 Instalación
 
 ### 1. Clonar repositorio
