@@ -1,108 +1,108 @@
-/* ======== FUENTE ======== */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
-
-/* ======== RESET ======== */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+/* --- ESTILOS ESPECÍFICOS PARA PÁGINA DE INICIO --- */
 
 html, body {
-    width: 100%;
     height: 100%;
+    margin: 0;
+    padding: 0;
 }
 
-/* ======== BODY Y FONDO ======== */
 body {
-    font-family: 'Poppins', sans-serif;
-    background-color: #fff;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    font-family: var(--font-inter);
+    display: grid;
+    place-items: center; /* centra el login horizontal y verticalmente */
+    min-height: 100vh;
     overflow: hidden;
     position: relative;
-
-    /* Fondos laterales */
-    background-image: url('../img/patron_izquierda.png'), url('../img/patron_derecha.png');
-    background-repeat: no-repeat, no-repeat;
-    background-position: left center, right center;
-    background-size: contain, contain;
 }
 
-/* ======== BARRAS SUPERIOR E INFERIOR ======== */
-.header-bar,
-.footer-bar {
-    width: 100%;
-    height: 35px;
-    background-color: #00bcd4;
+/* Barras superior e inferior */
+body::before,
+body::after {
+    content: '';
     position: fixed;
     left: 0;
-    z-index: 10;
+    right: 0;
+    height: 30px;
+    background-color: var(--primary-blue);
+    z-index: 5;
 }
-.header-bar { top: 0; }
-.footer-bar { bottom: 0; }
 
-/* ======== CONTENEDOR PRINCIPAL ======== */
-.recuperar-page,
+body::before { top: 0; }
+body::after { bottom: 0; }
+
+/* Laterales */
+.lateral {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    max-height: 80vh;
+    width: auto;
+    object-fit: contain;
+    z-index: 2;
+    opacity: 1;
+}
+
+.izquierda { left: 0; }
+.derecha { right: 0; }
+
+/* Caja login */
 .login-container {
+    background-color: #fff;
+    border-radius: 12px;
+    border: 2px solid var(--primary-blue);
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+    width: 100%;
+    max-width: 450px;
+    padding: 32px;
+    text-align: center;
+    z-index: 10;
+    position: relative;
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Logo */
+.logo-container {
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
-    height: calc(100vh - 70px); /* resta barras */
-    width: 100%;
-    max-width: 100vw;
-    padding: 20px;
-    z-index: 2;
-    position: relative;
+    margin: 10px 0 20px;
+    min-height: auto;
+    padding: 0;
 }
 
-/* ======== TARJETA CENTRAL ======== */
-.recuperar-card,
-.login-box,
-.inicio-card {
-    background-color: #fff;
-    border: 1.5px solid #00bcd4;
-    border-radius: 12px;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
-    width: 400px;
-    max-width: 90vw;
-    padding: 40px 45px;
-    text-align: center;
-    z-index: 3;
-}
-
-/* ======== LOGO ======== */
-.logo-hospital,
 .logo {
     width: 120px;
-    height: auto;
-    display: block;
-    margin: 0 auto 20px auto;
+    height: 120px;
+    object-fit: contain;
 }
 
-/* ======== TÍTULOS ======== */
+/* Título */
 .title {
-    font-size: 1.8em;
+    font-family: var(--font-inter);
+    font-size: 28px;
     font-weight: 600;
+    text-align: center;
     color: #000;
     margin-bottom: 10px;
+    line-height: 1.3;
 }
 
+/* Subtítulo */
 .subtitle {
-    font-size: 1.1em;
+    font-family: var(--font-blinker);
+    font-size: 18px;
+    font-weight: normal;
+    text-align: center;
     color: #000;
     margin-bottom: 25px;
 }
 
-/* ======== BOTONES ======== */
+/* Botones */
 .login-options {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    width: 100%;
+    margin-top: 1rem;
 }
 
 .login-button {
@@ -110,8 +110,9 @@ body {
     border-radius: 8px;
     border: 2px solid #000;
     background-color: #fff;
-    font-size: 17px;
-    font-weight: 600;
+    font-family: var(--font-blinker);
+    font-size: 18px;
+    font-weight: bold;
     color: #000;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -125,9 +126,9 @@ body {
 }
 
 .login-button:hover {
-    background-color: #00bcd4;
-    color: #fff;
-    border-color: #00bcd4;
+    background-color: var(--primary-blue);
+    color: white;
+    border-color: var(--primary-blue);
     transform: translateY(-2px);
     box-shadow: 2px 5px 8px rgba(0, 0, 0, 0.25);
 }
@@ -137,31 +138,31 @@ body {
     box-shadow: 2px 3px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* ======== RESPONSIVE ======== */
+/* Responsive */
 @media (max-width: 1024px) {
-    body {
-        background-size: 45%, 45%;
+    .lateral {
+        max-height: 70vh;
     }
 }
 
 @media (max-width: 768px) {
-    body {
-        background-image: none;
+    .lateral {
+        display: none;
     }
-    .inicio-card {
-        width: 90%;
-        padding: 35px 25px;
+    .login-container {
+        max-width: 92vw;
     }
 }
 
 @media (max-width: 480px) {
-    .inicio-card {
+    .login-container {
         padding: 20px 15px;
-        border: 1px solid #00bcd4;
+        border: 1px solid var(--primary-blue);
     }
 
-    .logo-hospital {
+    .logo {
         width: 100px;
+        height: 100px;
     }
 
     .title {
@@ -176,14 +177,4 @@ body {
         height: 42px;
         font-size: 15px;
     }
-}
-
-/* ======== ANIMACIÓN SUAVE ======== */
-@keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.98); }
-    to { opacity: 1; transform: scale(1); }
-}
-
-.inicio-card {
-    animation: fadeIn 0.4s ease-out;
 }
