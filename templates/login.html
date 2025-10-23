@@ -1,52 +1,74 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Iniciar Sesión - Sistema de Patrimonio{% endblock %}
+{% block title %}Iniciar Sesión - Hospital Dr. Alejandro Korn{% endblock %}
 
 {% block header %}{% endblock %}
 {% block footer %}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/login.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 {% endblock %}
 
 {% block content %}
-<img src="{% static 'img/lateral-izquierda.png' %}" alt="Decoración izquierda" class="lateral izquierda">
-<img src="{% static 'img/lateral-derecha.png' %}" alt="Decoración derecha" class="lateral derecha">
+<!-- Barra superior -->
+<div class="header-bar"></div>
 
-<div class="login-container">
-    <div class="logo-container">
-        <img class="logo" src="{% static 'img/logo.png' %}" alt="Logo del Hospital">
+<!-- Contenedor principal -->
+<div class="container">
+    <div class="login-box" id="loginBox">
+        <div class="header">
+            <img src="{% static 'img/logo.png' %}" alt="Logo Hospital Dr. Alejandro Korn">
+            <div class="title">
+                <h1>Sistema</h1>
+                <h2>Gestión de Patrimonio</h2>
+            </div>
+        </div>
+
+        <!-- Formulario de inicio de sesión -->
+        <form id="loginForm" method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}"/>
+
+            <div class="input-group">
+                <label for="usuario">Usuario</label>
+                <div class="input-field" id="usernameField">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="usuario" name="usuario" autocomplete="username"
+                           value="{{ form.usuario.value|default:'' }}" placeholder="Ingrese su usuario">
+                </div>
+                <div class="error-message" id="usernameError"></div>
+            </div>
+
+            <div class="input-group">
+                <label for="contrasena">Contraseña</label>
+                <div class="input-field" id="passwordField">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="contrasena" name="contrasena" autocomplete="current-password"
+                           placeholder="Ingrese su contraseña">
+                </div>
+                <div class="error-message" id="passwordError"></div>
+            </div>
+
+            {% if form.errors %}
+            <div class="error-message" id="loginError" style="display: block;">El Usuario y/o Contraseña es incorrecto</div>
+            {% else %}
+            <div class="error-message" id="loginError">El Usuario y/o Contraseña es incorrecto</div>
+            {% endif %}
+
+            <a href="{% url 'recuperar_password' %}" class="forgot-password">Olvidé mi Contraseña</a>
+
+            <button type="submit" class="login-button" id="loginButton">
+                <span class="spinner"></span>
+                <span class="button-text">Iniciar Sesión</span>
+            </button>
+        </form>
     </div>
-
-    <h1 class="title">Sistema<br>Gestión de Patrimonio</h1>
-
-    {% include 'includes/messages.html' %}
-
-    <form method="post" action="{% url 'login' %}">
-        {% csrf_token %}
-        <!-- 🔒 Lleva el next saneado desde la vista para evitar bucles -->
-        <input type="hidden" name="next" value="{{ next }}"/>
-
-        <div class="input-group">
-            <label for="usuario">Usuario</label>
-            <div class="input-field">
-                <i class="fas fa-user"></i>
-                <input type="text" id="usuario" name="usuario" required autofocus>
-            </div>
-        </div>
-
-        <div class="input-group">
-            <label for="contrasena">Contraseña</label>
-            <div class="input-field">
-                <i class="fas fa-lock"></i>
-                <input type="password" id="contrasena" name="contrasena" required>
-            </div>
-        </div>
-
-        <a href="{% url 'recuperar_password' %}" class="forgot-password">Olvidé mi Contraseña</a>
-
-        <button type="submit" class="login-button">Iniciar Sesión</button>
-    </form>
 </div>
+
+<!-- Barra inferior -->
+<div class="footer-bar"></div>
+
+<script src="{% static 'js/login.js' %}"></script>
 {% endblock %}

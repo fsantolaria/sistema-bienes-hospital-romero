@@ -1,0 +1,92 @@
+/* Estilos generales para la tabla de operadores */
+.titulo-operadores {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 10px 0;
+    border-bottom: 2px solid #ddd;
+}
+
+.titulo-operadores h2 {
+    margin: 0;
+    color: #333;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.btn-icono-agregar {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-right: 15px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-icono-agregar:hover {
+    background-color: #45a049;
+}
+
+/* Contenedor de la tabla */
+.tabla-operadores-container {
+    width: 100%;
+    overflow-x: auto;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+/* Estilos de la tabla */
+.tabla-operadores {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+}
+
+.tabla-operadores th {
+    background-color: #f5f5f5;
+    color: #333;
+    font-weight: bold;
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 2px solid #ddd;
+}
+
+.tabla-operadores td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #ddd;
+}
+
+.tabla-operadores tr:last-child td {
+    border-bottom: none;
+}
+
+.tabla-operadores tr:hover {
+    background-color: #f9f9f9;
+}
+
+/* Iconos en lugar de botones */
+.icono-ver-mas, .icono-baja {
+    font-size: 18px;
+    cursor: pointer;
+    display: inline-block;
+    padding: 5px;
+    transition: transform 0.2s;
+}
+
+.icono-ver-mas:hover, .icono-baja:hover {
+    transform: scale(1.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .tabla-operadores-container {
+        font-size: 14px;
+    }
+    
+    .tabla-operadores th,
+    .tabla-operadores td {
+        padding: 8px 10px;
+    }
+}

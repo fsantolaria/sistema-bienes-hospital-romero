@@ -1,36 +1,72 @@
-.main-content {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: calc(100vh - 120px);
-    padding: 2rem 1rem;
+/* ======== FUENTE ======== */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+
+/* ======== RESETEO GENERAL ======== */
+* {
+    margin: 0;
+    padding: 0;
     box-sizing: border-box;
 }
 
-.recuperar-page {
-    display: flex;
+html, body {
     width: 100%;
-    max-width: 1200px;
-    margin: auto;
-    gap: 2rem;
+    height: 100%;
 }
 
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+/* ======== HEADER Y FOOTER ======== */
+.header-bar,
+.footer-bar {
+    width: 100%;
+    height: 35px;
+    background-color: #00bcd4;
+    position: fixed;
+    left: 0;
+    z-index: 10;
+}
+
+.header-bar { top: 0; }
+.footer-bar { bottom: 0; }
+
+/* ======== DISTRIBUCIÓN PRINCIPAL ======== */
+.recuperar-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+    width: 100%;
+    max-width: 1200px; /* Ajustado para equilibrar espacios */
+    padding: 20px 40px; /* Menor altura vertical */
+    gap: 10px; /* Menor separación entre paneles */
+}
+
+/* ======== PANEL IZQUIERDO ======== */
 .left-panel {
     flex: 1;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start; /* Alineado hacia la izquierda */
     align-items: center;
 }
 
-.left-panel-logos {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    justify-content: center;
+.logo-bsas-full {
+    width: 95%;
+    max-width: 550px;
+    height: auto;
+    margin-left: 40px; /* Da aire al borde izquierdo */
 }
-.logo-prov { height: 120px; }
-.logo-bsas { height: 70px; }
 
+
+/* ======== PANEL DERECHO ======== */
 .right-panel {
     flex: 1;
     display: flex;
@@ -38,60 +74,102 @@
     align-items: center;
 }
 
+/* ======== TARJETA DE RECUPERACIÓN ======== */
 .recuperar-card {
+    background-color: #fff;
+    border: 1px solid #00bcd4; /* Borde más fino */
+    border-radius: 14px; /* Más redondeado */
+    padding: 40px 60px;
+    text-align: center;
     width: 100%;
     max-width: 420px;
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 18px rgba(0,0,0,0.12);
-    background: #fff;
-    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .logo-hospital {
-    width: 100px;
-    margin-bottom: 1rem;
+    width: 120px;
+    margin-bottom: 1.5rem;
 }
 
+/* ======== TÍTULO Y MENSAJE ======== */
 .title {
-    font-size: 1.4rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-}
-.message {
-    font-size: 0.95rem;
-    color: #555;
+    font-size: 1.6rem;
+    font-weight: 500; /* Más liviano que antes */
     margin-bottom: 1rem;
+    color: #111;
 }
 
+.message {
+    font-size: 1rem;
+    color: #000;
+    margin-bottom: 2rem;
+}
+
+/* ======== BOTÓN ======== */
 .btn-send {
     width: 100%;
-    padding: 0.8rem;
-    border-radius: 8px;
+    padding: 14px;
+    background-color: #00bcd4;
+    color: #fff;
     border: none;
-    background-color: #0097a7;
-    color: white;
+    border-radius: 6px;
+    font-size: 1.05em;
     font-weight: bold;
-    font-size: 1rem;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
-.btn-send:hover { background-color: #007c8a; }
 
+.btn-send:hover {
+    background-color: #0097a7;
+}
+
+/* ======== LINK VOLVER ======== */
 .back-link {
     display: inline-block;
-    margin-top: 1rem;
-    font-size: 0.9rem;
+    margin-top: 2.2rem; /* Más espacio respecto al botón */
+    font-size: 0.95rem;
     color: #0097a7;
     text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
 }
-.back-link:hover { text-decoration: underline; }
 
-@media (max-width: 900px) {
-    .recuperar-page { flex-direction: column; }
-    .left-panel { order: 2; }
-    .right-panel { order: 1; }
+.back-link:hover {
+    text-decoration: underline;
+    transform: translateY(-1px);
 }
+
+/* ======== RESPONSIVE ======== */
+@media (max-width: 950px) {
+    .recuperar-page {
+        flex-direction: column;
+        text-align: center;
+        padding: 20px;
+        gap: 20px;
+    }
+
+    .left-panel {
+        order: 2;
+        justify-content: center;
+    }
+
+    .right-panel {
+        order: 1;
+    }
+
+    .logo-bsas-full {
+        width: 70%;
+        max-width: 400px;
+        margin-left: 0;
+    }
+
+    .recuperar-card {
+        padding: 35px 40px;
+    }
+}
+
+
 
 
 

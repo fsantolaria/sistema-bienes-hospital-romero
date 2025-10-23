@@ -58,6 +58,23 @@ body {
     color: #006e87;
 }
 
+/* Estilos específicos para el logout link */
+.logout-link {
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    align-items: center;
+}
+
+.logout-link .material-symbols-outlined {
+    color: #0087a3;
+    transition: color 0.3s ease;
+}
+
+.logout-link:hover .material-symbols-outlined {
+    color: #d32f2f;
+}
+
 /* -------- Contenedor principal -------- */
 .main-container {
     display: flex;

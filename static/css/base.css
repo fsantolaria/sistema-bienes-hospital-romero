@@ -90,7 +90,7 @@ html, body {
 /* -------- Panel lateral -------- */
 .left-panel {
     width: 280px;
-    background-color: #00a4c6;
+    background-color: #ffffff;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;

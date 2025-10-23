@@ -10,9 +10,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const spinner = document.querySelector('.spinner');
     const buttonText = document.querySelector('.button-text');
 
-    // Credenciales válidas (esto será reemplazado por la validación del backend)
-    const validUsername = 'admin';
-    const validPassword = 'admin123';
+    // Si hay errores de Django, mostramos el mensaje
+    {% if form.errors %}
+    loginError.style.display = 'block';
+    {% endif %}
 
     loginForm.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -35,8 +36,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!password) {
             showError(passwordField, passwordError, 'Por favor ingrese su contraseña');
             isValid = false;
-        } else if (password.length < 6) {
-            showError(passwordField, passwordError, 'La contraseña debe tener al menos 6 caracteres');
+        } else if (password.length < 5) {
+            showError(passwordField, passwordError, 'La contraseña debe tener al menos 5 caracteres');
             isValid = false;
         }
         
@@ -46,46 +47,9 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Simular proceso de autenticación
-        simulateLogin(username, password);
+        // Si pasa validación frontend, enviar el formulario normalmente
+        loginForm.submit();
     });
-
-    function simulateLogin(username, password) {
-        // Mostrar estado de carga
-        loginButton.disabled = true;
-        loginButton.classList.add('loading');
-        buttonText.textContent = 'Verificando...';
-        
-        // Simular delay de red (esto será reemplazado por una llamada AJAX al backend)
-        setTimeout(() => {
-            if (username === validUsername && password === validPassword) {
-                // Login exitoso
-                loginSuccess();
-            } else {
-                // Login fallido
-                loginFailed();
-            }
-            
-            // Restaurar estado del botón
-            loginButton.disabled = false;
-            loginButton.classList.remove('loading');
-            buttonText.textContent = 'Iniciar Sesión';
-        }, 1500);
-    }
-
-    function loginSuccess() {
-        // Aquí redirigirías al usuario a la página principal
-        alert('¡Inicio de sesión exitoso! Redirigiendo al sistema...');
-        // window.location.href = 'dashboard.html';
-    }
-
-    function loginFailed() {
-        loginError.style.display = 'block';
-        usernameField.classList.add('error');
-        passwordField.classList.add('error');
-        loginBox.classList.add('shake');
-        setTimeout(() => loginBox.classList.remove('shake'), 500);
-    }
 
     function showError(field, errorElement, message) {
         field.classList.add('error');

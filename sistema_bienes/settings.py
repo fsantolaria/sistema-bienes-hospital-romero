@@ -29,7 +29,7 @@ INSTALLED_APPS = [
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],  
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -64,6 +64,6 @@ DATABASES = {
 AUTH_USER_MODEL = 'core.Usuario'  # Reemplaza 'tu_app' con el nombre de tu app
 
 # URLs de redirección
-LOGIN_URL = '/login/'            
-LOGIN_REDIRECT_URL = '/'          
-LOGOUT_REDIRECT_URL = '/login/'   
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/inicio/'  # Cambiar a inicio para que maneje el rol correctamente
+LOGOUT_REDIRECT_URL = '/login/'
