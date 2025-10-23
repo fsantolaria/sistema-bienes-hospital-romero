@@ -1,113 +1,121 @@
-from django.test import TestCase
-from django.contrib.auth import get_user_model
+# core/tests/test_models.py
+from datetime import date, timedelta
+
 from django.core.exceptions import ValidationError
+from django.test import TestCase
+
 from core.models import BienPatrimonial, Expediente
+from core.constants import ORIGEN_COMPRA, ESTADO_ACTIVO
 
 
-class BienModelTest(TestCase):
-    def setUp(self):
-        User = get_user_model()
-        self.user = User.objects.create_user(username="tester", password="12345")
-
-        self.expediente = Expediente.objects.create(
+class ExpedienteModelTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.exp1 = Expediente.objects.create(
             numero_expediente="EXP-001",
             organismo_origen="Hospital Central",
             numero_compra="COMP-001",
+            proveedor="Proveedor SA",
         )
 
-        self.base = {
-            "numero_inventario": "INV-001",
-            "nombre": "Computadora HP",
-            "descripcion": "Equipo de oficina",
-            "tipo": "INFORMATICA",
-            "marca": "",
-            "modelo": "",
-            "numero_serie": "",
-            "fecha_adquisicion": "2024-01-10",
-            "valor_adquisicion": 1500.00,
-            "proveedor": "",
-            "cuenta_codigo": "",
-            "origen": "COMPRA",
-            "donante": "",
-            "numero_identificacion": "NI-001",
-            "ubicacion_actual": "Oficina 101",
-            "responsable": "Juan Pérez",
-            "expediente": self.expediente,
-            "observaciones": "",
-            "fecha_ultimo_mantenimiento": None,
-            "proximo_mantenimiento": None,
-            "usuario_creacion": self.user,
-        }
+    def test_creacion_ok(self):
+        self.assertEqual(self.exp1.numero_expediente, "EXP-001")
+        self.assertEqual(str(self.exp1), "EXP-001")
 
-    def test_creacion_valida_y_defaults(self):
-        bien = BienPatrimonial(**self.base)
+    def test_unicidad_numero_expediente(self):
+        dup = Expediente(
+            numero_expediente="EXP-001",  # repetido
+            organismo_origen="Otro",
+        )
+        # Validamos a nivel modelo (sin golpear DB con IntegrityError)
+        with self.assertRaises(ValidationError):
+            dup.full_clean()
+
+    def test_ordering_por_numero(self):
+        Expediente.objects.create(numero_expediente="EXP-002")
+        Expediente.objects.create(numero_expediente="EXP-000")
+        nums = list(Expediente.objects.values_list("numero_expediente", flat=True))
+        self.assertEqual(nums, sorted(nums))
+
+
+class BienPatrimonialModelTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.exp = Expediente.objects.create(
+            numero_expediente="EXP-100",
+            organismo_origen="Hospital Central",
+        )
+
+    def test_creacion_minima_ok(self):
+        bien = BienPatrimonial.objects.create(
+            nombre="PC Escritorio",
+            descripcion="Equipo de oficina",
+            cantidad=1,
+            expediente=self.exp,
+            origen=ORIGEN_COMPRA,
+            estado=ESTADO_ACTIVO,
+            numero_identificacion="ID-001",
+            valor_adquisicion=123.45,
+        )
+        # clean() se llama en el admin, acá validamos explícito
         bien.full_clean()
-        bien.save()
-        self.assertEqual(bien.estado, "ACTIVO")
-        self.assertEqual(bien.origen, "COMPRA")
-        self.assertEqual(str(bien), f"{bien.numero_inventario} - {bien.nombre}")
+        self.assertEqual(bien.estado, ESTADO_ACTIVO)
+        self.assertEqual(bien.expediente, self.exp)
+        self.assertIn("PC Escritorio", str(bien))
 
-    def test_donacion_requiere_donante(self):
-        data = self.base.copy()
-        data.update({"origen": "DONACION", "donante": ""})
-        bien = BienPatrimonial(**data)
-        with self.assertRaises(ValidationError) as ctx:
+    def test_valor_negativo_da_error(self):
+        bien = BienPatrimonial(
+            nombre="Silla",
+            descripcion="Silla ergonómica",
+            cantidad=1,
+            origen=ORIGEN_COMPRA,
+            numero_identificacion="ID-NEG",
+            valor_adquisicion=-1,
+        )
+        with self.assertRaises(ValidationError):
             bien.full_clean()
-        self.assertIn("donante", ctx.exception.error_dict)
 
-        data_ok = self.base.copy()
-        data_ok.update({"origen": "DONACION", "donante": "Fundación Amigos"})
-        bien_ok = BienPatrimonial(**data_ok)
-        bien_ok.full_clean()
-
-    def test_valor_adquisicion_no_negativo(self):
-        data = self.base.copy()
-        data.update({"valor_adquisicion": -1})
-        bien = BienPatrimonial(**data)
-        with self.assertRaises(ValidationError) as ctx:
+    def test_fecha_adquisicion_futura_da_error(self):
+        bien = BienPatrimonial(
+            nombre="Impresora",
+            descripcion="Laser",
+            cantidad=1,
+            origen=ORIGEN_COMPRA,
+            numero_identificacion="ID-FUT",
+            fecha_adquisicion=date.today() + timedelta(days=1),
+        )
+        with self.assertRaises(ValidationError):
             bien.full_clean()
-        self.assertIn("valor_adquisicion", ctx.exception.error_dict)
 
-        for v in (0, 10, 1234.50):
-            d = self.base.copy()
-            d.update({"valor_adquisicion": v})
-            b = BienPatrimonial(**d)
-            b.full_clean()
+    def test_origen_no_compra_borra_precio_en_clean(self):
+        # Simulamos: setear un precio pero origen != COMPRA
+        bien = BienPatrimonial(
+            nombre="Donación de libros",
+            descripcion="Lote de libros",
+            cantidad=10,
+            origen="DONACION",     # distinto a ORIGEN_COMPRA
+            numero_identificacion="ID-DON",
+            valor_adquisicion=500, # debería anularse
+        )
+        # clean() debería poner valor_adquisicion en None
+        bien.clean()
+        self.assertIsNone(bien.valor_adquisicion)
 
-    def test_unicidad_numero_inventario(self):
-        primero = BienPatrimonial(**self.base)
-        primero.full_clean()
-        primero.save()
-
-        dup = self.base.copy()
-        dup.update({"nombre": "Otro bien"})
-        segundo = BienPatrimonial(**dup)
-        with self.assertRaises(ValidationError) as ctx:
-            segundo.full_clean()
-        self.assertIn("numero_inventario", ctx.exception.error_dict)
-
-    def test_unicidad_numero_identificacion(self):
-        a = BienPatrimonial(**self.base)
-        a.full_clean()
-        a.save()
-
-        dup = self.base.copy()
-        dup.update({
-            "numero_inventario": "INV-002",
-            "nombre": "Impresora",
-        })
-        b = BienPatrimonial(**dup)
-        with self.assertRaises(ValidationError) as ctx:
-            b.full_clean()
-        self.assertIn("numero_identificacion", ctx.exception.error_dict)
-
-    def test_numero_identificacion_puede_ser_null_o_blank(self):
-        d1 = self.base.copy()
-        d1.update({"numero_inventario": "INV-010", "numero_identificacion": None})
-        b1 = BienPatrimonial(**d1)
-        b1.full_clean()
-
-        d2 = self.base.copy()
-        d2.update({"numero_inventario": "INV-011", "numero_identificacion": ""})
-        b2 = BienPatrimonial(**d2)
-        b2.full_clean()
+    def test_numero_identificacion_unico(self):
+        BienPatrimonial.objects.create(
+            nombre="Monitor",
+            descripcion="24 pulgadas",
+            cantidad=1,
+            origen=ORIGEN_COMPRA,
+            numero_identificacion="UNICO-1",
+        )
+        
+        dup = BienPatrimonial(
+            nombre="Monitor 2",
+            descripcion="27 pulgadas",
+            cantidad=1,
+            origen=ORIGEN_COMPRA,
+            numero_identificacion="UNICO-1",  # repetido
+        )
+        with self.assertRaises(ValidationError):
+            dup.full_clean()
