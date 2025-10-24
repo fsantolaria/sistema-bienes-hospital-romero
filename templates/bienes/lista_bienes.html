@@ -238,3 +238,65 @@
   {% include 'bienes/includes/offcanvas_dar_baja.html' %}
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  // Selección múltiple
+  const btnToggle = document.getElementById('btn-toggle-seleccion');
+  const btnEliminar = document.getElementById('btn-confirm-eliminar');
+  const selectAll  = document.getElementById('select-all');
+
+  const updateCount = () => {
+    const n = Array.from(document.querySelectorAll('.chk-bien')).filter(c => c.checked).length;
+    if (btnEliminar) {
+      btnEliminar.textContent = n > 0 ? `Eliminar (${n})` : 'Eliminar (0)';
+      btnEliminar.disabled = n === 0;
+    }
+  };
+
+  const toggleCols = () => {
+    document.querySelectorAll('.seleccion-col').forEach(el => el.classList.toggle('d-none'));
+    if (btnEliminar) btnEliminar.classList.toggle('d-none');
+    if (selectAll) selectAll.checked = false;
+    document.querySelectorAll('.chk-bien').forEach(c => c.checked = false);
+    updateCount();
+  };
+
+  if (btnToggle) btnToggle.addEventListener('click', toggleCols);
+  if (selectAll) {
+    selectAll.addEventListener('change', () => {
+      document.querySelectorAll('.chk-bien').forEach(c => c.checked = selectAll.checked);
+      updateCount();
+    });
+  }
+  document.addEventListener('change', e => {
+    if (e.target.classList && e.target.classList.contains('chk-bien')) updateCount();
+  });
+
+  // Preparar OFFCANVAS
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.btn-dar-baja');
+    if (!btn) return;
+    e.preventDefault();
+
+    const form = document.getElementById('form-dar-baja');
+    if (form) form.action = btn.getAttribute('data-action') || '';
+
+    const info = document.getElementById('dar-baja-desc');
+    if (info) info.textContent = (btn.getAttribute('data-descripcion') || '');
+
+    const hoy = new Date().toISOString().slice(0,10);
+    const f = document.getElementById('fecha_baja');       if (f) f.value = hoy;
+    const exp = document.getElementById('expediente_baja'); if (exp) exp.value = '';
+    const d = document.getElementById('descripcion_baja');  if (d) d.value = '';
+
+    const offcanvasEl = document.getElementById('offcanvasDarBaja');
+    if (offcanvasEl) {
+      const offcanvas = bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl);
+      offcanvas.show();
+    }
+  });
+})();
+</script>
+{% endblock %}
