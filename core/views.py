@@ -67,7 +67,10 @@ def login_view(request):
             login(request, user)
             messages.success(request, f'¡Bienvenido {user.username}!')
             return redirect(_role_route_name(user))
+        # Authentication failed: add a message and a context flag so the template
+        # can show the inline error next to the form (not only global messages)
         messages.error(request, 'Usuario o contraseña incorrectos')
+        return render(request, 'login.html', {'login_error': True})
 
     return render(request, 'login.html')
 
