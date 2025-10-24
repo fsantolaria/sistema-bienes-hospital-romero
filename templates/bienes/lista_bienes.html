@@ -37,7 +37,6 @@
       <a class="btn btn-success" href="{% url 'bienes' %}">
         <i class="fa-solid fa-plus me-1"></i> Cargar bien
       </a>
-      <!-- Filtros -->
       <button class="btn btn-outline-primary" type="button"
               data-bs-toggle="collapse" data-bs-target="#filtrosBox"
               aria-expanded="false" aria-controls="filtrosBox" id="btn-filtros">
@@ -101,9 +100,10 @@
       </div>
     </div>
 
+    <!-- TOTAL -->
     <div class="col-12 mt-2 text-muted">
       {% if q %}Mostrando resultados para: <strong>{{ q }}</strong> · {% endif %}
-      Total {{ bienes|length }}
+      Total {{ paginator.count }}{% if is_paginated %} — página {{ page_obj.number }} de {{ paginator.num_pages }}{% endif %}
     </div>
   </form>
 
@@ -194,68 +194,47 @@
     </div>
   </form>
 
+  <!-- PAGINACIÓN -->
+  {% if is_paginated %}
+  <nav aria-label="Paginación de bienes" class="mt-3">
+    <ul class="pagination pagination-sm justify-content-center">
+      {% with qs_pref=querystring|default_if_none:""|add:"&" %}
+      <li class="page-item {% if not prev_page %}disabled{% endif %}">
+        <a class="page-link" href="?{{ qs_pref }}page=1">Primera</a>
+      </li>
+      <li class="page-item {% if not prev_page %}disabled{% endif %}">
+        {% if prev_page %}
+          <a class="page-link" href="?{{ qs_pref }}page={{ prev_page }}">«</a>
+        {% else %}
+          <span class="page-link">«</span>
+        {% endif %}
+      </li>
+
+      {% for num in page_range %}
+        {% if num == '…' %}
+          <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% elif num == page_obj.number %}
+          <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+        {% else %}
+          <li class="page-item"><a class="page-link" href="?{{ qs_pref }}page={{ num }}">{{ num }}</a></li>
+        {% endif %}
+      {% endfor %}
+
+      <li class="page-item {% if not next_page %}disabled{% endif %}">
+        {% if next_page %}
+          <a class="page-link" href="?{{ qs_pref }}page={{ next_page }}">»</a>
+        {% else %}
+          <span class="page-link">»</span>
+        {% endif %}
+      </li>
+      <li class="page-item {% if not next_page %}disabled{% endif %}">
+        <a class="page-link" href="?{{ qs_pref }}page={{ paginator.num_pages }}">Última</a>
+      </li>
+      {% endwith %}
+    </ul>
+  </nav>
+  {% endif %}
+
   {% include 'bienes/includes/offcanvas_dar_baja.html' %}
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-(function () {
-  // Selección múltiple
-  const btnToggle = document.getElementById('btn-toggle-seleccion');
-  const btnEliminar = document.getElementById('btn-confirm-eliminar');
-  const selectAll  = document.getElementById('select-all');
-
-  const updateCount = () => {
-    const n = Array.from(document.querySelectorAll('.chk-bien')).filter(c => c.checked).length;
-    if (btnEliminar) {
-      btnEliminar.textContent = n > 0 ? `Eliminar (${n})` : 'Eliminar (0)';
-      btnEliminar.disabled = n === 0;
-    }
-  };
-
-  const toggleCols = () => {
-    document.querySelectorAll('.seleccion-col').forEach(el => el.classList.toggle('d-none'));
-    if (btnEliminar) btnEliminar.classList.toggle('d-none');
-    if (selectAll) selectAll.checked = false;
-    document.querySelectorAll('.chk-bien').forEach(c => c.checked = false);
-    updateCount();
-  };
-
-  if (btnToggle) btnToggle.addEventListener('click', toggleCols);
-  if (selectAll) {
-    selectAll.addEventListener('change', () => {
-      document.querySelectorAll('.chk-bien').forEach(c => c.checked = selectAll.checked);
-      updateCount();
-    });
-  }
-  document.addEventListener('change', e => {
-    if (e.target.classList && e.target.classList.contains('chk-bien')) updateCount();
-  });
-
-  // Preparar OFFCANVAS
-  document.addEventListener('click', function(e) {
-    const btn = e.target.closest('.btn-dar-baja');
-    if (!btn) return;
-    e.preventDefault();
-
-    const form = document.getElementById('form-dar-baja');
-    if (form) form.action = btn.getAttribute('data-action') || '';
-
-    const info = document.getElementById('dar-baja-desc');
-    if (info) info.textContent = (btn.getAttribute('data-descripcion') || '');
-
-    const hoy = new Date().toISOString().slice(0,10);
-    const f = document.getElementById('fecha_baja');       if (f) f.value = hoy;
-    const exp = document.getElementById('expediente_baja'); if (exp) exp.value = '';
-    const d = document.getElementById('descripcion_baja');  if (d) d.value = '';
-
-    const offcanvasEl = document.getElementById('offcanvasDarBaja');
-    if (offcanvasEl) {
-      const offcanvas = bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl);
-      offcanvas.show();
-    }
-  });
-})();
-</script>
 {% endblock %}

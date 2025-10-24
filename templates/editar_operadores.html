@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Editar Operador{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/alta_operadores.css' %}">
+<link rel="stylesheet" href="{% static 'libs/fontawesome/css/all.min.css' %}">
+{% endblock %}
+
+{% block content %}
+<div id="alta-operador-view" class="view active">
+  <div class="alta-header">
+      <h2>EDITAR OPERADOR</h2>
+  </div>
+
+  <form method="POST" class="form-alta">
+    {% csrf_token %}
+    <div class="form-section">
+      <h3 class="section-title">Datos del operador</h3>
+
+      <div class="form-group-item">
+        <label for="nombre">Nombre:</label>
+        <input type="text" id="nombre" name="nombre" value="{{ operador.first_name }}" required>
+      </div>
+
+      <div class="form-group-item">
+        <label for="apellido">Apellido:</label>
+        <input type="text" id="apellido" name="apellido" value="{{ operador.last_name }}" required>
+      </div>
+
+      <div class="form-group-item">
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" value="{{ operador.email|default:'' }}">
+      </div>
+
+      <div class="form-group-item">
+        <label for="estado">Estado:</label>
+        <div class="input-container">
+          <select id="estado" name="estado" required>
+            <option value="habilitado" {% if operador.is_active %}selected{% endif %}>Habilitado</option>
+            <option value="no-habilitado" {% if not operador.is_active %}selected{% endif %}>No Habilitado</option>
+          </select>
+          <i class="fas fa-caret-down"></i>
+        </div>
+      </div>
+
+      {% if operador.pais is not None %}
+      <div class="form-group-item">
+        <label for="pais">Nacionalidad:</label>
+        <input type="text" id="pais" name="pais" value="{{ operador.pais }}">
+      </div>
+      {% endif %}
+
+      {% if operador.numero_doc is not None %}
+      <div class="form-group-item">
+        <label for="numero_doc">Número de Documento:</label>
+        <input type="text" id="numero_doc" name="numero_doc" value="{{ operador.numero_doc }}">
+      </div>
+      {% endif %}
+
+      <div class="form-group-item">
+        <label for="password">Nueva contraseña (opcional):</label>
+        <input type="password" id="password" name="password" placeholder="Dejar en blanco para no cambiar">
+      </div>
+    </div>
+
+    <div class="form-buttons">
+      <button type="submit" class="btn-guardar">Guardar cambios</button>
+      <a href="{% url 'operadores' %}" class="btn-cancelar">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

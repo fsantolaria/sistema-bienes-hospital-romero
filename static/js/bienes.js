@@ -4,6 +4,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const on = (el, ev, cb) => el && el.addEventListener(ev, cb);
 
+  // Fecha de hoy en formato YYYY-MM-DD (para inputs type="date")
+  const hoyISO = () => {
+    const d = new Date();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${d.getFullYear()}-${m}-${day}`;
+  };
+
   // Toggle clase oculto en un modal
   const abrir = (sel) => $(sel)?.classList.remove("oculto");
   const cerrar = (sel) => $(sel)?.classList.add("oculto");
@@ -95,6 +103,28 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   togglePrecioModal();
   on(selOrigenModal, 'change', togglePrecioModal);
+
+  /* ================== NUEVO: Fecha de Baja visible si estado = BAJA ================== */
+  // Requiere que en el template exista:
+  //   - un contenedor con id="grupo-fecha-baja" (con class "d-none" por defecto)
+  //   - el input de fecha con id="id_fecha_baja"
+  const selEstado       = $('#id_estado');
+  const grupoFechaBaja  = $('#grupo-fecha-baja');
+  const inputFechaBaja  = $('#id_fecha_baja');
+
+  function toggleFechaBaja() {
+    if (!selEstado || !grupoFechaBaja) return;
+    const v = (selEstado.value || '').toUpperCase();
+    if (v === 'BAJA') {
+      grupoFechaBaja.classList.remove('d-none');
+      if (inputFechaBaja && !inputFechaBaja.value) inputFechaBaja.value = hoyISO();
+    } else {
+      grupoFechaBaja.classList.add('d-none');
+      if (inputFechaBaja) inputFechaBaja.value = '';
+    }
+  }
+  toggleFechaBaja();
+  on(selEstado, 'change', toggleFechaBaja);
 
   /* ================== Truncado expandible en celdas ================== */
   document.addEventListener('click', (e) => {

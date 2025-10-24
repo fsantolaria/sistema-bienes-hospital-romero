@@ -45,7 +45,7 @@
 
     <div class="col-12 mt-2 text-muted">
       {% if request.GET.q %}Mostrando resultados para: <strong>{{ request.GET.q }}</strong> · {% endif %}
-      Total: {{ bienes|length }}
+      Total {{ paginator.count }}{% if is_paginated %} — página {{ page_obj.number }} de {{ paginator.num_pages }}{% endif %}
     </div>
   </form>
 
@@ -58,9 +58,7 @@
           <th>N° de ID</th>
           <th>Descripción</th>
           <th>Cantidad</th>
-          <!-- NUEVO: mantenemos el expediente original -->
           <th>N° de Expediente</th>
-          <!-- El de baja queda aparte -->
           <th>Expediente Baja</th>
           <th>N° de Compra</th>
           <th>Cuenta Código</th>
@@ -85,10 +83,7 @@
           <td style="min-width:260px;">{{ b.descripcion }}</td>
           <td class="text-center">{{ b.cantidad }}</td>
 
-          <!-- Expediente original (de la carga/relación) -->
           <td class="text-nowrap">{{ b.expediente.numero_expediente|default:"—" }}</td>
-
-          <!-- Expediente de Baja (campo de baja) -->
           <td class="text-nowrap">{{ b.expediente_baja|default:"—" }}</td>
 
           <td class="text-nowrap">{{ b.expediente.numero_compra|default:"—" }}</td>
@@ -117,7 +112,6 @@
           </td>
 
           <td class="text-center text-nowrap">
-            <!-- Restablecer (POST) -->
             <form method="post" action="{% url 'restablecer_bien' b.pk %}" class="d-inline">
               {% csrf_token %}
               <button type="submit" class="btn btn-sm btn-success" title="Restablecer a ACTIVO"
@@ -126,7 +120,6 @@
               </button>
             </form>
 
-            <!-- Eliminar definitivo (POST) -->
             <form method="post" action="{% url 'eliminar_bien_definitivo' b.pk %}" class="d-inline">
               {% csrf_token %}
               <button type="submit" class="btn btn-sm btn-danger" title="Eliminar definitivamente"
@@ -144,5 +137,55 @@
       </tbody>
     </table>
   </div>
+
+  <!-- PAGINACIÓN -->
+  {% if is_paginated %}
+  <nav aria-label="Paginación de bienes dados de baja" class="mt-3">
+    <ul class="pagination pagination-sm justify-content-center">
+      {% with qs_pref=querystring|default_if_none:""|add:"&" %}
+
+      <!-- Primero -->
+      <li class="page-item {% if not prev_page %}disabled{% endif %}">
+        <a class="page-link" href="?{{ qs_pref }}page=1">Primera</a>
+      </li>
+
+      <!-- Anterior -->
+      <li class="page-item {% if not prev_page %}disabled{% endif %}">
+        {% if prev_page %}
+          <a class="page-link" href="?{{ qs_pref }}page={{ prev_page }}">«</a>
+        {% else %}
+          <span class="page-link">«</span>
+        {% endif %}
+      </li>
+
+      <!-- Números -->
+      {% for num in page_range %}
+        {% if num == '…' %}
+          <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% elif num == page_obj.number %}
+          <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+        {% else %}
+          <li class="page-item"><a class="page-link" href="?{{ qs_pref }}page={{ num }}">{{ num }}</a></li>
+        {% endif %}
+      {% endfor %}
+
+      <!-- Siguiente -->
+      <li class="page-item {% if not next_page %}disabled{% endif %}">
+        {% if next_page %}
+          <a class="page-link" href="?{{ qs_pref }}page={{ next_page }}">»</a>
+        {% else %}
+          <span class="page-link">»</span>
+        {% endif %}
+      </li>
+
+      <!-- Última -->
+      <li class="page-item {% if not next_page %}disabled{% endif %}">
+        <a class="page-link" href="?{{ qs_pref }}page={{ paginator.num_pages }}">Última</a>
+      </li>
+      {% endwith %}
+    </ul>
+  </nav>
+  {% endif %}
+
 </div>
 {% endblock %}

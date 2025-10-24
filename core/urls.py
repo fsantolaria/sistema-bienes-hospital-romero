@@ -4,7 +4,6 @@ from . import views
 
 urlpatterns = [
     # ===== Raíz del sitio =====
-    
     path('', RedirectView.as_view(pattern_name='inicio', permanent=False)),
 
     # ===== Inicio / Auth =====
@@ -13,6 +12,7 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('registro/', views.registro, name='registro'),
     path('recuperar-password/', views.recuperar_password, name='recuperar_password'),
+
     # Compatibilidad con /accounts/login/
     path('accounts/login/', RedirectView.as_view(pattern_name='login', permanent=False)),
 
@@ -22,7 +22,8 @@ urlpatterns = [
 
     # ===== Operadores =====
     path('operadores/', views.operadores, name='operadores'),
-    path('alta_operadores/', views.alta_operadores, name='alta_operadores'),  # <-- nombre corregido
+    path('operadores/alta/', views.alta_operadores, name='alta_operadores'),
+    path('operadores/<int:pk>/editar/', views.editar_operador, name='editar_operador'),
 
     # ===== Varias =====
     path('base/', views.base, name='base'),
@@ -46,7 +47,7 @@ urlpatterns = [
     # Carga masiva
     path('carga-masiva/', views.carga_masiva_bienes, name='carga_masiva'),
 
-    # Vistas legacy / formularios simples
+    # Formularios / vistas legacy
     path('bienes/', views.bienes, name='bienes'),
     path('bien_confirm_delete/', views.bien_confirm_delete, name='bien_confirm_delete'),
 ]

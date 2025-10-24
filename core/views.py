@@ -1,4 +1,4 @@
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, get_user_model
 import pandas as pd
 from datetime import date
 from django.shortcuts import render, redirect, get_object_or_404
@@ -13,6 +13,8 @@ from django.core.exceptions import ValidationError
 from decimal import Decimal, InvalidOperation
 from django.utils.dateparse import parse_date
 from django.contrib.messages import get_messages
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.utils.text import slugify
 
 
 def _role_route_name(user) -> str:
@@ -125,13 +127,18 @@ def home_admin(request):
     return render(request, 'home_admin.html', perms)
 
 
+# ============= OPERADORES =============
+Operador = get_user_model()
+
 @login_required
 def operadores(request):
-    perms = permisos_context(request.user)
-    if not perms["puede_gestionar_operadores"]:
-        messages.warning(request, 'No tienes permisos para gestionar operadores')
-        return redirect('home_operador')
-    return render(request, 'operadores.html', perms)
+    # Lista solo “operadores” (no staff) ordenados por nombre
+    operadores_qs = Operador.objects.filter(is_staff=False).order_by('first_name', 'last_name', 'username')
+    ctx = {
+        "operadores": operadores_qs,
+        "usar_operador_model": False,  # por si tus templates usan este flag
+    }
+    return render(request, "operadores.html", ctx)
 
 
 def recuperar_password(request):
@@ -140,73 +147,100 @@ def recuperar_password(request):
 
 @login_required
 def alta_operadores(request):
-    perms = permisos_context(request.user)
-    if not perms["puede_gestionar_operadores"]:
-        messages.error(request, 'No tienes permisos para acceder a esta página')
-        return redirect('home_operador')
+    if request.method == "POST":
+        nombre      = (request.POST.get("nombre") or "").strip()
+        apellido    = (request.POST.get("apellido") or "").strip()
+        pais        = (request.POST.get("pais") or "").strip()
+        numero_doc  = (request.POST.get("numero_doc") or "").strip()  # OJO: guión bajo
+        email       = (request.POST.get("email") or "").strip()
+        estado      = (request.POST.get("estado") or "habilitado").strip()
+        password    = (request.POST.get("password") or "").strip()
+
+        # 1) Username generado con nombre+apellido (sin espacios/acentos) y único
+        base_username = slugify(f"{nombre}.{apellido}") or (email.split("@")[0] if email else "")
+        if not base_username:
+            messages.error(request, "No se pudo generar un usuario. Completá Nombre/Apellido o Email.")
+            return redirect("alta_operadores")
+
+        username = base_username
+        i = 1
+        while Operador.objects.filter(username=username).exists():
+            i += 1
+            username = f"{base_username}{i}"
+
+        # 2) is_active según “estado”
+        is_active = (estado == "habilitado")
+
+        # 3) Crear usuario operador
+        operador = Operador.objects.create_user(
+            username=username,
+            email=email or None,
+            first_name=nombre,
+            last_name=apellido,
+            is_staff=False,         # no es admin
+            is_superuser=False,     # no es superuser
+            is_active=is_active,
+        )
+        # Campos extra si tu User los tiene:
+        if hasattr(operador, "pais"):
+            operador.pais = pais
+        if hasattr(operador, "numero_doc"):
+            operador.numero_doc = numero_doc
+        if hasattr(operador, "estado"):
+            operador.estado = estado  # guarda cadena 'habilitado' / 'no-habilitado'
+
+        if password:
+            operador.set_password(password)
+        operador.save()
+
+        messages.success(request, f"Operador {nombre} {apellido} creado. Usuario: {operador.username}")
+        return redirect("operadores")  # ← vuelve al listado
+
+    # GET
+    return render(request, "alta_operadores.html", {"usar_operador_model": False})
+
+
+@login_required
+def editar_operador(request, pk):
+    operador = get_object_or_404(Operador, pk=pk, is_staff=False)
 
     if request.method == "POST":
-        nombre = (request.POST.get('nombre') or "").strip()
-        apellido = (request.POST.get('apellido') or "").strip()
-        email = (request.POST.get('email') or "").strip()
-        password = (request.POST.get('password') or "").strip()
-        pais = (request.POST.get('pais') or "").strip()
-        numero_doc = (request.POST.get('numero-doc') or "").strip()
-        estado = (request.POST.get('estado') or "").strip()
+        nombre      = (request.POST.get("nombre") or "").strip()
+        apellido    = (request.POST.get("apellido") or "").strip()
+        email       = (request.POST.get("email") or "").strip()
+        estado      = (request.POST.get("estado") or "habilitado").strip()
+        pais        = (request.POST.get("pais") or "").strip()
+        numero_doc  = (request.POST.get("numero_doc") or "").strip()
+        password    = (request.POST.get("password") or "").strip()
 
-        if not (nombre and apellido and email and password):
-            messages.error(request, "Faltan datos obligatorios: Nombre, Apellido, Email y Contraseña.")
-            return redirect('alta_operadores')
+        operador.first_name = nombre
+        operador.last_name  = apellido
+        operador.email      = email or None
 
-        if '@' not in email or '.' not in email:
-            messages.error(request, "El email no tiene un formato válido.")
-            return redirect('alta_operadores')
+        # is_active / estado
+        operador.is_active  = (estado == "habilitado")
+        if hasattr(operador, "estado"):
+            operador.estado = estado
 
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
-        if User.objects.filter(username=email).exists() or User.objects.filter(email=email).exists():
-            messages.error(request, "Ya existe un usuario con ese email/username.")
-            return redirect('alta_operadores')
+        # extras si existen
+        if hasattr(operador, "pais"):
+            operador.pais = pais
+        if hasattr(operador, "numero_doc"):
+            operador.numero_doc = numero_doc
 
-        is_active = estado == 'habilitado' if estado else True
-        try:
-            user = User.objects.create_user(
-                username=email,
-                email=email,
-                password=password,
-                tipo_usuario='empleado',
-                is_active=is_active,
-                first_name=nombre,
-                last_name=apellido
-            )
-        except TypeError:
-            user = User.objects.create_user(
-                username=email,
-                email=email,
-                password=password,
-                is_active=is_active,
-                first_name=nombre,
-                last_name=apellido
-            )
+        if password:
+            operador.set_password(password)
 
-        try:
-            from core.models.operador import Operador as OperadorModel
-            operador_data = {'usuario': user, 'nombre_completo': f"{nombre} {apellido}"}
-            if pais:
-                operador_data['pais'] = pais
-            if numero_doc:
-                operador_data['numero_documento'] = numero_doc
-            if estado:
-                operador_data['estado'] = estado
-            OperadorModel.objects.create(**operador_data)
-        except (ImportError, AttributeError):
-            pass
+        operador.save()
+        messages.success(request, "Operador actualizado correctamente.")
+        return redirect("operadores")
 
-        messages.success(request, f"Operador {nombre} {apellido} creado correctamente.")
-        return redirect('operadores')
-
-    return render(request, 'alta_operadores.html', perms)
-
+    # GET
+    ctx = {
+        "operador": operador,
+        "usar_operador_model": False,
+    }
+    return render(request, "editar_operadores.html", ctx)
 
 @login_required
 def reportes_view(request):
@@ -221,6 +255,7 @@ def reportes_view(request):
 
 @login_required
 def lista_bienes(request):
+    # --------- Parámetros de búsqueda / filtros / orden ----------
     q        = (request.GET.get("q") or "").strip()
     f_origen = request.GET.get("f_origen") or ""
     f_estado = request.GET.get("f_estado") or ""
@@ -228,6 +263,7 @@ def lista_bienes(request):
     f_hasta  = request.GET.get("f_hasta") or ""
     orden    = request.GET.get("orden") or "-fecha"
 
+    # --------- Query base ----------
     bienes_queryset = (
         BienPatrimonial.objects
         .select_related("expediente")
@@ -250,7 +286,7 @@ def lista_bienes(request):
             Q(expediente__numero_compra__icontains=q)
         )
 
-    # Nota: origen/estado son CharField con default; __NULL__ casi nunca aplica, pero lo dejo por compatibilidad.
+    # Filtros
     if f_origen == "__NULL__":
         bienes_queryset = bienes_queryset.filter(origen__isnull=True)
     elif f_origen:
@@ -270,6 +306,7 @@ def lista_bienes(request):
         if h:
             bienes_queryset = bienes_queryset.filter(fecha_adquisicion__lte=h)
 
+    # Orden
     if orden == "fecha":
         bienes_queryset = bienes_queryset.order_by("fecha_adquisicion", "clave_unica")
     elif orden == "-fecha":
@@ -281,10 +318,70 @@ def lista_bienes(request):
     else:
         bienes_queryset = bienes_queryset.order_by("clave_unica")
 
-    context = permisos_context(request.user)
-    context.update({"bienes": bienes_queryset, "q": q})
-    return render(request, "bienes/lista_bienes.html", context)
+    # --------- Paginación segura (30 por página) ----------
+    per_page = 30
+    paginator = Paginator(bienes_queryset, per_page)
 
+    # Página solicitada (como int) con fallback a 1
+    page_raw = request.GET.get("page", "1")
+    try:
+        page_number = int(page_raw)
+        if page_number < 1:
+            page_number = 1
+    except ValueError:
+        page_number = 1
+
+    try:
+        page_obj = paginator.page(page_number)
+    except (EmptyPage, PageNotAnInteger):
+        page_obj = paginator.page(1)
+
+    # Enlaces prev/next SIN provocar excepciones en el template
+    try:
+        prev_page = page_obj.previous_page_number()
+    except Exception:
+        prev_page = None
+    try:
+        next_page = page_obj.next_page_number()
+    except Exception:
+        next_page = None
+
+    # Range con elipsis (1 … n-2 n-1 n n+1 n+2 … last)
+    current = page_obj.number
+    last = paginator.num_pages
+    window = 2
+    nums = set([1, last] + list(range(max(1, current - window), min(last, current + window) + 1)))
+    page_range = []
+    last_added = 0
+    for i in range(1, last + 1):
+        if i in nums:
+            page_range.append(i)
+            last_added = i
+        else:
+            # insertar elipsis solo una vez entre bloques
+            if last_added != "…":
+                page_range.append("…")
+                last_added = "…"
+
+    # Querystring para mantener filtros en links de paginación
+    qs = request.GET.copy()
+    qs.pop("page", None)
+    querystring = qs.urlencode()
+
+    # --------- Contexto ----------
+    context = permisos_context(request.user)
+    context.update({
+        "q": q,
+        "bienes": page_obj.object_list,   # lo que itera la tabla
+        "paginator": paginator,
+        "page_obj": page_obj,
+        "is_paginated": paginator.num_pages > 1,
+        "page_range": page_range,
+        "prev_page": prev_page,
+        "next_page": next_page,
+        "querystring": querystring,
+    })
+    return render(request, "bienes/lista_bienes.html", context)
 
 # ============================
 # CRUD SIMPLE
@@ -566,7 +663,7 @@ def lista_baja_bienes(request):
             Q(descripcion_baja__icontains=q) |
             Q(numero_identificacion__icontains=q) |
             Q(servicios__icontains=q) |
-            Q(cuenta_codigo__icontainsq:=q) |  # <-- typo evitado: mantenemos como estaba si no hay campo
+            Q(cuenta_codigo__icontains=q) |
             Q(nomenclatura_bienes__icontains=q) |
             Q(numero_serie__icontains=q) |
             Q(expediente__numero_expediente__icontains=q) |
@@ -584,36 +681,89 @@ def lista_baja_bienes(request):
     else:
         bienes_baja = bienes_baja.order_by("-fecha_baja", "clave_unica")
 
+    # ===== Paginación =====
+    try:
+        per_page = int(request.GET.get("per_page") or 30)
+    except ValueError:
+        per_page = 30
+
+    paginator = Paginator(bienes_baja, per_page)
+
+    page_str = request.GET.get("page") or "1"
+    try:
+        page_number = int(page_str)
+    except ValueError:
+        page_number = 1
+    if page_number < 1:
+        page_number = 1
+
+    try:
+        page_obj = paginator.page(page_number)
+    except (PageNotAnInteger, EmptyPage):
+        page_obj = paginator.page(1)
+        page_number = 1
+
+    # Querystring sin page=
+    qd = request.GET.copy()
+    qd.pop("page", None)
+    querystring = qd.urlencode()
+
+    # Rango comprimido (…)
+    current = page_obj.number
+    total = paginator.num_pages
+    window = 2
+    page_range = []
+    for num in range(1, total + 1):
+        if num == 1 or num == total or (current - window) <= num <= (current + window):
+            page_range.append(num)
+        elif page_range and page_range[-1] != "…":
+            page_range.append("…")
+
+    prev_page = current - 1 if page_obj.has_previous() else None
+    next_page = current + 1 if page_obj.has_next() else None
+
     context = permisos_context(request.user)
-    context.update({"bienes": bienes_baja})
+    context.update({
+        "bienes": page_obj.object_list,
+        "page_obj": page_obj,
+        "paginator": paginator,
+        "is_paginated": paginator.num_pages > 1,
+        "page_range": page_range,
+        "prev_page": prev_page,
+        "next_page": next_page,
+        "querystring": querystring,
+    })
     return render(request, "bienes/lista_baja_bienes.html", context)
 
 
 @login_required
 @require_POST
 def dar_baja_bien(request, pk):
+    """
+    Marca un bien como BAJA sin eliminarlo del listado general.
+    Aparece en ambas listas: lista_bienes (con estado 'BAJA') y lista_baja_bienes.
+    """
     bien = get_object_or_404(BienPatrimonial, pk=pk)
 
     fecha_baja = parse_date(request.POST.get("fecha_baja") or "") or date.today()
     expediente_baja = (request.POST.get("expediente_baja") or "").strip()
     descripcion_baja = (request.POST.get("descripcion_baja") or "").strip()
 
+    # Cambiar estado y registrar datos de baja
     bien.estado = "BAJA"
     bien.fecha_baja = fecha_baja
-
     if hasattr(bien, "expediente_baja"):
         bien.expediente_baja = expediente_baja
     if hasattr(bien, "descripcion_baja"):
         bien.descripcion_baja = descripcion_baja
-    elif descripcion_baja:
-        bien.observaciones = (bien.observaciones or "")
-        if bien.observaciones:
-            bien.observaciones += " | "
-        bien.observaciones += f"BAJA: {descripcion_baja}"
 
-    bien.save()
-    messages.success(request, f"Bien {bien.clave_unica or bien.pk} dado de baja correctamente.")
-    return redirect("lista_baja_bienes")
+    bien.save(update_fields=["estado", "fecha_baja", "expediente_baja", "descripcion_baja"])
+
+    messages.success(
+        request,
+        f"Bien {bien.clave_unica or bien.pk} dado de baja correctamente. Ahora aparece en la lista general con estado BAJA."
+    )
+    return redirect("lista_bienes")
 
 
 @login_required

@@ -59,12 +59,38 @@
             {% for e in form.cantidad.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
           </div>
 
-          <!-- Expediente -->
-          <div class="col-md-4">
-            <label class="form-label" for="{{ form.expediente.id_for_label }}">N° de Expediente</label>
-            {{ form.expediente }}
-            {% for e in form.expediente.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+          <!-- BLOQUE AMPLIABLE: DATOS DE EXPEDIENTE -->
+          <div class="col-12">
+            <button class="btn btn-outline-info mb-2" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#expedienteCollapse"
+                    aria-expanded="false" aria-controls="expedienteCollapse">
+              <i class="fa-solid fa-folder-open me-1"></i> Agregar datos de expediente (opcional)
+            </button>
+
+            <div class="collapse {% if form.numero_expediente.errors or form.numero_compra.errors %}show{% endif %}"
+                 id="expedienteCollapse">
+              <div class="card card-body border border-primary bg-light">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label" for="{{ form.numero_expediente.id_for_label }}">N° de Expediente</label>
+                    {{ form.numero_expediente }}
+                    {% for e in form.numero_expediente.errors %}
+                      <div class="invalid-feedback d-block">{{ e }}</div>
+                    {% endfor %}
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label" for="{{ form.numero_compra.id_for_label }}">N° de Compra</label>
+                    {{ form.numero_compra }}
+                    {% for e in form.numero_compra.errors %}
+                      <div class="invalid-feedback d-block">{{ e }}</div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
+          <!-- FIN BLOQUE EXPEDIENTE -->
 
           <!-- Cuenta código / Nomenclatura -->
           <div class="col-md-3">
@@ -121,12 +147,20 @@
             {% for e in form.valor_adquisicion.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
           </div>
 
-          <!-- Fechas -->
+          <!-- Fecha de Alta -->
           <div class="col-md-4">
             <label class="form-label" for="{{ form.fecha_adquisicion.id_for_label }}">Fecha de Alta</label>
             {{ form.fecha_adquisicion }}
             {% for e in form.fecha_adquisicion.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
           </div>
+
+          <!-- NUEVO: Fecha de Baja (oculta hasta que el estado sea BAJA) -->
+          <div class="col-md-4 d-none" id="grupo-fecha-baja">
+            <label class="form-label" for="{{ form.fecha_baja.id_for_label }}">Fecha de Baja</label>
+            {{ form.fecha_baja }}
+            {% for e in form.fecha_baja.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+          </div>
+        </div>
 
         <div class="d-flex gap-2 mt-4">
           <button type="submit" class="btn btn-success">
@@ -145,7 +179,7 @@
 
 {% block extra_js %}
 <script>
-  // Ocultar "Precio" si Origen ≠ COMPRA
+  // Ocultar "Precio" si Origen ≠ COMPRA y mostrar "Fecha de Baja" si Estado = BAJA
   (function () {
     const origen = document.getElementById('id_origen');
     const grupoPrecio = document.getElementById('grupo-precio');
@@ -163,6 +197,32 @@
     }
     togglePrecio();
     origen?.addEventListener('change', togglePrecio);
+
+    // === Mostrar Fecha de Baja si Estado = BAJA ===
+    const estado = document.getElementById('id_estado');
+    const grupoFechaBaja = document.getElementById('grupo-fecha-baja');
+    const inputFechaBaja = document.getElementById('id_fecha_baja');
+
+    function hoyISO() {
+      const d = new Date();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${d.getFullYear()}-${m}-${day}`;
+    }
+
+    function toggleFechaBaja() {
+      const v = (estado?.value || '').toUpperCase();
+      if (v === 'BAJA') {
+        grupoFechaBaja?.classList.remove('d-none');
+        if (inputFechaBaja && !inputFechaBaja.value) inputFechaBaja.value = hoyISO();
+      } else {
+        grupoFechaBaja?.classList.add('d-none');
+        if (inputFechaBaja) inputFechaBaja.value = '';
+      }
+    }
+
+    toggleFechaBaja();
+    estado?.addEventListener('change', toggleFechaBaja);
   })();
 </script>
 {% endblock %}

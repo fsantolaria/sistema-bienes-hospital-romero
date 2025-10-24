@@ -5,62 +5,53 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/operadores.css' %}">
+<link rel="stylesheet" href="{% static 'libs/fontawesome/css/all.min.css' %}">
 {% endblock %}
 
 {% block content %}
 <div class="titulo-operadores">
-    <button class="btn-icono-agregar" data-view="alta_operadores">
-        <i class="fa-solid fa-user-plus"></i>
-    </button>
-    <h2>OPERADORES</h2>
+  <a class="btn-icono-agregar" href="{% url 'alta_operadores' %}">
+    <i class="fa-solid fa-user-plus"></i>
+  </a>
+  <h2>OPERADORES</h2>
 </div>
 
 <div class="tabla-operadores-container">
-    <table class="tabla-operadores">
-        <thead>
-            <tr>
-                <th>OPERADORES</th>
-                <th>NOMBRES Y APELLIDOS</th>
-                <th>VER MÁS</th>
-                <th>BAJA</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>PABLO</td>
-                <td>Pablo Larralde</td>
-                <td><span class="icono-ver-mas">✅</span></td>
-                <td><span class="icono-baja">💬</span></td>
-            </tr>
-            <tr>
-                <td>LEONEL</td>
-                <td>Leonel Martinez</td>
-                <td><span class="icono-ver-mas">✅</span></td>
-                <td><span class="icono-baja">💬</span></td>
-            </tr>
-            <tr>
-                <td>EMILIA</td>
-                <td>Emilia Gonzales</td>
-                <td><span class="icono-ver-mas">✅</span></td>
-                <td><span class="icono-baja">💬</span></td>
-            </tr>
-            <tr>
-                <td>ROBERTO</td>
-                <td>Roberto Pettinato Diaz</td>
-                <td><span class="icono-ver-mas">✅</span></td>
-                <td><span class="icono-baja">💬</span></td>
-            </tr>
-            <tr>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-        </tbody>
-    </table>
+  <table class="tabla-operadores">
+    <thead>
+      <tr>
+        <th>OPERADOR</th>
+        <th>NOMBRES Y APELLIDOS</th>
+        <th>EDITAR</th>
+        <th>ESTADO</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for op in operadores %}
+      <tr>
+        <td>{{ op.username }}</td>
+        <td>{{ op.first_name }} {{ op.last_name }}</td>
+        <td class="text-center">
+          <a class="btn btn-sm btn-info" href="{% url 'editar_operador' op.pk %}" title="Editar">
+            <i class="fa-solid fa-pen"></i>
+          </a>
+        </td>
+        <td>{% if op.is_active %}habilitado{% else %}no-habilitado{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4" class="text-center text-muted py-3">No hay operadores cargados.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/operadores.js' %}"></script>
+{# Este JS NO debe reescribir la tabla con datos estáticos #}
+<script>
+// Si tenías /static/js/operadores.js con datos de ejemplo, quitá su carga o vacíalo.
+console.log('Operadores (render server-side).');
+</script>
 {% endblock %}
