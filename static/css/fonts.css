@@ -1,3 +1,14 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Blinker:wght@400;600&family=Open+Sans:wght@400;600&display=swap');
+
+
+:root {
+    --font-sans: 'Inter', 'Open Sans', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+body, input, button, textarea, select {
+    font-family: var(--font-sans);
+}
 /* ==========================
    Fuentes locales
 ========================== */

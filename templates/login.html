@@ -51,7 +51,8 @@
                 <div class="error-message" id="passwordError"></div>
             </div>
 
-            {% if form.errors %}
+            {# show inline login error when view signals it via login_error in context #}
+            {% if login_error %}
             <div class="error-message" id="loginError" style="display: block;">El Usuario y/o Contraseña es incorrecto</div>
             {% else %}
             <div class="error-message" id="loginError">El Usuario y/o Contraseña es incorrecto</div>
