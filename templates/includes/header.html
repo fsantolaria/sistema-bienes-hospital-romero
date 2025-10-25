@@ -1,27 +1,26 @@
 {% load static %}
+
 <header class="main-header">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="{% url 'inicio' %}">
-                <img src="{% static 'img/logo.png' %}" alt="Logo" width="40" height="40" class="d-inline-block align-text-top">
-                Sistema de Patrimonio
+    <div class="header-container">
+        <!-- Logo e Identificación -->
+        <div class="logo-section">
+            <a href="{% url 'inicio' %}" class="logo-link">
+                <img src="{% static 'img/logo.png' %}" alt="Logo Hospital" class="logo-img">
+                <span class="system-title">Sistema de Gestión de Bienes Patrimoniales</span>
             </a>
-
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'inicio' %}">Inicio</a>
-                        
-                    </li>
-                </ul>
-            </div>
         </div>
 
-    </nav>
+        <!-- Íconos de acciones -->
+        <div class="icon-section">
+            <a href="{% url 'inicio' %}" class="header-icon" title="Volver al inicio">
+                <span class="material-symbols-outlined">home</span>
+            </a>
+            <span class="material-symbols-outlined header-icon" title="Notificaciones">notifications</span>
+            <a href="{% url 'logout' %}" class="header-icon" title="Cerrar sesión">
+                <span class="material-symbols-outlined">logout</span>
+            </a>
+        </div>
+    </div>
 </header>
+
 

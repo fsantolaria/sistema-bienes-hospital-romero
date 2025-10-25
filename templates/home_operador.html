@@ -1,49 +1,42 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Gestión de Bienes Patrimoniales</title>
-    <link rel="stylesheet" href="styles.css">
-    <!-- Fuente base Arial/Helvetica -->
-    <style>
-        body { font-family: Arial, Helvetica, sans-serif; }
-    </style>
-    <!-- Iconos Material Design -->
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
-</head>
-<body>
-    <!-- Barra superior -->
-    <header class="top-bar">
-        <div class="logo-container">
-            <img src="img/logo.png" alt="Logo Hospital" class="logo">
-            <span class="system-title">Sistema de Gestión de Bienes Patrimoniales</span>
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Panel del Operador - Sistema de Bienes Patrimoniales{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/home_admin.css' %}">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<!-- Contenedor principal -->
+<main class="main-container">
+    <!-- Panel lateral izquierdo -->
+    <aside class="left-panel">
+        <img src="{% static 'img/diseño-izquierda.png' %}" alt="Gobierno de Buenos Aires" class="panel-image">
+    </aside>
+
+    <!-- Área central -->
+    <section class="home-content">
+        <div class="menu-buttons">
+            <!-- Botón Bienes Patrimoniales -->
+            <a href="{% url 'bienes' %}" class="menu-button">
+                <i class="fas fa-table-cells-large card-icon"></i>
+                Bienes Patrimoniales
+            </a>
+
+            <!-- Botón Reportes -->
+            <a href="{% url 'reportes' %}" class="menu-button">
+                <i class="fas fa-chart-line card-icon"></i>
+                Reportes
+            </a>
         </div>
-        <div class="icons-container">
-            <span class="material-symbols-outlined">notifications</span>
-            <a href="/logout/" class="logout-link"><span class="material-symbols-outlined">logout</span></a>
-        </div>
-    </header>
+    </section>
+</main>
 
-    <!-- Contenedor principal -->
-    <main class="main-container">
-        <!-- Panel lateral izquierdo -->
-        <aside class="left-panel">
-            <img src="img/diseño-izquierda.png" alt="Gobierno de Buenos Aires" class="panel-image">
-        </aside>
+<footer class="footer"></footer>
+{% endblock %}
 
-        <!-- Área central -->
-        <section class="home-content">
-            <div class="menu-buttons">
-                <button class="menu-button" id="btn-bienes">BIENES</button>
-                <button class="menu-button" id="btn-perfil">PERFIL</button>
-            </div>
-        </section>
-    </main>
-
-    <!-- Footer vacío -->
-    <footer class="footer"></footer>
-
-    <script src="script.js"></script>
-</body>
-</html>
+{% block extra_js %}
+<script src="{% static 'js/home_admin.js' %}"></script>
+{% endblock %}

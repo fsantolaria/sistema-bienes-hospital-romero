@@ -1,0 +1,100 @@
+<div id="modal-bien" class="modal oculto">
+  <div class="modal-content">
+    <h3 id="modal-titulo">Alta de Bien</h3>
+
+    <div class="form-grid-alta">
+      <!-- Fila 1 -->
+      <div class="form-group-full">
+        <label>Número de Expediente</label>
+        <input type="text" id="expediente" value="Ex-2019-KXXXXXXX-GK18A-XXXXXXX">
+      </div>
+      <div class="form-group">
+        <label>Número de ID</label>
+        <input type="text" id="clave">
+      </div>
+      <div class="form-group">
+        <label>Fecha</label>
+        <input type="text" id="fecha" value="27/06/2024">
+      </div>
+
+      <!-- Fila 2 -->
+      <div class="form-group">
+        <label>Origen de Alta</label>
+        <select id="origen">
+          <option value="">Seleccione</option>
+          <option value="MINISTERIO">MINISTERIO</option>
+          <option value="COMPRA">COMPRA</option>
+          <option value="DONACION">DONACIÓN</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Cantidad</label>
+        <input type="number" id="cantidad" value="1">
+      </div>
+      <div class="form-group">
+        <label>Precio</label>
+        <input type="text" id="precio" value="$1.000.000">
+      </div>
+
+      <!-- Fila 3 -->
+      <div class="form-group">
+        <label>Número de Serie</label>
+        <input type="text" id="serie">
+      </div>
+      <div class="form-group">
+        <label>Estado</label>
+        <select id="estado">
+          <option value="ACTIVO">Activo</option>
+          <option value="INACTIVO">Inactivo</option>
+          <option value="MANTENIMIENTO">En Mantenimiento</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Cuenta Código</label>
+        <input type="text" id="cuenta">
+      </div>
+
+      <!-- Fila 4 - Descripción del Bien -->
+      <div class="form-group-descripcion">
+        <label>Descripción del Bien</label>
+        <input type="text" id="nombre" value="DESTILADOR" class="input-destacado">
+      </div>
+      <div class="form-group-empty"></div>
+      <div class="form-group">
+        <label>Número de compra</label>
+        <input type="text" id="compra" value="XXXXXXXXXXX">
+      </div>
+
+      <!-- Fila 5 -->
+      <div class="form-group-full">
+        <input type="text" id="descripcion1" placeholder="XXXXXXXXXXXXXXXX">
+      </div>
+      <div class="form-group-empty"></div>
+      <div class="form-group">
+        <label>Servicios</label>
+        <input type="text" id="servicio" value="Guardia Salud Mental">
+      </div>
+
+      <!-- Fila 6 -->
+      <div class="form-group-full">
+        <input type="text" id="descripcion2" placeholder="XXXXXXXXXXXXXXXX">
+      </div>
+      <div class="form-group-empty"></div>
+      <div class="form-group-empty"></div>
+
+      <!-- Fila 7 - Nomenclatura -->
+      <div class="form-group-nomenclatura">
+        <label>Nomenclatura de Bienes</label>
+        <input type="text" id="nomenclatura" value="Laboratorio y Gabinetes">
+      </div>
+      <div class="form-group-empty"></div>
+      <div class="form-group-empty"></div>
+    </div>
+
+    <div class="modal-buttons">
+      <button id="cancelar-modal" class="btn-cancelar">Volver</button>
+      <button id="guardar-modal" class="btn-guardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
