@@ -222,7 +222,6 @@ html, body {
     color: #000;
     padding: 10px 24px;
     display: flex;
-    justify-content: center;
     align-items: center;
     height: 70px;
     border-bottom: 2px solid #0092b3;
@@ -230,16 +229,15 @@ html, body {
 
 .header-container {
     width: 100%;
-    max-width: 1200px;
     display: flex;
-    justify-content: flex-start;
     align-items: center;
 }
 
 .logo-section {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 18px;
+    margin-left: -10; 
 }
 
 .logo-link {
@@ -250,8 +248,8 @@ html, body {
 }
 
 .logo-img {
-    width: 50px;
-    height: 50px;
+    margin-right: 20px;   /* Más espacio entre icono y título */
+    margin-left: 0;       /* Icono pegado al margen izquierdo */
 }
 
 .system-title {
@@ -263,8 +261,10 @@ html, body {
 /* Íconos del header */
 .icon-section {
     display: flex;
+    flex-direction: row;  /* Esto los pone horizontales */
+    gap: 15px;            /* Espacio entre botones */
     align-items: center;
-    gap: 22px;
+    margin-left: auto;    /* Esto los empuja a la derecha */
 }
 
 .header-icon {
@@ -295,6 +295,142 @@ html, body {
     margin: 3px 0;
     font-size: 15px;
 }
+
+.logo-section {
+    display: flex;
+    align-items: center;
+    gap: 18px;              /* separa un poco más el texto del logo */
+    margin-left: -20px;     /* mueve el logo más a la izquierda */
+}
+
+.header-container {
+    justify-content: flex-start;
+    gap: auto;
+}
+
+.icon-section {
+    margin-left: auto;
+}
+
+.logo-img {
+    width: 50px;
+    height: 50px;
+}
+
+.system-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #000;
+}
+
+/* Íconos del header - VERSIÓN CORREGIDA */
+.icon-section {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    align-items: center;
+    margin-left: auto;
+}
+
+.header-icon {
+    font-size: 28px;
+    color: #001a1f; /* MUCHO MÁS OSCURO */
+    cursor: pointer;
+    transition: transform 0.2s ease, color 0.3s ease;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+}
+
+.header-icon:hover {
+    color: #000000; /* NEGRO PURO al hover */
+    transform: scale(1.1);
+}
+
+/* === Panel de notificaciones === */
+.notification-wrapper {
+    position: relative;
+}
+
+.notification-panel {
+    display: none;
+    position: absolute;
+    top: 40px;
+    right: 0;
+    background-color: #f2f2f2;
+    border-radius: 10px;
+    box-shadow: 0px 3px 8px rgba(0, 0, 0, 0.2);
+    width: 380px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 10px 15px;
+    z-index: 100;
+}
+
+.notification-panel.active {
+    display: block;
+}
+
+.notif-title {
+    text-align: center;
+    font-weight: 700;
+    color: #000;
+    border-bottom: 2px solid #00a4c6;
+    margin-bottom: 10px;
+}
+
+.notif-item {
+    display: flex;
+    align-items: flex-start;
+    background-color: #d9d9d9;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    padding: 10px;
+    gap: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.notif-avatar {
+    font-size: 40px;
+    color: #000;
+}
+
+.notif-content {
+    flex: 1;
+}
+
+.notif-content strong {
+    display: block;
+    font-size: 15px;
+    color: #000;
+}
+
+.notif-content p {
+    font-size: 14px;
+    margin: 3px 0;
+}
+
+.notif-content small {
+    font-size: 12px;
+    color: #333;
+}
+
+
+/* ==========================
+   FOOTER UNIFICADO
+========================== */
+.main-footer {
+    background-color: #00a4c6;
+    color: #000;
+    text-align: center;
+    padding: 14px 0;
+    border-top: 2px solid #0092b3;
+}
+
+.footer-content p {
+    margin: 3px 0;
+    font-size: 15px;
+}
 /* Ajuste de alineación izquierda del logo y título */
 .logo-section {
     margin-left: 10px;
@@ -307,4 +443,28 @@ html, body {
 
 .icon-section {
     margin-left: auto;
+}
+/* === FIX HEADER ICONS === */
+.icon-section {
+    display: flex !important;
+    flex-direction: row !important;  /* Los íconos en fila */
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 20px !important;            /* Espaciado entre íconos */
+}
+
+.header-icon {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-decoration: none !important;
+    font-size: 28px !important;
+    color: #001a1f !important;
+    cursor: pointer !important;
+    transition: transform 0.2s ease, color 0.3s ease !important;
+}
+
+.header-icon:hover {
+    color: #000 !important;
+    transform: scale(1.1) !important;
 }
