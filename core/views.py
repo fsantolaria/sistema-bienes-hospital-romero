@@ -19,9 +19,11 @@ from django.utils.text import slugify
 
 def _role_route_name(user) -> str:
     """Devuelve el nombre de la ruta según el rol del usuario."""
+    if user.is_superuser:
+        return 'home_admin'
     if hasattr(user, 'tipo_usuario'):
         return 'home_admin' if user.tipo_usuario == 'admin' else 'home_operador'
-    return 'home_admin' if user.is_superuser else 'home_operador'
+    return 'home_operador'
 
 
 
@@ -62,15 +64,37 @@ def login_view(request):
     if request.method == 'POST':
         usuario = request.POST.get('usuario')
         contrasena = request.POST.get('contrasena')
+        tipo_usuario = request.POST.get('tipo_usuario')
         user = authenticate(request, username=usuario, password=contrasena)
         if user is not None:
-            login(request, user)
-            messages.success(request, f'¡Bienvenido {user.username}!')
-            return redirect(_role_route_name(user))
+            # Validar tipo de usuario
+            if tipo_usuario == 'admin':
+                if user.is_superuser or (hasattr(user, 'tipo_usuario') and user.tipo_usuario == 'admin'):
+                    login(request, user)
+                    messages.success(request, f'¡Bienvenido {user.username}!')
+                    return redirect(_role_route_name(user))
+                else:
+                    messages.error(request, 'El tipo de usuario seleccionado no coincide con el usuario ingresado.')
+                    return render(request, 'login.html', {'login_error': True, 'request': request})
+            elif tipo_usuario == 'empleado':
+                # Los superusuarios NO pueden loguear como operador
+                if user.is_superuser:
+                    messages.error(request, 'Un administrador no puede ingresar como operador.')
+                    return render(request, 'login.html', {'login_error': True, 'request': request})
+                if hasattr(user, 'tipo_usuario') and user.tipo_usuario == 'empleado':
+                    login(request, user)
+                    messages.success(request, f'¡Bienvenido {user.username}!')
+                    return redirect(_role_route_name(user))
+                else:
+                    messages.error(request, 'El tipo de usuario seleccionado no coincide con el usuario ingresado.')
+                    return render(request, 'login.html', {'login_error': True, 'request': request})
+            else:
+                messages.error(request, 'Tipo de usuario no válido.')
+                return render(request, 'login.html', {'login_error': True, 'request': request})
         # Authentication failed: add a message and a context flag so the template
         # can show the inline error next to the form (not only global messages)
         messages.error(request, 'Usuario o contraseña incorrectos')
-        return render(request, 'login.html', {'login_error': True})
+        return render(request, 'login.html', {'login_error': True, 'request': request})
 
     return render(request, 'login.html')
 
@@ -175,7 +199,7 @@ def alta_operadores(request):
         is_active = (estado == "habilitado")
 
         # 3) Crear usuario operador
-        operador = Operador.objects.create_user(
+        operador = Operador(
             username=username,
             email=email or None,
             first_name=nombre,
@@ -184,6 +208,12 @@ def alta_operadores(request):
             is_superuser=False,     # no es superuser
             is_active=is_active,
         )
+        # Asignar tipo_usuario y setear password ANTES de guardar
+        operador.tipo_usuario = 'empleado'
+        if password:
+            operador.set_password(password)
+        else:
+            operador.set_password(username)  # fallback: username como password si no se ingresa
         # Campos extra si tu User los tiene:
         if hasattr(operador, "pais"):
             operador.pais = pais
@@ -191,9 +221,6 @@ def alta_operadores(request):
             operador.numero_doc = numero_doc
         if hasattr(operador, "estado"):
             operador.estado = estado  # guarda cadena 'habilitado' / 'no-habilitado'
-
-        if password:
-            operador.set_password(password)
         operador.save()
 
         messages.success(request, f"Operador {nombre} {apellido} creado. Usuario: {operador.username}")
@@ -258,6 +285,250 @@ def reportes_view(request):
 
 @login_required
 def lista_bienes(request):
+    # Si es operador, redirigir a la vista limitada
+    user = request.user
+    perms = permisos_context(user)
+    if not perms['es_admin']:
+        return redirect('lista_bienes_operador')
+    # Vista original para admin y otros
+    # --------- Parámetros de búsqueda / filtros / orden ----------
+    q        = (request.GET.get("q") or "").strip()
+    f_origen = request.GET.get("f_origen") or ""
+    f_estado = request.GET.get("f_estado") or ""
+    f_desde  = request.GET.get("f_desde") or ""
+    f_hasta  = request.GET.get("f_hasta") or ""
+    orden    = request.GET.get("orden") or "-fecha"
+
+    bienes_queryset = (
+        BienPatrimonial.objects
+        .select_related("expediente")
+        .order_by("clave_unica")
+    )
+
+    if q:
+        bienes_queryset = bienes_queryset.filter(
+            Q(clave_unica__icontains=q) |
+            Q(descripcion__icontains=q) |
+            Q(observaciones__icontains=q) |
+            Q(numero_identificacion__icontains=q) |
+            Q(servicios__icontains=q) |
+            Q(cuenta_codigo__icontains=q) |
+            Q(nomenclatura_bienes__icontains=q) |
+            Q(numero_serie__icontains=q) |
+            Q(origen__icontains=q) |
+            Q(estado__icontains=q) |
+            Q(expediente__numero_expediente__icontains=q) |
+            Q(expediente__numero_compra__icontains=q)
+        )
+
+    # Filtros
+    if f_origen == "__NULL__":
+        bienes_queryset = bienes_queryset.filter(origen__isnull=True)
+    elif f_origen:
+        bienes_queryset = bienes_queryset.filter(origen=f_origen)
+
+    if f_estado == "__NULL__":
+        bienes_queryset = bienes_queryset.filter(estado__isnull=True)
+    elif f_estado:
+        bienes_queryset = bienes_queryset.filter(estado=f_estado)
+
+    if f_desde:
+        d = parse_date(f_desde)
+        if d:
+            bienes_queryset = bienes_queryset.filter(fecha_adquisicion__gte=d)
+    if f_hasta:
+        h = parse_date(f_hasta)
+        if h:
+            bienes_queryset = bienes_queryset.filter(fecha_adquisicion__lte=h)
+
+    # Orden
+    if orden == "fecha":
+        bienes_queryset = bienes_queryset.order_by("fecha_adquisicion", "clave_unica")
+    elif orden == "-fecha":
+        bienes_queryset = bienes_queryset.order_by("-fecha_adquisicion", "clave_unica")
+    elif orden == "precio":
+        bienes_queryset = bienes_queryset.order_by("valor_adquisicion", "clave_unica")
+    elif orden == "-precio":
+        bienes_queryset = bienes_queryset.order_by("-valor_adquisicion", "clave_unica")
+    else:
+        bienes_queryset = bienes_queryset.order_by("clave_unica")
+
+    # Paginación segura (30 por página)
+    per_page = 30
+    paginator = Paginator(bienes_queryset, per_page)
+
+    # Página solicitada (como int) con fallback a 1
+    page_raw = request.GET.get("page", "1")
+    try:
+        page_number = int(page_raw)
+        if page_number < 1:
+            page_number = 1
+    except ValueError:
+        page_number = 1
+
+    try:
+        page_obj = paginator.page(page_number)
+    except (EmptyPage, PageNotAnInteger):
+        page_obj = paginator.page(1)
+
+    # Enlaces prev/next SIN provocar excepciones en el template
+    try:
+        prev_page = page_obj.previous_page_number()
+    except Exception:
+        prev_page = None
+    try:
+        next_page = page_obj.next_page_number()
+    except Exception:
+        next_page = None
+
+    # Range con elipsis (1 … n-2 n-1 n n+1 n+2 … last)
+    current = page_obj.number
+    last = paginator.num_pages
+    window = 2
+    nums = set([1, last] + list(range(max(1, current - window), min(last, current + window) + 1)))
+    page_range = []
+    last_added = 0
+    for i in range(1, last + 1):
+        if i in nums:
+            page_range.append(i)
+            last_added = i
+        else:
+            # insertar elipsis solo una vez entre bloques
+            if last_added != "…":
+                page_range.append("…")
+                last_added = "…"
+
+    # Querystring para mantener filtros en links de paginación
+    qs = request.GET.copy()
+    qs.pop("page", None)
+    querystring = qs.urlencode()
+
+    # --------- Contexto ----------
+    context = permisos_context(request.user)
+    context.update({
+        "q": q,
+        "bienes": page_obj.object_list,   # lo que itera la tabla
+        "paginator": paginator,
+        "page_obj": page_obj,
+        "is_paginated": paginator.num_pages > 1,
+        "page_range": page_range,
+        "prev_page": prev_page,
+        "next_page": next_page,
+        "querystring": querystring,
+    })
+    return render(request, "bienes/lista_bienes.html", context)
+def lista_bienes_operador(request):
+    """Vista limitada para operador: solo puede ver y editar bienes."""
+    # Parámetros de búsqueda / filtros / orden
+    q        = (request.GET.get("q") or "").strip()
+    f_origen = request.GET.get("f_origen") or ""
+    f_estado = request.GET.get("f_estado") or ""
+    f_desde  = request.GET.get("f_desde") or ""
+    f_hasta  = request.GET.get("f_hasta") or ""
+    orden    = request.GET.get("orden") or "-fecha"
+
+    bienes_queryset = (
+        BienPatrimonial.objects
+        .select_related("expediente")
+        .order_by("clave_unica")
+    )
+    if q:
+        bienes_queryset = bienes_queryset.filter(
+            Q(clave_unica__icontains=q) |
+            Q(descripcion__icontains=q) |
+            Q(observaciones__icontains=q) |
+            Q(numero_identificacion__icontains=q) |
+            Q(servicios__icontains=q) |
+            Q(cuenta_codigo__icontains=q) |
+            Q(nomenclatura_bienes__icontains=q) |
+            Q(numero_serie__icontains=q) |
+            Q(origen__icontains=q) |
+            Q(estado__icontains=q) |
+            Q(expediente__numero_expediente__icontains=q) |
+            Q(expediente__numero_compra__icontains=q)
+        )
+    # Filtros
+    if f_origen == "__NULL__":
+        bienes_queryset = bienes_queryset.filter(origen__isnull=True)
+    elif f_origen:
+        bienes_queryset = bienes_queryset.filter(origen=f_origen)
+    if f_estado == "__NULL__":
+        bienes_queryset = bienes_queryset.filter(estado__isnull=True)
+    elif f_estado:
+        bienes_queryset = bienes_queryset.filter(estado=f_estado)
+    if f_desde:
+        d = parse_date(f_desde)
+        if d:
+            bienes_queryset = bienes_queryset.filter(fecha_adquisicion__gte=d)
+    if f_hasta:
+        h = parse_date(f_hasta)
+        if h:
+            bienes_queryset = bienes_queryset.filter(fecha_adquisicion__lte=h)
+    # Orden
+    if orden == "fecha":
+        bienes_queryset = bienes_queryset.order_by("fecha_adquisicion", "clave_unica")
+    elif orden == "-fecha":
+        bienes_queryset = bienes_queryset.order_by("-fecha_adquisicion", "clave_unica")
+    elif orden == "precio":
+        bienes_queryset = bienes_queryset.order_by("valor_adquisicion", "clave_unica")
+    elif orden == "-precio":
+        bienes_queryset = bienes_queryset.order_by("-valor_adquisicion", "clave_unica")
+    else:
+        bienes_queryset = bienes_queryset.order_by("clave_unica")
+    # Paginación
+    per_page = 30
+    paginator = Paginator(bienes_queryset, per_page)
+    page_raw = request.GET.get("page", "1")
+    try:
+        page_number = int(page_raw)
+        if page_number < 1:
+            page_number = 1
+    except ValueError:
+        page_number = 1
+    try:
+        page_obj = paginator.page(page_number)
+    except (EmptyPage, PageNotAnInteger):
+        page_obj = paginator.page(1)
+    # Enlaces prev/next
+    try:
+        prev_page = page_obj.previous_page_number()
+    except Exception:
+        prev_page = None
+    try:
+        next_page = page_obj.next_page_number()
+    except Exception:
+        next_page = None
+    # Range con elipsis
+    current = page_obj.number
+    last = paginator.num_pages
+    window = 2
+    nums = set([1, last] + list(range(max(1, current - window), min(last, current + window) + 1)))
+    page_range = []
+    last_added = 0
+    for i in range(1, last + 1):
+        if i in nums:
+            page_range.append(i)
+            last_added = i
+        else:
+            if last_added != "…":
+                page_range.append("…")
+                last_added = "…"
+    qs = request.GET.copy()
+    qs.pop("page", None)
+    querystring = qs.urlencode()
+    context = permisos_context(request.user)
+    context.update({
+        "q": q,
+        "bienes": page_obj.object_list,
+        "paginator": paginator,
+        "page_obj": page_obj,
+        "is_paginated": paginator.num_pages > 1,
+        "page_range": page_range,
+        "prev_page": prev_page,
+        "next_page": next_page,
+        "querystring": querystring,
+    })
+    return render(request, "bienes/lista_bienes_operador.html", context)
     # --------- Parámetros de búsqueda / filtros / orden ----------
     q        = (request.GET.get("q") or "").strip()
     f_origen = request.GET.get("f_origen") or ""
@@ -398,6 +669,9 @@ def editar_bien(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, "Bien patrimonial actualizado correctamente.")
+            # Redirigir según tipo de usuario
+            if hasattr(request.user, 'tipo_usuario') and request.user.tipo_usuario == 'empleado':
+                return redirect('lista_bienes_operador')
             return redirect('lista_bienes')
     else:
         form = BienPatrimonialForm(instance=bien)

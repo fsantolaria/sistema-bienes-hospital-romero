@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Bienes Patrimoniales Operador{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <form method="get" class="row g-2 align-items-end mb-3">
+        <div class="col-md-4">
+            <label class="form-label">Buscar</label>
+            <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Descripción, ID, servicio...">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Ordenar</label>
+            <select name="orden" class="form-select">
+                <option value="-fecha"  {% if orden == "-fecha" %}selected{% endif %}>Más recientes</option>
+                <option value="fecha"   {% if orden == "fecha" %}selected{% endif %}>Más antiguos</option>
+                <option value="-precio" {% if orden == "-precio" %}selected{% endif %}>Precio ↓</option>
+                <option value="precio"  {% if orden == "precio" %}selected{% endif %}>Precio ↑</option>
+            </select>
+        </div>
+        <div class="col-auto d-flex align-items-end gap-2">
+            <button class="btn btn-primary" type="submit">
+                <i class="fas fa-search me-1"></i> Buscar
+            </button>
+            <a class="btn btn-outline-secondary" href="?limpiar=1">Limpiar</a>
+            <button class="btn btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#filtrosBox" aria-expanded="false" aria-controls="filtrosBox" id="btn-filtros">
+                <i class="fas fa-sliders-h me-1"></i> Filtros
+            </button>
+        </div>
+        <div class="col-12 collapse mt-3" id="filtrosBox">
+            <div class="row g-2">
+                <div class="col-md-3">
+                    <label class="form-label">Origen</label>
+                    <input type="text" name="f_origen" class="form-control" value="{{ f_origen }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Estado</label>
+                    <input type="text" name="f_estado" class="form-control" value="{{ f_estado }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Desde (Alta)</label>
+                    <input type="date" name="f_desde" class="form-control" value="{{ f_desde }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Hasta (Alta)</label>
+                    <input type="date" name="f_hasta" class="form-control" value="{{ f_hasta }}">
+                </div>
+            </div>
+        </div>
+        <div class="col-12 mt-2 text-muted">
+            {% if q %}Mostrando resultados para: <strong>{{ q }}</strong> · {% endif %}
+            Total {{ paginator.count }}{% if is_paginated %} — página {{ page_obj.number }} de {{ paginator.num_pages }}{% endif %}
+        </div>
+    </form>
+    <div class="table-responsive">
+        <table id="tabla-bienes" class="table table-sm table-bordered align-middle">
+            <thead class="table-light text-center">
+                <tr>
+                    <th>Clave Única</th>
+                    <th>N° ID</th>
+                    <th>Descripción</th>
+                    <th>Cantidad</th>
+                    <th>Expediente</th>
+                    <th>N° Compra</th>
+                    <th>Cuenta Código</th>
+                    <th>Nomenclatura</th>
+                    <th>N° Serie</th>
+                    <th>Origen</th>
+                    <th>Estado</th>
+                    <th>Servicios</th>
+                    <th>Observaciones</th>
+                    <th>Precio</th>
+                    <th>Fecha Alta</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in bienes %}
+                <tr>
+                    <td class="text-nowrap">{{ b.clave_unica }}</td>
+                    <td class="text-nowrap">{{ b.numero_identificacion|default:"—" }}</td>
+                    <td style="min-width:260px;">{{ b.descripcion }}</td>
+                    <td class="text-center">{{ b.cantidad }}</td>
+                    <td class="text-nowrap">{{ b.expediente.numero_expediente|default:"—" }}</td>
+                    <td class="text-nowrap">{{ b.expediente.numero_compra|default:"—" }}</td>
+                    <td class="text-nowrap">{{ b.cuenta_codigo|default:"—" }}</td>
+                    <td class="text-nowrap">{{ b.nomenclatura_bienes|default:"—" }}</td>
+                    <td class="text-nowrap">{{ b.numero_serie|default:"—" }}</td>
+                    <td class="text-nowrap">{{ b.get_origen_display|default:b.origen|default:"—" }}</td>
+                    <td class="text-nowrap">{{ b.get_estado_display|default:b.estado|default:"—" }}</td>
+                    <td class="text-nowrap">{{ b.servicios|default:"—" }}</td>
+                    <td style="min-width:220px;">{{ b.observaciones|default:"—" }}</td>
+                    <td class="text-end">
+                        {% if b.valor_adquisicion %}
+                            ${{ b.valor_adquisicion|floatformat:0|intcomma }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td class="text-nowrap">
+                        {% if b.fecha_adquisicion %}
+                            {{ b.fecha_adquisicion|date:"d/m/Y" }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td class="text-center text-nowrap">
+                        {% if b.pk %}
+                            <a class="btn btn-sm btn-primary" href="{% url 'editar_bien' b.pk %}" title="Editar">
+                                <i class="fas fa-pen"></i> Editar
+                            </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="16" class="text-center text-muted py-4">No hay bienes para mostrar.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+        {% if is_paginated %}
+        <nav aria-label="Paginación de bienes" class="mt-3">
+            <ul class="pagination pagination-sm justify-content-center mb-4">
+                {% with qs_pref=querystring|default_if_none:""|add:"&" %}
+                <li class="page-item {% if not prev_page %}disabled{% endif %}">
+                    <a class="page-link" href="?{{ qs_pref }}page=1">Primera</a>
+                </li>
+                <li class="page-item {% if not prev_page %}disabled{% endif %}">
+                    {% if prev_page %}
+                        <a class="page-link" href="?{{ qs_pref }}page={{ prev_page }}">«</a>
+                    {% else %}
+                        <span class="page-link">«</span>
+                    {% endif %}
+                </li>
+                {% for num in page_range %}
+                    {% if num == '…' %}
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                    {% elif num == page_obj.number %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% else %}
+                        <li class="page-item"><a class="page-link" href="?{{ qs_pref }}page={{ num }}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+                <li class="page-item {% if not next_page %}disabled{% endif %}">
+                    {% if next_page %}
+                        <a class="page-link" href="?{{ qs_pref }}page={{ next_page }}">»</a>
+                    {% else %}
+                        <span class="page-link">»</span>
+                    {% endif %}
+                </li>
+                <li class="page-item {% if not next_page %}disabled{% endif %}">
+                    <a class="page-link" href="?{{ qs_pref }}page={{ paginator.num_pages }}">Última</a>
+                </li>
+                {% endwith %}
+            </ul>
+        </nav>
+        {% endif %}
+</div>
+{% endblock %}

@@ -39,20 +39,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Elementos del DOM
     const btnNotificaciones = document.querySelector('.header-icon[title="Notificaciones"]');
     let badgeNotificaciones = null;
-    
+
     // Inicializar sistema de notificaciones
     function inicializarNotificaciones() {
         if (!btnNotificaciones) return;
-        
+
         // Crear badge de notificaciones no leídas
         badgeNotificaciones = document.createElement('span');
         badgeNotificaciones.className = 'notificaciones-badge';
         actualizarBadge();
-        
+
         // Agregar badge al botón de notificaciones
         btnNotificaciones.parentNode.classList.add('notificaciones-container');
         btnNotificaciones.parentNode.appendChild(badgeNotificaciones);
-        
+
         // Agregar event listener
         btnNotificaciones.addEventListener('click', mostrarNotificaciones);
     }
@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Actualizar badge con número de notificaciones no leídas
     function actualizarBadge() {
         if (!badgeNotificaciones) return;
-        
+
         const noLeidas = notificaciones.filter(notif => !notif.leida).length;
         badgeNotificaciones.textContent = noLeidas;
         badgeNotificaciones.style.display = noLeidas > 0 ? 'flex' : 'none';
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const modal = document.createElement('div');
         modal.className = 'notificaciones-modal';
         modal.style.display = 'flex';
-        
+
         modal.innerHTML = `
             <div class="notificaciones-contenido">
                 <div class="notificaciones-header">
