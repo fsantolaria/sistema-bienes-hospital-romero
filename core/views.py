@@ -15,6 +15,8 @@ from django.utils.dateparse import parse_date
 from django.contrib.messages import get_messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.utils.text import slugify
+from core.models.notificacion import Notificacion
+from django.http import JsonResponse
 
 
 def _role_route_name(user) -> str:
@@ -122,7 +124,14 @@ def bienes(request):
     if request.method == "POST":
         form = BienPatrimonialForm(request.POST)
         if form.is_valid():
-            form.save()
+            bien = form.save()
+            # ...existing code...
+            nombre_bien = getattr(bien, 'nombre', None) or getattr(bien, 'descripcion', 'Sin nombre')
+            Notificacion.objects.create(
+                usuario=request.user,
+                mensaje=f"Se registró el bien '{nombre_bien}' (Clave: {bien.clave_unica}) correctamente.",
+                leida=False
+            )
             messages.success(request, "Bien creado correctamente.")
             return redirect("lista_bienes")
         messages.error(request, "Revisá los datos del formulario.")
@@ -151,6 +160,12 @@ def home_admin(request):
     if not perms["es_admin"]:
         messages.error(request, 'No tienes permisos para acceder a esta página')
         return redirect('home_operador')
+    notificaciones = Notificacion.objects.filter(usuario=request.user).order_by('-fecha')[:5]
+    notificaciones_count = Notificacion.objects.filter(usuario=request.user, leida=False).count()
+    perms.update({
+        'notificaciones': notificaciones,
+        'notificaciones_count': notificaciones_count,
+    })
     return render(request, 'home_admin.html', perms)
 
 
@@ -227,6 +242,13 @@ def alta_operadores(request):
         if hasattr(operador, "estado"):
             operador.estado = estado  # guarda cadena 'habilitado' / 'no-habilitado'
         operador.save()
+
+        # Notificación de creación de operador
+        Notificacion.objects.create(
+            usuario=request.user,
+            mensaje=f"Se creó el operador '{operador.username}'.",
+            leida=False
+        )
 
         messages.success(request, f"Operador {nombre} {apellido} creado. Usuario: {operador.username}")
         return redirect("operadores")  # ← vuelve al listado
@@ -673,6 +695,12 @@ def editar_bien(request, pk):
         form = BienPatrimonialForm(request.POST, instance=bien)
         if form.is_valid():
             form.save()
+            # Notificación de edición de bien
+            Notificacion.objects.create(
+                usuario=request.user,
+                mensaje=f"Se editó el bien '{bien.nombre}' (Clave: {bien.clave_unica}).",
+                leida=False
+            )
             messages.success(request, "Bien patrimonial actualizado correctamente.")
             # Redirigir según tipo de usuario
             if hasattr(request.user, 'tipo_usuario') and request.user.tipo_usuario == 'empleado':
@@ -693,6 +721,12 @@ def eliminar_bien(request, pk):
         return redirect('lista_bienes')
 
     bien = get_object_or_404(BienPatrimonial, pk=pk)
+    # Notificación de baja de bien
+    Notificacion.objects.create(
+        usuario=request.user,
+        mensaje=f"Se dio de baja el bien '{bien.nombre}' (Clave: {bien.clave_unica}).",
+        leida=False
+    )
     bien.delete()
     messages.success(request, "Bien eliminado correctamente.")
     return redirect('lista_bienes')
@@ -897,6 +931,13 @@ def carga_masiva_bienes(request):
         if errores:
             messages.error(request, 'Algunas filas fallaron: ' + ' | '.join(errores[:8]))
 
+        # Notificación de carga masiva
+        Notificacion.objects.create(
+            usuario=request.user,
+            mensaje=f"Se realizó una carga masiva: {creados} bienes registrados. Errores: {len(errores)}.",
+            leida=False
+        )
+
         return redirect('lista_bienes')
 
     except (FileNotFoundError, pd.errors.EmptyDataError, KeyError) as e:
@@ -1094,3 +1135,20 @@ def eliminar_bien_definitivo(request, pk):
     bien.delete()
     messages.success(request, f"Bien {identificador} eliminado definitivamente.")
     return redirect("lista_baja_bienes")
+
+
+@login_required
+def marcar_notificaciones_leidas(request):
+    if request.method == "POST":
+        Notificacion.objects.filter(usuario=request.user, leida=False).update(leida=True)
+        return JsonResponse({"ok": True})
+    return JsonResponse({"ok": False}, status=400)
+
+def crear_notificacion(usuario, mensaje):
+    # Crear la notificación
+    Notificacion.objects.create(usuario=usuario, mensaje=mensaje)
+    # Limitar a 5 notificaciones por usuario, borrar las más antiguas
+    notificaciones = Notificacion.objects.filter(usuario=usuario).order_by('-fecha')
+    if notificaciones.count() > 5:
+        for n in notificaciones[5:]:
+            n.delete()

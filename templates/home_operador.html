@@ -19,18 +19,17 @@
     <!-- Área central -->
     <section class="home-content">
         <div class="menu-buttons">
-            <!-- Botón Bienes Patrimoniales -->
+                <!-- Botón Bienes Patrimoniales -->
+                <a href="{% url 'lista_bienes_operador' %}" class="menu-button">
+                    <i class="fas fa-table-cells-large card-icon"></i>
+                    Bienes Patrimoniales
+                </a>
 
-            <a href="{% url 'lista_bienes_operador' %}" class="menu-button">
-                <i class="fas fa-table-cells-large card-icon"></i>
-                Bienes Patrimoniales
-            </a>
-
-            <!-- Botón Reportes -->
-            <a href="{% url 'reportes' %}" class="menu-button">
-                <i class="fas fa-chart-line card-icon"></i>
-                Reportes
-            </a>
+                <!-- Botón Reportes -->
+                <a href="{% url 'reportes' %}" class="menu-button">
+                    <i class="fas fa-chart-line card-icon"></i>
+                    Reportes
+                </a>
         </div>
     </section>
 </main>

@@ -12,14 +12,65 @@
 
         <!-- Íconos de acciones -->
         <div class="icon-section">
-            <a href="{% url 'inicio' %}" class="header-icon" title="Volver al inicio">
-                <span class="material-symbols-outlined">home</span>
-            </a>
-            <span class="material-symbols-outlined header-icon" title="Notificaciones">notifications</span>
-            <span class="notificaciones-container">
-            <a href="{% url 'logout' %}" class="header-icon" title="Cerrar sesión">
-                <span class="material-symbols-outlined">logout</span>
-            </a>
+                <a href="{% url 'inicio' %}" class="header-icon" title="Volver al inicio">
+                    <span class="material-symbols-outlined">home</span>
+                </a>
+                {% if user.is_superuser %}
+                    <span class="notificaciones-wrapper" title="Notificaciones" id="notificacionesBell">
+                        <span class="material-symbols-outlined header-icon">notifications
+                            {% if notificaciones_count and notificaciones_count > 0 %}
+                                <span class="notificaciones-container">{{ notificaciones_count }}</span>
+                            {% endif %}
+                        </span>
+                        <div id="notificacionesDropdown" class="notificaciones-dropdown" style="display:none;">
+                            <div class="dropdown-header">Notificaciones</div>
+                            <ul class="dropdown-list">
+                                {% for n in notificaciones %}
+                                    <li>{{ n.mensaje }}</li>
+                                {% empty %}
+                                    <li>No tienes notificaciones nuevas</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </span>
+                    <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        var bell = document.getElementById('notificacionesBell');
+                        var dropdown = document.getElementById('notificacionesDropdown');
+                        if (bell && dropdown) {
+                            bell.addEventListener('click', function(e) {
+                                e.stopPropagation();
+                                dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+                                // Marcar notificaciones como leídas vía AJAX
+                                if (dropdown.style.display === 'block' && parseInt('{{ notificaciones_count }}') > 0) {
+                                    fetch("{% url 'marcar_notificaciones_leidas' %}", {
+                                        method: "POST",
+                                        headers: {
+                                            "X-CSRFToken": "{{ csrf_token }}",
+                                            "Content-Type": "application/json"
+                                        },
+                                        body: "{}"
+                                    }).then(function(resp) {
+                                        if (resp.ok) {
+                                            // Oculta el badge rojo
+                                            var badge = bell.querySelector('.notificaciones-container');
+                                            if (badge) badge.style.display = 'none';
+                                        }
+                                    });
+                                }
+                            });
+                            document.addEventListener('click', function(e) {
+                                if (!bell.contains(e.target)) {
+                                    dropdown.style.display = 'none';
+                                }
+                            });
+                        }
+                    });
+                    </script>
+                {% endif %}
+                <a href="{% url 'logout' %}" class="header-icon" title="Cerrar sesión">
+                    <span class="material-symbols-outlined">logout</span>
+                </a>
         </div>
     </div>
 </header>

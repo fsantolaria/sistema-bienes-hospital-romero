@@ -1,3 +1,32 @@
+.notificaciones-dropdown {
+    position: absolute;
+    top: 36px;
+    right: 0;
+    min-width: 220px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    padding: 12px 0 8px 0;
+    z-index: 10;
+    font-size: 15px;
+}
+.dropdown-header {
+    font-weight: bold;
+    padding: 0 16px 8px 16px;
+    color: #0097b2;
+}
+.dropdown-list {
+    list-style: none;
+    margin: 0;
+    padding: 0 16px;
+}
+.dropdown-list li {
+    padding: 6px 0;
+    border-bottom: 1px solid #eee;
+}
+.dropdown-list li:last-child {
+    border-bottom: none;
+}
 /* --- ESTILOS BASE GLOBALES --- */
 
 :root {
@@ -366,6 +395,29 @@ html, body {
     padding: 10px 15px;
     z-index: 100;
 }
+    .notificaciones-wrapper {
+         position: relative;
+         display: inline-block;
+    }
+    .notificaciones-container {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        min-width: 24px;
+        height: 24px;
+        background: #ff3b3b;
+        color: #fff;
+        font-size: 16px;
+        font-weight: bold;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+        z-index: 2;
+        padding: 0 6px;
+        border: 2px solid #fff;
+    }
 
 .notification-panel.active {
     display: block;

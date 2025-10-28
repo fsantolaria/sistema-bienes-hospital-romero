@@ -1,6 +1,7 @@
 from django.urls import path
 from django.views.generic import RedirectView
 from . import views
+from core.views import marcar_notificaciones_leidas
 
 urlpatterns = [
     # ===== Raíz del sitio =====
@@ -51,4 +52,7 @@ urlpatterns = [
     # Formularios / vistas legacy
     path('bienes/', views.bienes, name='bienes'),
     path('bien_confirm_delete/', views.bien_confirm_delete, name='bien_confirm_delete'),
+
+    # ===== Notificaciones =====
+    path('notificaciones/leidas/', marcar_notificaciones_leidas, name='marcar_notificaciones_leidas'),
 ]
