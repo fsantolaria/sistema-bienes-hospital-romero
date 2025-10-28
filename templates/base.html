@@ -5,6 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Sistema de Gestión de Bienes Patrimoniales{% endblock %}</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
 
     <!-- Fuentes locales -->
     <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
@@ -14,12 +18,15 @@
 
     <!-- FontAwesome CDN v6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- Bootstrap local -->
     <link rel="stylesheet" href="{% static 'libs/bootstrap/css/bootstrap.min.css' %}">
 
     <!-- CSS global -->
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
+
+    <!-- CSS para notificaciones -->
+    <link rel="stylesheet" href="{% static 'css/notificaciones.css' %}">
 
     {% block extra_css %}{% endblock %}
 </head>
@@ -42,6 +49,9 @@
 
     <!-- JS global -->
     <script src="{% static 'js/base.js' %}"></script>
+
+    <!-- JS para notificaciones -->
+    <script src="{% static 'js/notificaciones.js' %}"></script>
 
     {% block extra_js %}{% endblock %}
 

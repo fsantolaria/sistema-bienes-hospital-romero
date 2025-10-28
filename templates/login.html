@@ -30,6 +30,7 @@
         <form id="loginForm" method="post" action="{% url 'login' %}">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ next }}"/>
+            <input type="hidden" name="tipo_usuario" value="{{ request.GET.tipo|default:'' }}"/>
 
             <div class="input-group">
                 <label for="usuario">Usuario</label>

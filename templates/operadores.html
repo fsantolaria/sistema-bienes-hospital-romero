@@ -22,7 +22,11 @@
       <tr>
         <th>OPERADOR</th>
         <th>NOMBRES Y APELLIDOS</th>
-        <th>EDITAR</th>
+        <th class="text-center">
+          <div style="display: flex; flex-direction: column; align-items: center;">
+            <span>EDITAR</span>
+          </div>
+        </th>
         <th>ESTADO</th>
       </tr>
     </thead>
@@ -32,9 +36,11 @@
         <td>{{ op.username }}</td>
         <td>{{ op.first_name }} {{ op.last_name }}</td>
         <td class="text-center">
-          <a class="btn btn-sm btn-info" href="{% url 'editar_operador' op.pk %}" title="Editar">
-            <i class="fa-solid fa-pen"></i>
-          </a>
+          <div style="margin-top: 8px; display: flex; flex-direction: column; align-items: center;">
+            <a class="btn btn-sm btn-info" href="{% url 'editar_operador' op.pk %}" title="Editar">
+              <i class="fa-solid fa-pen"></i>
+            </a>
+          </div>
         </td>
         <td>{% if op.is_active %}habilitado{% else %}no-habilitado{% endif %}</td>
       </tr>
