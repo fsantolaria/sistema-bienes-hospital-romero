@@ -169,6 +169,11 @@ def operadores(request):
 
 
 def recuperar_password(request):
+    if request.method == "POST":
+        # Acá podrías enviar el correo o guardar el pedido en la base
+        messages.success(request, "✅ Solicitud enviada correctamente.")
+        return redirect('recuperar_password')  # vuelve a la misma página
+
     return render(request, 'recuperar_password.html')
 
 
