@@ -55,4 +55,6 @@ urlpatterns = [
 
     # ===== Notificaciones =====
     path('notificaciones/leidas/', marcar_notificaciones_leidas, name='marcar_notificaciones_leidas'),
+    path('notificaciones/<int:pk>/eliminar/', views.eliminar_notificacion, name='eliminar_notificacion'),
+    path('notificaciones/<int:pk>/marcar-leida/', views.marcar_notificacion_leida, name='marcar_notificacion_leida'),
 ]

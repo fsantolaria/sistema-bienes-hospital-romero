@@ -6,18 +6,26 @@
 
 .notificaciones-badge {
     position: absolute;
-    top: -8px;
-    right: -8px;
-    background-color: #ff4444;
-    color: white;
+    top: -6px; /* coloca la badge sobre la campana */
+    right: -6px; /* ligeramente a la derecha para overlap similar a la imagen */
+    background-color: #ff2136; /* rojo vivo */
+    color: #ffffff;
     border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    font-size: 12px;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 7px; /* permite números de dos dígitos */
+    font-size: 13px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+    border: 3px solid #ffffff; /* borde blanco como en la imagen */
+    z-index: 5;
+    pointer-events: none; /* no interfiere con el click en la campana */
+    transform-origin: center;
+    transition: transform 160ms cubic-bezier(.2,.8,.2,1), opacity 160ms ease;
+    opacity: 1;
 }
 
 .notificaciones-modal {
@@ -187,4 +195,115 @@
     .btn-accion-notificacion {
         width: 100%;
     }
+}
+
+/* Dropdown / list item styling: show delete icon at right */
+.dropdown-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.dropdown-list .dropdown-notif-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-bottom: 1px solid #eee;
+    gap: 12px;
+}
+.dropdown-list .dropdown-notif-item .dropdown-notif-text {
+    flex: 1 1 auto;
+    color: #222;
+    font-size: 14px;
+    line-height: 1.2;
+}
+.btn-eliminar-notificacion {
+    background: transparent;
+    border: none;
+    color: #777;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn-eliminar-notificacion i {
+    font-size: 14px;
+}
+.btn-eliminar-notificacion:hover {
+    background: rgba(0,0,0,0.04);
+    color: #444;
+}
+.btn-eliminar-notificacion:focus,
+.btn-eliminar-notificacion:focus-visible {
+    outline: 2px solid rgba(0,0,0,0.08);
+    box-shadow: 0 0 0 4px rgba(0,0,0,0.03);
+}
+.dropdown-list .dropdown-notif-item:last-child {
+    border-bottom: none;
+}
+
+/* Small sr-only helper (if not present elsewhere) */
+.sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+/* Mejoras estéticas para el dropdown (sin imágenes) */
+.notificaciones-dropdown {
+    min-width: 280px;
+    padding: 10px 8px;
+    background: linear-gradient(0deg, #ffffff 0%, #fbfcfd 100%);
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(13, 38, 59, 0.12);
+    border: 1px solid rgba(15, 23, 42, 0.04);
+    transition: transform 120ms ease, opacity 120ms ease;
+    transform-origin: top right;
+}
+.notificaciones-dropdown .dropdown-header {
+    font-weight: 700;
+    color: #0f1724;
+    padding: 6px 12px 10px 12px;
+    font-size: 15px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+    margin-bottom: 8px;
+}
+.dropdown-list .dropdown-notif-item {
+    background: transparent;
+    border-radius: 8px;
+    padding: 8px 10px;
+    transition: background-color 160ms ease, transform 120ms ease;
+}
+.dropdown-list .dropdown-notif-item:hover {
+    background: rgba(2,6,23,0.03);
+    transform: translateY(-1px);
+}
+.dropdown-list .dropdown-notif-item .dropdown-notif-text {
+    color: #0b1220;
+    font-size: 14px;
+}
+.notificaciones-dropdown .dropdown-list li + li {
+    margin-top: 4px;
+}
+
+/* Hacer el tacho más sencillo (gris) */
+.btn-eliminar-notificacion {
+    color: #6b7280; /* gris neutro */
+}
+.btn-eliminar-notificacion i {
+    font-size: 14px;
+}
+
+/* Focus claro para accesibilidad */
+.dropdown-notif-item:focus-within {
+    outline: 2px solid rgba(59,130,246,0.08);
+    border-radius: 8px;
 }

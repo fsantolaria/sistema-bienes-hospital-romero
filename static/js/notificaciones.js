@@ -36,39 +36,142 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     ];
 
-    // Elementos del DOM
-    const btnNotificaciones = document.querySelector('.header-icon[title="Notificaciones"]');
+    // Elementos del DOM: seleccionar el wrapper por id si existe (no modificar alineación)
+    const wrapperNotificaciones = document.getElementById('notificacionesBell') || document.querySelector('.notificaciones-wrapper');
     let badgeNotificaciones = null;
 
     // Inicializar sistema de notificaciones
     function inicializarNotificaciones() {
-        if (!btnNotificaciones) return;
+        if (!wrapperNotificaciones) return;
 
-        // Crear badge de notificaciones no leídas
-        badgeNotificaciones = document.createElement('span');
-        badgeNotificaciones.className = 'notificaciones-badge';
+        // Buscar si ya existe una badge (renderizada por servidor)
+        badgeNotificaciones = wrapperNotificaciones.querySelector('.notificaciones-badge');
+        if (!badgeNotificaciones) {
+            badgeNotificaciones = document.createElement('span');
+            badgeNotificaciones.className = 'notificaciones-badge';
+            // Insertar la badge después del icono para mantener el flujo
+            wrapperNotificaciones.appendChild(badgeNotificaciones);
+        }
         actualizarBadge();
+        // Agregar event listener al wrapper (el click abre el panel/modal)
+        wrapperNotificaciones.addEventListener('click', mostrarNotificaciones);
 
-        // Agregar badge al botón de notificaciones
-        btnNotificaciones.parentNode.classList.add('notificaciones-container');
-        btnNotificaciones.parentNode.appendChild(badgeNotificaciones);
+        // Si existe dropdown server-renderizado, agregar delegación para eliminar desde el dropdown
+        const dropdown = document.getElementById('notificacionesDropdown') || wrapperNotificaciones.querySelector('.notificaciones-dropdown');
+        if (dropdown) {
+            // delegación para eliminar notificaciones desde el dropdown
+            dropdown.addEventListener('click', function(ev) {
+                const btn = ev.target.closest('.btn-eliminar-notificacion');
+                if (!btn) return;
+                ev.stopPropagation();
+                const id = btn.getAttribute('data-id');
+                const li = btn.closest('.dropdown-notif-item');
+                const badge = wrapperNotificaciones.querySelector('.notificaciones-badge');
+                fetch(`/notificaciones/${id}/eliminar/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken') || ''
+                    },
+                    body: '{}'
+                }).then(function(resp) {
+                    if (resp.ok) {
+                        if (li && li.parentNode) li.parentNode.removeChild(li);
+                        if (badge) {
+                            try {
+                                var cur = parseInt(badge.textContent) || 0;
+                                cur = Math.max(0, cur - 1);
+                                if (cur <= 0) {
+                                    badge.style.display = 'none';
+                                } else {
+                                    badge.textContent = cur;
+                                }
+                            } catch (e) {
+                                // noop
+                            }
+                        }
+                    } else {
+                        alert('No se pudo eliminar la notificación.');
+                    }
+                }).catch(function() {
+                    alert('No se pudo conectar con el servidor.');
+                });
+            });
+        }
 
-        // Agregar event listener
-        btnNotificaciones.addEventListener('click', mostrarNotificaciones);
+        // Cerrar dropdown al clickear fuera
+        document.addEventListener('click', function(ev) {
+            const dd = document.getElementById('notificacionesDropdown') || wrapperNotificaciones.querySelector('.notificaciones-dropdown');
+            if (!dd) return;
+            if (!wrapperNotificaciones.contains(ev.target)) {
+                dd.style.display = 'none';
+            }
+        });
     }
 
     // Actualizar badge con número de notificaciones no leídas
     function actualizarBadge() {
-        if (!badgeNotificaciones) return;
-
-        const noLeidas = notificaciones.filter(notif => !notif.leida).length;
-        badgeNotificaciones.textContent = noLeidas;
-        badgeNotificaciones.style.display = noLeidas > 0 ? 'flex' : 'none';
+    if (!badgeNotificaciones) return;
+    // Preferir calcular desde el DOM (dropdown server-rendered) si está presente
+    const dropdown = document.getElementById('notificacionesDropdown') || wrapperNotificaciones.querySelector('.notificaciones-dropdown');
+    let noLeidas = 0;
+    if (dropdown) {
+        // contar LI con data-leida="0" o con clase notificacion-no-leida
+        const items = dropdown.querySelectorAll('.dropdown-notif-item');
+        items.forEach(it => {
+            const dl = it.getAttribute('data-leida');
+            if (dl === null) {
+                if (it.classList.contains('notificacion-no-leida')) noLeidas++;
+            } else if (dl === '0') {
+                noLeidas++;
+            }
+        });
+    } else {
+        // Fallback: usar array cliente
+        noLeidas = notificaciones.filter(notif => !notif.leida).length;
     }
 
-    // Mostrar modal de notificaciones
-    function mostrarNotificaciones() {
-        // Crear modal
+    badgeNotificaciones.textContent = noLeidas;
+    badgeNotificaciones.style.opacity = noLeidas > 0 ? '1' : '0';
+    badgeNotificaciones.style.transform = noLeidas > 0 ? 'scale(1)' : 'scale(0.6)';
+    badgeNotificaciones.style.display = noLeidas > 0 ? 'flex' : 'none';
+    }
+
+    // Mostrar notificaciones: si existe dropdown (server-rendered) lo toggleamos,
+    // sino creamos el modal (client-side).
+    function mostrarNotificaciones(e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        const dropdown = document.getElementById('notificacionesDropdown') || wrapperNotificaciones.querySelector('.notificaciones-dropdown');
+        if (dropdown) {
+            // Toggle dropdown visibility
+            const isVisible = dropdown.style.display === 'block';
+            dropdown.style.display = isVisible ? 'none' : 'block';
+
+            // Si abrimos el dropdown y hay badge > 0, marcar leídas en backend y ocultar badge
+            if (!isVisible) {
+                const badge = wrapperNotificaciones.querySelector('.notificaciones-badge');
+                if (badge && parseInt(badge.textContent) > 0) {
+                    fetch('/notificaciones/leidas/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken') || ''
+                        },
+                        body: '{}'
+                    }).then(function(resp) {
+                        if (resp.ok) {
+                            if (badge) badge.style.display = 'none';
+                        }
+                    }).catch(function() {
+                        // ignore network errors for read-mark
+                    });
+                }
+            }
+
+            return;
+        }
+
+        // Si no hay dropdown, creamos el modal (el comportamiento anterior)
         const modal = document.createElement('div');
         modal.className = 'notificaciones-modal';
         modal.style.display = 'flex';
@@ -93,8 +196,8 @@ document.addEventListener('DOMContentLoaded', function() {
             cerrarModal(modal);
         });
 
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) {
+        modal.addEventListener('click', function(ev) {
+            if (ev.target === modal) {
                 cerrarModal(modal);
             }
         });
@@ -119,7 +222,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="notificacion-titulo">${notificacion.titulo}</div>
                 <div class="notificacion-descripcion">${notificacion.descripcion}</div>
                 <div class="separador-notificacion"></div>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap:10px;">
                     <div class="notificacion-fecha">Fecha: ${notificacion.fecha}</div>
                     <div class="notificacion-acciones">
                         ${!notificacion.leida ? `
@@ -135,6 +238,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                 Rechazar
                             </button>
                         ` : ''}
+                        <!-- Botón eliminar (tachito) -->
+                        <button class="btn-eliminar-notificacion" data-id="${notificacion.id}" title="Eliminar">
+                            <i class="fa fa-trash" aria-hidden="true"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -149,6 +256,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 const id = this.getAttribute('data-id');
                 marcarComoLeido(id);
                 cerrarModal(modal);
+            });
+        });
+
+        // Botones eliminar notificación (tachito)
+        modal.querySelectorAll('.btn-eliminar-notificacion').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const id = this.getAttribute('data-id');
+                eliminarNotificacion(id, this.closest('.notificacion-item'));
             });
         });
 
@@ -171,14 +287,74 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Eliminar notificación (frontend demo): remueve del array, del DOM y actualiza badge
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+
+    function eliminarNotificacion(id, element) {
+        // Llamada al backend para persistir la eliminación
+        fetch(`/notificaciones/${id}/eliminar/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken') || ''
+            },
+            body: '{}'
+        }).then(resp => {
+            if (resp.ok) {
+                const idx = notificaciones.findIndex(n => n.id == id);
+                if (idx !== -1) notificaciones.splice(idx, 1);
+                if (element && element.parentNode) element.parentNode.removeChild(element);
+                actualizarBadge();
+                mostrarMensaje('Notificación eliminada', 'info');
+            } else {
+                mostrarMensaje('No se pudo eliminar la notificación en el servidor', 'error');
+            }
+        }).catch(err => {
+            console.error(err);
+            mostrarMensaje('Error de red al eliminar notificación', 'error');
+        });
+    }
+
     // Funciones de manejo de notificaciones
     function marcarComoLeido(id) {
-        const notificacion = notificaciones.find(notif => notif.id == id);
-        if (notificacion) {
-            notificacion.leida = true;
-            actualizarBadge();
-            mostrarMensaje('Notificación marcada como leída', 'success');
-        }
+        // Intentar marcar en backend primero (si existe), luego actualizar UI
+        fetch(`/notificaciones/${id}/marcar-leida/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken') || ''
+            },
+            body: '{}'
+        }).then(resp => {
+            if (resp.ok) {
+                // Actualizar array cliente si aplica
+                const notificacion = notificaciones.find(notif => notif.id == id);
+                if (notificacion) notificacion.leida = true;
+
+                // Si hay dropdown renderizado, actualizar atributo/data y clases
+                const dropdown = document.getElementById('notificacionesDropdown') || wrapperNotificaciones.querySelector('.notificaciones-dropdown');
+                if (dropdown) {
+                    const li = dropdown.querySelector(`.dropdown-notif-item[data-id="${id}"]`);
+                    if (li) {
+                        li.setAttribute('data-leida', '1');
+                        li.classList.remove('notificacion-no-leida');
+                    }
+                }
+
+                actualizarBadge();
+                mostrarMensaje('Notificación marcada como leída', 'success');
+            } else {
+                mostrarMensaje('No se pudo marcar la notificación como leída', 'error');
+            }
+        }).catch(err => {
+            console.error(err);
+            mostrarMensaje('Error de red al marcar notificación', 'error');
+        });
     }
 
     function manejarAceptar(id) {

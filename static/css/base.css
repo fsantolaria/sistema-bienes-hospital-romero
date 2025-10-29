@@ -266,7 +266,7 @@ html, body {
     display: flex;
     align-items: center;
     gap: 18px;
-    margin-left: -10; 
+    margin-left: -10;
 }
 
 .logo-link {
@@ -519,4 +519,49 @@ html, body {
 .header-icon:hover {
     color: #000 !important;
     transform: scale(1.1) !important;
+}
+
+/* -------------------------------------------------------------------------
+   Efecto: transición de COLOR de claro -> oscuro al hover/focus.
+   - Color por defecto (claro) en los iconos del header.
+   - Al entrar (hover / focus) transicionar a oscuro (#000) en 150ms.
+   - Al salir vuelve al color claro (también con transición).
+   - Se fuerza con !important para garantizar comportamiento consistente
+     en todos los templates donde se incluya el header.
+   ------------------------------------------------------------------------- */
+.header-icon,
+.header-icon .material-symbols-outlined,
+.notificaciones-wrapper .material-symbols-outlined,
+.notificaciones-wrapper.header-icon {
+    /* Color claro por defecto */
+    color: #0087a3 !important; /* azul/teal claro por defecto */
+    transition: color 150ms ease, transform 0.2s ease !important;
+}
+
+/* Asegurar que el ícono interno herede y tenga transición (aplica a home/logout) */
+.header-icon .material-symbols-outlined {
+    color: #0087a3 !important;
+    transition: color 150ms ease !important;
+}
+
+/* Al hover / focus transicionamos a negro (oscuro) */
+.header-icon:hover,
+.header-icon:focus,
+.header-icon:focus-visible,
+.notificaciones-wrapper:hover .material-symbols-outlined,
+.notificaciones-wrapper:focus .material-symbols-outlined {
+    color: #000 !important;
+}
+
+/* Estado activo (touch): mantener oscuro mientras está presionado */
+.header-icon:active,
+.notificaciones-wrapper:active {
+    color: #000 !important;
+}
+
+/* Aplicar color oscuro al icono interno cuando el padre recibe hover/focus */
+.header-icon:hover .material-symbols-outlined,
+.header-icon:focus .material-symbols-outlined,
+.header-icon:focus-visible .material-symbols-outlined {
+    color: #000 !important;
 }
