@@ -1,6 +1,6 @@
 from django.contrib.auth import authenticate, login, logout, get_user_model
 import pandas as pd
-from datetime import date
+from datetime import date, timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -16,8 +16,18 @@ from django.contrib.messages import get_messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.utils.text import slugify
 from core.models.notificacion import Notificacion
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.template.loader import render_to_string
+from django.utils import timezone
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.units import cm
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+import io
+from xml.sax.saxutils import escape
+
 
 
 def _role_route_name(user) -> str:
@@ -329,12 +339,235 @@ def editar_operador(request, pk):
 
 
 @login_required
+def reportes_pdf(request):
+    """
+    Exporta a PDF el mismo conjunto que se ve en reportes_view,
+    respetando ?scope=24h|all. Intenta WeasyPrint; si no está disponible,
+    cae a ReportLab (sin dependencias nativas).
+    """
+    scope = (request.GET.get("scope") or "24h").lower()
+    now = timezone.now()
+
+    if scope == "24h":
+        since_dt = now - timedelta(hours=24)
+        since_date = since_dt.date()
+        bienes = (
+            BienPatrimonial.objects
+            .select_related("expediente")
+            .filter(Q(fecha_adquisicion__gte=since_date) | Q(fecha_baja__gte=since_date))
+            .order_by("-fecha_baja", "-fecha_adquisicion", "pk")
+        )
+        notifs = Notificacion.objects.filter(fecha__gte=since_dt).order_by("-fecha")
+        rango_desc = "Últimas 24 horas"
+    else:
+        bienes = (
+            BienPatrimonial.objects
+            .select_related("expediente")
+            .order_by("-fecha_adquisicion", "pk")
+        )
+        notifs = Notificacion.objects.none()
+        rango_desc = "Todos"
+
+    ctx = {
+        "bienes": bienes,
+        "notifs": notifs,
+        "rango_desc": rango_desc,
+        "generado_en": now,
+        "usuario": request.user,
+        **permisos_context(request.user),
+    }
+
+    # --------- Intento 1: WeasyPrint (si está instalado correctamente) ----------
+    try:
+        from weasyprint import HTML, CSS  # import diferido
+        html_str = render_to_string("reportes_pdf.html", ctx, request=request)
+        pdf_bytes = HTML(
+            string=html_str,
+            base_url=request.build_absolute_uri("/")
+        ).write_pdf(
+            stylesheets=[CSS(string="""
+                @page { size: A4; margin: 1.5cm; }
+                body { font-family: sans-serif; font-size: 12px; }
+                h1,h2,h3 { margin: 0 0 .4rem 0; }
+                table { width: 100%; border-collapse: collapse; }
+                th, td { border: 1px solid #ddd; padding: 6px; vertical-align: top; }
+                thead th { background: #f2f2f2; }
+                .muted { color: #666; }
+            """)]
+        )
+        resp = HttpResponse(pdf_bytes, content_type="application/pdf")
+        resp["Content-Disposition"] = f'inline; filename="reporte_{scope}.pdf"'
+        return resp
+
+    # --------- Fallback: ReportLab puro (sin DLLs) ----------
+    except Exception:
+        def money(v):
+            if not v:
+                return "—"
+            return f"${int(round(float(v))):,}".replace(",", ".")
+
+        # Estilos base
+        styles = getSampleStyleSheet()
+        title_style = styles["Title"]
+        meta_style = styles["Normal"]
+
+        # Estilos de celda (con wrapping)
+        p_cell = ParagraphStyle(
+            "p_cell",
+            parent=styles["Normal"],
+            fontName="Helvetica",
+            fontSize=9,
+            leading=11,
+            wordWrap="CJK",      # permite cortar palabras largas
+            spaceAfter=0,
+        )
+        p_head = ParagraphStyle(
+            "p_head",
+            parent=p_cell,
+            fontName="Helvetica-Bold"
+        )
+
+        def P(texto, head: bool = False):
+            if texto is None or texto == "":
+                texto = "—"
+            txt = escape(str(texto)).replace("\n", "<br/>")
+            return Paragraph(txt, p_head if head else p_cell)
+
+        # Construcción del documento
+        bio = io.BytesIO()
+        doc = SimpleDocTemplate(
+            bio, pagesize=A4,
+            leftMargin=1.5*cm, rightMargin=1.5*cm, topMargin=1.5*cm, bottomMargin=1.5*cm
+        )
+        elems = []
+
+        # Encabezado
+        title = f"Reporte de Bienes Patrimoniales – {rango_desc}"
+        meta = f"Generado: {now.strftime('%d/%m/%Y %H:%M')} · Usuario: {request.user.username}"
+        elems.append(Paragraph(title, title_style))
+        elems.append(Paragraph(meta, meta_style))
+        elems.append(Spacer(1, 8))
+
+        # ----- TABLA DE BIENES -----
+        data = [[
+            P("ID", True), P("Clave", True), P("Descripción", True), P("Servicios", True),
+            P("Estado", True), P("Alta", True), P("Baja", True), P("Valor", True),
+        ]]
+
+        for b in bienes:
+            estado = b.get_estado_display() if hasattr(b, "get_estado_display") else (b.estado or "—")
+            alta = b.fecha_adquisicion.strftime("%d/%m/%Y") if b.fecha_adquisicion else "—"
+            baja = b.fecha_baja.strftime("%d/%m/%Y") if b.fecha_baja else "—"
+            data.append([
+                P(b.pk or ""),
+                P(b.clave_unica or "—"),
+                P(b.descripcion or "—"),
+                P(b.servicios or "—"),
+                P(estado),
+                P(alta),
+                P(baja),
+                P(money(b.valor_adquisicion)),
+            ])
+
+        # Ancho útil (puntos) y cálculo de colWidths escalado
+        PAGE_W, _ = A4
+        usable_w = PAGE_W - (doc.leftMargin + doc.rightMargin)
+        base_col_cm = [1.2, 2.0, 9.0, 2.2, 2.0, 2.0, 2.0, 1.6]  # suma ~22 cm, luego se escala
+        base_col_pts = [w * cm for w in base_col_cm]
+        scale = float(usable_w) / float(sum(base_col_pts))
+        colWidths = [w * scale for w in base_col_pts]
+
+        table = Table(data, repeatRows=1, colWidths=colWidths)
+        ts = TableStyle([
+            ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#f2f2f2")),
+            ("FONTNAME",   (0,0), (-1,0), "Helvetica-Bold"),
+            ("FONTSIZE",   (0,0), (-1,0), 10),
+            ("TEXTCOLOR",  (0,0), (-1,0), colors.black),
+
+            ("VALIGN",     (0,0), (-1,-1), "TOP"),
+            ("GRID",       (0,0), (-1,-1), 0.25, colors.HexColor("#cccccc")),
+
+            ("LEFTPADDING",(0,0), (-1,-1), 4),
+            ("RIGHTPADDING",(0,0), (-1,-1), 4),
+            ("TOPPADDING", (0,0), (-1,-1), 3),
+            ("BOTTOMPADDING",(0,0), (-1,-1), 3),
+
+            ("ALIGN",      (0,1), (0,-1), "CENTER"),  # ID centrado
+            ("ALIGN",      (-1,1), (-1,-1), "RIGHT"), # Valor a la derecha
+        ])
+        for i in range(1, len(data)):  # zebra rows
+            if i % 2 == 0:
+                ts.add("BACKGROUND", (0,i), (-1,i), colors.whitesmoke)
+
+        table.setStyle(ts)
+        elems.append(table)
+
+        # ----- NOTIFICACIONES (solo para 24h) -----
+        if notifs:
+            elems.append(Spacer(1, 10))
+            elems.append(Paragraph("Acciones registradas", styles["Heading3"]))
+            notif_data = [[P("Fecha", True), P("Mensaje", True)]]
+            for n in notifs:
+                notif_data.append([
+                    P(n.fecha.strftime("%d/%m/%Y %H:%M")),
+                    P(n.mensaje),
+                ])
+            nt_col_w = [3.2*cm, usable_w - 3.2*cm]
+            nt = Table(notif_data, repeatRows=1, colWidths=nt_col_w)
+            nt.setStyle(TableStyle([
+                ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#f2f2f2")),
+                ("GRID", (0,0), (-1,-1), 0.25, colors.HexColor("#cccccc")),
+                ("VALIGN", (0,0), (-1,-1), "TOP"),
+                ("LEFTPADDING",(0,0), (-1,-1), 4),
+                ("RIGHTPADDING",(0,0), (-1,-1), 4),
+                ("TOPPADDING", (0,0), (-1,-1), 3),
+                ("BOTTOMPADDING",(0,0), (-1,-1), 3),
+            ]))
+            elems.append(nt)
+
+        # Render
+        doc.build(elems)
+        pdf_bytes = bio.getvalue()
+        bio.close()
+
+        resp = HttpResponse(pdf_bytes, content_type="application/pdf")
+        resp["Content-Disposition"] = f'inline; filename="reporte_{scope}_fallback.pdf"'
+        return resp
+
+
+@login_required
 def reportes_view(request):
-    context = permisos_context(request.user)
-    context.update({"reportes": []})
-    return render(request, 'reportes.html', context)
+    
+    scope = (request.GET.get("scope") or "24h").lower()
+    now = timezone.now()
 
+    if scope == "24h":
+        since_dt = now - timedelta(hours=24)
+        since_date = since_dt.date()
+        bienes = (
+            BienPatrimonial.objects
+            .select_related("expediente")
+            .filter(
+                Q(fecha_adquisicion__gte=since_date) |
+                Q(fecha_baja__gte=since_date)
+            )
+            .order_by("-fecha_baja", "-fecha_adquisicion", "pk")
+        )
+    else:
+        bienes = (
+            BienPatrimonial.objects
+            .select_related("expediente")
+            .order_by("-fecha_adquisicion", "pk")
+        )
 
+    ctx = permisos_context(request.user)
+    ctx.update({
+        "bienes": bienes,
+        "scope": scope,  # útil para armar el link a PDF: {% url 'reportes_pdf' %}?scope={{ scope }}
+    })
+    return render(request, "reportes.html", ctx)
+    
+    
 # ========= Helpers de orden =========
 
 def _build_ordering(orden_param: str):

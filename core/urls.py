@@ -30,7 +30,8 @@ urlpatterns = [
 
     # ===== Varias =====
     path('base/', views.base, name='base'),
-    path('reportes/', views.reportes_view, name='reportes'),
+    path("reportes/", views.reportes_view, name="reportes"),
+    path("reportes/pdf/", views.reportes_pdf, name="reportes_pdf"),
 
     # ===== Bienes =====
     # Acciones específicas primero

@@ -1,0 +1,74 @@
+{% load humanize %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Reporte – {{ rango_desc }}</title>
+  <style>
+    h2 { margin: 0 0 8px 0; }
+    .muted { color: #666; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ddd; padding: 6px; vertical-align: top; font-size: 12px; }
+    thead th { background: #f2f2f2; }
+    .text-end { text-align: right; }
+    .text-nowrap { white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <h2>Reporte de Bienes Patrimoniales</h2>
+  <div class="muted">
+    Rango: <strong>{{ rango_desc }}</strong> · Generado: {{ generado_en|date:"d/m/Y H:i" }} · Usuario: {{ usuario.username }}
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Clave</th>
+        <th>Descripción</th>
+        <th>Servicios</th>
+        <th>Estado</th>
+        <th>Alta</th>
+        <th>Baja</th>
+        <th>Valor</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in bienes %}
+      <tr>
+        <td class="text-nowrap">{{ b.pk }}</td>
+        <td class="text-nowrap">{{ b.clave_unica|default:"—" }}</td>
+        <td>{{ b.descripcion|default:"—" }}</td>
+        <td class="text-nowrap">{{ b.servicios|default:"—" }}</td>
+        <td class="text-nowrap">{{ b.get_estado_display|default:b.estado|default:"—" }}</td>
+        <td class="text-nowrap">{% if b.fecha_adquisicion %}{{ b.fecha_adquisicion|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+        <td class="text-nowrap">{% if b.fecha_baja %}{{ b.fecha_baja|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+        <td class="text-end">{% if b.valor_adquisicion %}${{ b.valor_adquisicion|floatformat:0|intcomma }}{% else %}—{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" class="muted">Sin movimientos en {{ rango_desc|lower }}.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if notifs %}
+  <h3 style="margin-top: 16px;">Acciones registradas</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Mensaje</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for n in notifs %}
+      <tr>
+        <td class="text-nowrap">{{ n.fecha|date:"d/m/Y H:i" }}</td>
+        <td>{{ n.mensaje }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</body>
+</html>
