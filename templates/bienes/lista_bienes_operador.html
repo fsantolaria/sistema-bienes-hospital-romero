@@ -6,14 +6,16 @@
 
 {% block content %}
 <div class="container-fluid py-3">
-    <form method="get" class="row g-2 align-items-end mb-3">
+    <h3 class="m-0">Lista de Bienes Patrimoniales - Operador</h3>
+    <!-- BÚSQUEDA + BOTONES -->
+    <form id="filtros-form" method="get" class="row g-2 align-items-end mb-3">
         <div class="col-md-4">
             <label class="form-label">Buscar</label>
-            <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Descripción, ID, servicio...">
+            <input type="search" name="q" value="{{ q }}" class="form-control auto-submit" placeholder="Descripción, ID, servicio...">
         </div>
         <div class="col-md-2">
             <label class="form-label">Ordenar</label>
-            <select name="orden" class="form-select">
+            <select name="orden" class="form-select auto-submit">
                 <option value="-fecha"  {% if orden == "-fecha" %}selected{% endif %}>Más recientes</option>
                 <option value="fecha"   {% if orden == "fecha" %}selected{% endif %}>Más antiguos</option>
                 <option value="-precio" {% if orden == "-precio" %}selected{% endif %}>Precio ↓</option>
@@ -33,19 +35,19 @@
             <div class="row g-2">
                 <div class="col-md-3">
                     <label class="form-label">Origen</label>
-                    <input type="text" name="f_origen" class="form-control" value="{{ f_origen }}">
+                    <input type="text" name="f_origen" class="form-control auto-submit" value="{{ f_origen }}">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Estado</label>
-                    <input type="text" name="f_estado" class="form-control" value="{{ f_estado }}">
+                    <input type="text" name="f_estado" class="form-control auto-submit" value="{{ f_estado }}">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Desde (Alta)</label>
-                    <input type="date" name="f_desde" class="form-control" value="{{ f_desde }}">
+                    <input type="date" name="f_desde" class="form-control auto-submit" value="{{ f_desde }}">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Hasta (Alta)</label>
-                    <input type="date" name="f_hasta" class="form-control" value="{{ f_hasta }}">
+                    <input type="date" name="f_hasta" class="form-control auto-submit" value="{{ f_hasta }}">
                 </div>
             </div>
         </div>
@@ -120,42 +122,87 @@
             </tbody>
         </table>
     </div>
-        {% if is_paginated %}
-        <nav aria-label="Paginación de bienes" class="mt-3">
-            <ul class="pagination pagination-sm justify-content-center mb-4">
-                {% with qs_pref=querystring|default_if_none:""|add:"&" %}
-                <li class="page-item {% if not prev_page %}disabled{% endif %}">
-                    <a class="page-link" href="?{{ qs_pref }}page=1">Primera</a>
-                </li>
-                <li class="page-item {% if not prev_page %}disabled{% endif %}">
-                    {% if prev_page %}
-                        <a class="page-link" href="?{{ qs_pref }}page={{ prev_page }}">«</a>
-                    {% else %}
-                        <span class="page-link">«</span>
-                    {% endif %}
-                </li>
-                {% for num in page_range %}
-                    {% if num == '…' %}
-                        <li class="page-item disabled"><span class="page-link">…</span></li>
-                    {% elif num == page_obj.number %}
-                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                    {% else %}
-                        <li class="page-item"><a class="page-link" href="?{{ qs_pref }}page={{ num }}">{{ num }}</a></li>
-                    {% endif %}
-                {% endfor %}
-                <li class="page-item {% if not next_page %}disabled{% endif %}">
-                    {% if next_page %}
-                        <a class="page-link" href="?{{ qs_pref }}page={{ next_page }}">»</a>
-                    {% else %}
-                        <span class="page-link">»</span>
-                    {% endif %}
-                </li>
-                <li class="page-item {% if not next_page %}disabled{% endif %}">
-                    <a class="page-link" href="?{{ qs_pref }}page={{ paginator.num_pages }}">Última</a>
-                </li>
-                {% endwith %}
-            </ul>
-        </nav>
-        {% endif %}
+    {% if is_paginated %}
+    <nav aria-label="Paginación de bienes" class="mt-3">
+        <ul class="pagination pagination-sm justify-content-center mb-4">
+            {% with qs_pref=querystring|default_if_none:""|add:"&" %}
+            <li class="page-item {% if not prev_page %}disabled{% endif %}">
+                <a class="page-link" href="?{{ qs_pref }}page=1">Primera</a>
+            </li>
+            <li class="page-item {% if not prev_page %}disabled{% endif %}">
+                {% if prev_page %}
+                    <a class="page-link" href="?{{ qs_pref }}page={{ prev_page }}">«</a>
+                {% else %}
+                    <span class="page-link">«</span>
+                {% endif %}
+            </li>
+            {% for num in page_range %}
+                {% if num == '…' %}
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                {% elif num == page_obj.number %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% else %}
+                    <li class="page-item"><a class="page-link" href="?{{ qs_pref }}page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+            <li class="page-item {% if not next_page %}disabled{% endif %}">
+                {% if next_page %}
+                    <a class="page-link" href="?{{ qs_pref }}page={{ next_page }}">»</a>
+                {% else %}
+                    <span class="page-link">»</span>
+                {% endif %}
+            </li>
+            <li class="page-item {% if not next_page %}disabled{% endif %}">
+                <a class="page-link" href="?{{ qs_pref }}page={{ paginator.num_pages }}">Última</a>
+            </li>
+            {% endwith %}
+        </ul>
+    </nav>
+    {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Autosubmit (operador) -->
+<script>
+(function () {
+  const form = document.querySelector('#filtros-form');
+  if (!form) return;
+
+  const requestSubmit = () => (form.requestSubmit ? form.requestSubmit() : form.submit());
+
+  const debounce = (fn, ms) => {
+    let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn.apply(null, args), ms); };
+  };
+  const debouncedSubmit = debounce(requestSubmit, 400);
+
+  const ensurePageReset = () => {
+    let pageInput = form.querySelector('input[name="page"]');
+    if (!pageInput) {
+      pageInput = document.createElement('input');
+      pageInput.type = 'hidden';
+      pageInput.name = 'page';
+      form.appendChild(pageInput);
+    }
+    pageInput.value = '1';
+  };
+
+  const autoEls = form.querySelectorAll('.auto-submit');
+
+  autoEls.forEach(el => {
+    const tag = el.tagName;
+    const type = (el.type || '').toLowerCase();
+
+    // Selects / fechas / checks → inmediato
+    if (tag === 'SELECT' || (tag === 'INPUT' && (type === 'date' || type === 'checkbox' || type === 'radio'))) {
+      el.addEventListener('change', () => { ensurePageReset(); requestSubmit(); });
+    }
+
+    // Texto / search (q, f_origen, f_estado) → debounce
+    if (tag === 'INPUT' && (type === 'text' || type === 'search')) {
+      el.addEventListener('input', () => { ensurePageReset(); debouncedSubmit(); });
+    }
+  });
+})();
+</script>
 {% endblock %}
