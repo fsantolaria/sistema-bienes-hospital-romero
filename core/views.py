@@ -1195,3 +1195,19 @@ def crear_notificacion(usuario, mensaje):
     if notificaciones.count() > 5:
         for n in notificaciones[5:]:
             n.delete()
+
+        # ---------------------------
+# 💡 Nueva vista: Recuperar contraseña
+# ---------------------------
+
+from django.contrib import messages
+from django.shortcuts import render, redirect
+
+def recuperar_password(request):
+    if request.method == "POST":
+        # Acá podrías enviar el correo o guardar el pedido en la base
+        messages.success(request, "✅ Solicitud enviada correctamente.")
+        return redirect('recuperar_password')  # vuelve a la misma página
+
+    return render(request, 'recuperar_password.html')
+    
