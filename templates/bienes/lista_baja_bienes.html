@@ -9,9 +9,6 @@
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="m-0">Bienes — Dados de Baja</h3>
     <div class="d-flex gap-2">
-      <a class="btn btn-success" href="{% url 'bienes' %}">
-        <i class="fa-solid fa-plus me-1"></i> Cargar bien 
-      </a>
       <a class="btn btn-outline-secondary" href="{% url 'lista_bienes' %}">
         <i class="fas fa-arrow-left me-1"></i> Volver a lista de bienes
       </a>
@@ -19,16 +16,16 @@
   </div>
 
   <!-- BÚSQUEDA / ORDEN -->
-  <form method="get" class="row g-2 align-items-end mb-3">
+  <form id="filtros-form" method="get" class="row g-2 align-items-end mb-3">
     <div class="col-md-4">
       <label class="form-label">Buscar</label>
-      <input type="search" name="q" value="{{ request.GET.q }}" class="form-control"
+      <input type="search" name="q" value="{{ request.GET.q }}" class="form-control auto-submit"
              placeholder="Descripción, ID, servicio...">
     </div>
 
     <div class="col-md-2">
       <label class="form-label">Ordenar</label>
-      <select name="orden" class="form-select">
+      <select name="orden" class="form-select auto-submit">
         <option value="-fecha_baja" {% if request.GET.orden == "-fecha_baja" %}selected{% endif %}>Bajas más recientes</option>
         <option value="fecha_baja"  {% if request.GET.orden == "fecha_baja" %}selected{% endif %}>Bajas más antiguas</option>
         <option value="-precio"     {% if request.GET.orden == "-precio" %}selected{% endif %}>Precio ↓</option>
@@ -37,10 +34,53 @@
     </div>
 
     <div class="col-auto d-flex align-items-end gap-2">
-      <button class="btn btn-primary" type="submit">
-        <i class="fas fa-search me-1"></i> Buscar
+      <button class="btn btn-outline-primary" type="button"
+              data-bs-toggle="collapse" data-bs-target="#filtrosBox"
+              aria-expanded="false" aria-controls="filtrosBox" id="btn-filtros">
+        <i class="fas fa-sliders-h me-1"></i> Filtros
       </button>
       <a class="btn btn-outline-secondary" href="{% url 'lista_baja_bienes' %}">Limpiar</a>
+      <a class="btn btn-success" href="{% url 'bienes' %}">
+        <i class="fa-solid fa-plus me-1"></i> Cargar bien
+      </a>
+    </div>
+
+    <div class="col-12 collapse mt-3" id="filtrosBox">
+      <div class="row g-2">
+        <div class="col-md-3">
+          <label class="form-label">Origen</label>
+          <select name="f_origen" class="form-select">
+            <option value="">Todos</option>
+            <option value="COMPRA" {% if request.GET.f_origen == "COMPRA" %}selected{% endif %}>Compra</option>
+            <option value="DONACION" {% if request.GET.f_origen == "DONACION" %}selected{% endif %}>Donación</option>
+            <option value="OMISION" {% if request.GET.f_origen == "OMISION" %}selected{% endif %}>Omisión</option>
+            <option value="TRANSFERENCIA" {% if request.GET.f_origen == "TRANSFERENCIA" %}selected{% endif %}>Transferencia</option>
+            <option value="__NULL__" {% if request.GET.f_origen == "__NULL__" %}selected{% endif %}>Sin origen</option>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Estado</label>
+          <select name="f_estado" class="form-select">
+            <option value="">Todos</option>
+            <option value="ACTIVO" {% if request.GET.f_estado == "ACTIVO" %}selected{% endif %}>Activo</option>
+            <option value="INACTIVO" {% if request.GET.f_estado == "INACTIVO" %}selected{% endif %}>Inactivo</option>
+            <option value="MANTENIMIENTO" {% if request.GET.f_estado == "MANTENIMIENTO" %}selected{% endif %}>Mantenimiento</option>
+            <option value="BAJA" {% if request.GET.f_estado == "BAJA" %}selected{% endif %}>Baja</option>
+            <option value="__NULL__" {% if request.GET.f_estado == "__NULL__" %}selected{% endif %}>Sin estado</option>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Desde (Alta)</label>
+          <input type="date" name="f_desde" class="form-control" value="{{ request.GET.f_desde }}">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Hasta (Alta)</label>
+          <input type="date" name="f_hasta" class="form-control" value="{{ request.GET.f_hasta }}">
+        </div>
+      </div>
     </div>
 
     <div class="col-12 mt-2 text-muted">
@@ -101,7 +141,7 @@
             {% if b.valor_adquisicion %}
               ${{ b.valor_adquisicion|floatformat:0|intcomma }}
             {% else %}
-              — 
+              —
             {% endif %}
           </td>
           <td class="text-nowrap">
@@ -112,21 +152,21 @@
           </td>
 
           <td class="text-center text-nowrap">
-            <form method="post" action="{% url 'restablecer_bien' b.pk %}" class="d-inline">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-sm btn-success" title="Restablecer a ACTIVO"
-                      onclick="return confirm('¿Restablecer este bien a ACTIVO?');">
-                <i class="fas fa-undo"></i>
-              </button>
-            </form>
+            <!-- Botones ahora abren modal de confirmación centralizado -->
+            <button type="button" class="btn btn-sm btn-success btn-open-confirm" title="Restablecer a ACTIVO"
+                    data-action="{% url 'restablecer_bien' b.pk %}"
+                    data-title="Restablecer bien"
+                    data-message="¿Restablecer este bien a ACTIVO?">
+              <i class="fas fa-undo"></i>
+            </button>
 
-            <form method="post" action="{% url 'eliminar_bien_definitivo' b.pk %}" class="d-inline">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-sm btn-danger" title="Eliminar definitivamente"
-                      onclick="return confirm('Esta acción no se puede deshacer. ¿Eliminar DEFINITIVAMENTE?');">
-                <i class="fas fa-trash-alt"></i>
-              </button>
-            </form>
+            <button type="button" class="btn btn-sm btn-danger btn-open-confirm" title="Eliminar definitivamente"
+                    data-action="{% url 'eliminar_bien_definitivo' b.pk %}"
+                    data-title="Eliminar definitivamente"
+                    data-message="Esta acción no se puede deshacer. ¿Eliminar DEFINITIVAMENTE?"
+                    data-danger="1">
+              <i class="fas fa-trash-alt"></i>
+            </button>
           </td>
         </tr>
         {% empty %}
@@ -188,4 +228,113 @@
   {% endif %}
 
 </div>
+{% endblock %}
+
+{% block extra_js %}
+
+<!-- Autosubmit (bajas) -->
+<script>
+(function () {
+  const form = document.querySelector('#filtros-form');
+  if (!form) return;
+
+  const requestSubmit = () => (form.requestSubmit ? form.requestSubmit() : form.submit());
+
+  const debounce = (fn, ms) => {
+    let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn.apply(null, args), ms); };
+  };
+  const debouncedSubmit = debounce(requestSubmit, 400);
+
+  const ensurePageReset = () => {
+    let pageInput = form.querySelector('input[name="page"]');
+    if (!pageInput) {
+      pageInput = document.createElement('input');
+      pageInput.type = 'hidden';
+      pageInput.name = 'page';
+      form.appendChild(pageInput);
+    }
+    pageInput.value = '1';
+  };
+
+  const autoEls = form.querySelectorAll('.auto-submit');
+  autoEls.forEach(el => {
+    const tag = el.tagName;
+    const type = (el.type || '').toLowerCase();
+
+    if (tag === 'SELECT' || (tag === 'INPUT' && (type === 'date' || type === 'checkbox' || type === 'radio'))) {
+      el.addEventListener('change', () => { ensurePageReset(); requestSubmit(); });
+    }
+    if (tag === 'INPUT' && (type === 'text' || type === 'search')) {
+      el.addEventListener('input', () => { ensurePageReset(); debouncedSubmit(); });
+    }
+  });
+
+})();
+
+</script>
+
+<script>
+// Modal de confirmación reutilizable para restaurar/eliminar bienes
+(function(){
+  const modalHtml = `
+  <div id="confirmItemModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:2000; align-items:center; justify-content:center;">
+    <div style="max-width:480px; width:94%;">
+      <div style="background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 18px 50px rgba(0,0,0,0.35);">
+        <div style="background:#0087a3; color:#000; padding:14px 18px; font-size:18px; font-weight:600;"> <span id="confirmItemTitle">Confirmar</span></div>
+        <div style="padding:18px; color:#333; background:#fff;">
+          <p id="confirmItemMessage" style="margin:0 0 12px;"></p>
+        </div>
+        <div style="padding:12px 18px 18px; display:flex; gap:10px; justify-content:flex-end; background:#fff;">
+          <button type="button" id="confirmItemCancel" class="btn btn-cancel" style="background:#6c757d; color:#fff; border:1px solid #6c757d; padding:8px 14px; border-radius:6px; box-sizing:border-box;">Cancelar</button>
+          <form id="confirmItemForm" method="post" style="margin:0;">
+            {% csrf_token %}
+            <button type="submit" id="confirmItemSubmit" class="btn btn-delete" style="padding:8px 14px; border-radius:6px; border:1px solid transparent; box-sizing:border-box;">Confirmar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  document.addEventListener('DOMContentLoaded', function(){
+    const wrapper = document.createElement('div'); wrapper.innerHTML = modalHtml; document.body.appendChild(wrapper.firstElementChild);
+    const modal = document.getElementById('confirmItemModal');
+    const titleEl = document.getElementById('confirmItemTitle');
+    const msgEl = document.getElementById('confirmItemMessage');
+    const form = document.getElementById('confirmItemForm');
+    const btnCancel = document.getElementById('confirmItemCancel');
+    const submitBtn = document.getElementById('confirmItemSubmit');
+
+    document.body.addEventListener('click', function(e){
+      const btn = e.target.closest('.btn-open-confirm');
+      if (!btn) return;
+      const action = btn.getAttribute('data-action');
+      const title = btn.getAttribute('data-title') || 'Confirmar';
+      const message = btn.getAttribute('data-message') || '';
+      const danger = btn.getAttribute('data-danger');
+      if (!action) return;
+
+      titleEl.textContent = title;
+      msgEl.textContent = message;
+      form.setAttribute('action', action);
+      if (danger) {
+        submitBtn.classList.remove('btn-delete');
+        submitBtn.style.background = '#e74c3c';
+        submitBtn.style.color = '#fff';
+      } else {
+        submitBtn.style.background = '#28a745';
+        submitBtn.style.color = '#fff';
+      }
+
+      modal.style.display = 'flex';
+      submitBtn.focus();
+    });
+
+    function closeModal(){ modal.style.display = 'none'; }
+    btnCancel.addEventListener('click', closeModal);
+    document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape' && modal.style.display === 'flex') closeModal(); });
+    modal.addEventListener('click', function(ev){ if (ev.target === modal) closeModal(); });
+
+  });
+})();
+</script>
 {% endblock %}

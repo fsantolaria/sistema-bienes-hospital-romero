@@ -35,9 +35,10 @@ html, body {
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    height: calc(100vh - 70px); /* deja espacio para header y footer */
-    margin-top: 35px;
-    margin-bottom: 35px;
+    /* Ajustamos para usar el header/footer estándar (70px cada uno) */
+    height: calc(100vh - 140px);
+    margin-top: 70px;
+    margin-bottom: 70px;
     padding: 0 60px;
 }
 
@@ -106,6 +107,14 @@ html, body {
     padding: 10px;
     border-radius: 6px;
     font-weight: 500;
+}
+
+/* Ocultar el contenedor global de mensajes que renderiza en el <main>
+   (evita que el mensaje aparezca arriba del header en esta página)
+   La plantilla incluye su propio mensaje dentro de la tarjeta, así que
+   ocultamos solo el .messages-container que es hijo directo de main. */
+main.main-content > .messages-container {
+    display: none;
 }
 
 /* ===== BOTÓN ===== */

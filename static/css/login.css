@@ -113,12 +113,13 @@ body {
 /* ======== LINK DE OLVIDÉ CONTRASEÑA ======== */
 .forgot-password {
     display: block;
-    text-align: left;
-    font-size: 0.9em;
-    color: #000;
+    text-align: center; /* centrar debajo del campo contraseña */
+    font-size: 0.95em;
+    color: #007c91;
     text-decoration: none;
-    margin-bottom: 25px;
-    font-weight: 500;
+    margin: 8px auto 18px; /* un poco más abajo y centrado */
+    font-weight: 600;
+    width: 100%;
 }
 .forgot-password:hover { text-decoration: underline; }
 
@@ -180,5 +181,5 @@ body {
     .container {
         height: calc(100vh - 70px);
         padding: 16px;
-    } 
+    }
 }

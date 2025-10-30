@@ -29,15 +29,22 @@
         <!-- Formulario de inicio de sesión -->
         <form id="loginForm" method="post" action="{% url 'login' %}">
             {% csrf_token %}
-            <input type="hidden" name="next" value="{{ next }}"/>
-            <input type="hidden" name="tipo_usuario" value="{{ request.GET.tipo|default:'' }}"/>
+            <input type="hidden" name="next" value="{{ next|default_if_none:'' }}"/>
+            <input type="hidden" name="tipo_usuario" value="{{ tipo_value|default:tipo_default|default:'' }}"/>
 
             <div class="input-group">
                 <label for="usuario">Usuario</label>
                 <div class="input-field" id="usernameField">
                     <i class="fas fa-user"></i>
-                    <input type="text" id="usuario" name="usuario" autocomplete="username"
-                           value="{{ form.usuario.value|default:'' }}" placeholder="Ingrese su usuario">
+                    <input
+                        type="text"
+                        id="usuario"
+                        name="usuario"
+                        autocomplete="username"
+                        placeholder="Ingrese su usuario"
+                        value="{{ usuario_value|default:'' }}"
+                        required
+                    >
                 </div>
                 <div class="error-message" id="usernameError"></div>
             </div>
@@ -46,13 +53,18 @@
                 <label for="contrasena">Contraseña</label>
                 <div class="input-field" id="passwordField">
                     <i class="fas fa-lock"></i>
-                    <input type="password" id="contrasena" name="contrasena" autocomplete="current-password"
-                           placeholder="Ingrese su contraseña">
+                    <input
+                        type="password"
+                        id="contrasena"
+                        name="contrasena"
+                        autocomplete="current-password"
+                        placeholder="Ingrese su contraseña"
+                        required
+                    >
                 </div>
                 <div class="error-message" id="passwordError"></div>
             </div>
 
-            {# show inline login error when view signals it via login_error in context #}
             {% if login_error %}
             <div class="error-message" id="loginError" style="display: block;">El Usuario y/o Contraseña es incorrecto</div>
             {% else %}
@@ -73,4 +85,18 @@
 <div class="footer-bar"></div>
 
 <script src="{% static 'js/login.js' %}"></script>
+
+<script>
+  // Enfocar contraseña automáticamente si hubo error de login para reintentar sin ir atrás
+  (function () {
+    const hadError = {{ login_error|default:"False"|yesno:"true,false" }};
+    if (hadError) {
+      const pwd = document.getElementById('contrasena');
+      if (pwd) {
+        pwd.focus();
+        if (pwd.select) pwd.select();
+      }
+    }
+  })();
+</script>
 {% endblock %}

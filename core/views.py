@@ -1,12 +1,12 @@
 from django.contrib.auth import authenticate, login, logout, get_user_model
 import pandas as pd
-from datetime import date
+from datetime import date, timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from core.forms import CargaMasivaForm, BienPatrimonialForm
 from core.models import BienPatrimonial
-from django.db.models import Q
+from django.db.models import Q, F
 from django.views.decorators.http import require_POST
 from django.db import transaction, IntegrityError
 from django.core.exceptions import ValidationError
@@ -16,7 +16,18 @@ from django.contrib.messages import get_messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.utils.text import slugify
 from core.models.notificacion import Notificacion
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.template.loader import render_to_string
+from django.utils import timezone
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.units import cm
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+import io
+from xml.sax.saxutils import escape
+
 
 
 def _role_route_name(user) -> str:
@@ -26,7 +37,6 @@ def _role_route_name(user) -> str:
     if hasattr(user, 'tipo_usuario'):
         return 'home_admin' if user.tipo_usuario == 'admin' else 'home_operador'
     return 'home_operador'
-
 
 
 # ============= VISTAS =============
@@ -53,7 +63,6 @@ def permisos_context(user):
 # ============================
 
 def inicio(request):
-
     if request.user.is_authenticated:
         return redirect(_role_route_name(request.user))
     return render(request, 'inicio.html')
@@ -63,42 +72,71 @@ def login_view(request):
     if request.user.is_authenticated:
         return redirect(_role_route_name(request.user))
 
-    if request.method == 'POST':
-        usuario = request.POST.get('usuario')
-        contrasena = request.POST.get('contrasena')
-        tipo_usuario = request.POST.get('tipo_usuario')
-        user = authenticate(request, username=usuario, password=contrasena)
-        if user is not None:
-            # Validar tipo de usuario
-            if tipo_usuario == 'admin':
-                if user.is_superuser or (hasattr(user, 'tipo_usuario') and user.tipo_usuario == 'admin'):
-                    login(request, user)
-                    messages.success(request, f'¡Bienvenido {user.username}!')
-                    return redirect(_role_route_name(user))
-                else:
-                    messages.error(request, 'El tipo de usuario seleccionado no coincide con el usuario ingresado.')
-                    return render(request, 'login.html', {'login_error': True, 'request': request})
-            elif tipo_usuario == 'empleado':
-                # Los superusuarios NO pueden loguear como operador
-                if user.is_superuser:
-                    messages.error(request, 'Un administrador no puede ingresar como operador.')
-                    return render(request, 'login.html', {'login_error': True, 'request': request})
-                if hasattr(user, 'tipo_usuario') and user.tipo_usuario == 'empleado':
-                    login(request, user)
-                    messages.success(request, f'¡Bienvenido {user.username}!')
-                    return redirect(_role_route_name(user))
-                else:
-                    messages.error(request, 'El tipo de usuario seleccionado no coincide con el usuario ingresado.')
-                    return render(request, 'login.html', {'login_error': True, 'request': request})
-            else:
-                messages.error(request, 'Tipo de usuario no válido.')
-                return render(request, 'login.html', {'login_error': True, 'request': request})
-        # Authentication failed: add a message and a context flag so the template
-        # can show the inline error next to the form (not only global messages)
-        messages.error(request, 'Usuario o contraseña incorrectos')
-        return render(request, 'login.html', {'login_error': True, 'request': request})
+    # Normalizar next
+    next_raw = request.POST.get('next') or request.GET.get('next')
+    next_url = next_raw if (next_raw and next_raw != 'None') else None
 
-    return render(request, 'login.html')
+    # Tomamos ?tipo=... pero NO lo leemos en el template
+    tipo_default = (request.GET.get('tipo') or '').strip()
+
+    if request.method == 'POST':
+        usuario = request.POST.get('usuario', '').strip()
+        contrasena = request.POST.get('contrasena', '')
+        tipo_usuario = (request.POST.get('tipo_usuario') or tipo_default or '').strip()
+
+        user = authenticate(request, username=usuario, password=contrasena)
+
+        def _rerender_error(msg):
+            messages.error(request, msg)
+            ctx = {
+                'login_error': True,
+                'usuario_value': usuario,
+                'tipo_value': tipo_usuario,
+                'tipo_default': tipo_default,
+                'next': next_url,
+                'request': request,
+            }
+            return render(request, 'login.html', ctx, status=401)
+
+        if user is None:
+            return _rerender_error('Usuario o contraseña incorrectos')
+
+        # Autodetección de tipo si no vino nada
+        if not tipo_usuario:
+            if getattr(user, 'is_superuser', False):
+                tipo_usuario = 'admin'
+            elif hasattr(user, 'tipo_usuario') and user.tipo_usuario in ('admin', 'empleado'):
+                tipo_usuario = user.tipo_usuario
+            else:
+                return _rerender_error('No se pudo determinar el tipo de usuario. Volvé a intentar.')
+
+        # Reglas de acceso
+        if tipo_usuario == 'admin':
+            if user.is_superuser or (hasattr(user, 'tipo_usuario') and user.tipo_usuario == 'admin'):
+                login(request, user)
+            else:
+                return _rerender_error('El tipo de usuario seleccionado no coincide con el usuario ingresado.')
+        elif tipo_usuario == 'empleado':
+            if user.is_superuser:
+                return _rerender_error('Un administrador no puede ingresar como operador.')
+            if hasattr(user, 'tipo_usuario') and user.tipo_usuario == 'empleado':
+                login(request, user)
+            else:
+                return _rerender_error('El tipo de usuario seleccionado no coincide con el usuario ingresado.')
+        else:
+            return _rerender_error('Tipo de usuario no válido.')
+
+        messages.success(request, f'¡Bienvenido {user.username}!')
+        if next_url and url_has_allowed_host_and_scheme(
+            next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+        ):
+            return redirect(next_url)
+        return redirect(_role_route_name(user))
+
+    return render(request, 'login.html', {
+        'next': next_url,
+        'tipo_default': tipo_default,
+    })
 
 
 @login_required
@@ -125,7 +163,6 @@ def bienes(request):
         form = BienPatrimonialForm(request.POST)
         if form.is_valid():
             bien = form.save()
-            # ...existing code...
             nombre_bien = getattr(bien, 'nombre', None) or getattr(bien, 'descripcion', 'Sin nombre')
             Notificacion.objects.create(
                 usuario=request.user,
@@ -180,15 +217,15 @@ def operadores(request):
         "operadores": operadores_qs,
         "usar_operador_model": False,  # por si tus templates usan este flag
     }
+    # Añadir flags de permisos al contexto para que templates puedan condicionar acciones
+    ctx.update(permisos_context(request.user))
     return render(request, "operadores.html", ctx)
 
 
 def recuperar_password(request):
     if request.method == "POST":
-        # Acá podrías enviar el correo o guardar el pedido en la base
         messages.success(request, "✅ Solicitud enviada correctamente.")
-        return redirect('recuperar_password')  # vuelve a la misma página
-
+        return redirect('recuperar_password')
     return render(request, 'recuperar_password.html')
 
 
@@ -198,12 +235,11 @@ def alta_operadores(request):
         nombre      = (request.POST.get("nombre") or "").strip()
         apellido    = (request.POST.get("apellido") or "").strip()
         pais        = (request.POST.get("pais") or "").strip()
-        numero_doc  = (request.POST.get("numero_doc") or "").strip()  # OJO: guión bajo
+        numero_doc  = (request.POST.get("numero_doc") or "").strip()
         email       = (request.POST.get("email") or "").strip()
         estado      = (request.POST.get("estado") or "habilitado").strip()
         password    = (request.POST.get("password") or "").strip()
 
-        # 1) Username generado con nombre+apellido (sin espacios/acentos) y único
         base_username = slugify(f"{nombre}.{apellido}") or (email.split("@")[0] if email else "")
         if not base_username:
             messages.error(request, "No se pudo generar un usuario. Completá Nombre/Apellido o Email.")
@@ -215,33 +251,29 @@ def alta_operadores(request):
             i += 1
             username = f"{base_username}{i}"
 
-        # 2) is_active según “estado”
         is_active = (estado == "habilitado")
 
-        # 3) Crear usuario operador
         operador = Operador(
             username=username,
             email=email or None,
             first_name=nombre,
             last_name=apellido,
-            is_staff=False,         # no es admin
-            is_superuser=False,     # no es superuser
+            is_staff=False,
+            is_superuser=False,
             is_active=is_active,
         )
-        # Asignar tipo_usuario y setear password ANTES de guardar
         operador.tipo_usuario = 'empleado'
         if password:
             operador.set_password(password)
         else:
-            operador.set_password(username)  # fallback: username como password si no se ingresa
-        # Campos extra si tu User los tiene:
+            operador.set_password(username)
         if hasattr(operador, "pais"):
             operador.pais = pais
         if hasattr(operador, "numero_doc"):
             operador.numero_doc = numero_doc
         if hasattr(operador, "estado"):
-            operador.estado = estado  # guarda cadena 'habilitado' / 'no-habilitado'
-        # Intentar guardar el usuario con reintentos en caso de colisiones únicas
+            operador.estado = estado
+
         saved = False
         attempts = 0
         while not saved and attempts < 10:
@@ -249,16 +281,14 @@ def alta_operadores(request):
                 operador.save()
                 saved = True
             except IntegrityError:
-                # Probablemente una colisión en username; generar una variante y reintentar
                 attempts += 1
                 i += 1
                 username = f"{base_username}{i}"
                 operador.username = username
         if not saved:
             messages.error(request, "No se pudo crear el usuario debido a un conflicto de nombre. Intentá de nuevo más tarde o con otro nombre.")
-            return redirect("alta_operadores")
+            return redirect("operadores")
 
-        # Notificación de creación de operador
         Notificacion.objects.create(
             usuario=request.user,
             mensaje=f"Se creó el operador '{operador.username}'.",
@@ -266,9 +296,8 @@ def alta_operadores(request):
         )
 
         messages.success(request, f"Operador {nombre} {apellido} creado. Usuario: {operador.username}")
-        return redirect("operadores")  # ← vuelve al listado
+        return redirect("operadores")
 
-    # GET
     return render(request, "alta_operadores.html", {"usar_operador_model": False})
 
 
@@ -288,18 +317,13 @@ def editar_operador(request, pk):
         operador.first_name = nombre
         operador.last_name  = apellido
         operador.email      = email or None
-
-        # is_active / estado
         operador.is_active  = (estado == "habilitado")
         if hasattr(operador, "estado"):
             operador.estado = estado
-
-        # extras si existen
         if hasattr(operador, "pais"):
             operador.pais = pais
         if hasattr(operador, "numero_doc"):
             operador.numero_doc = numero_doc
-
         if password:
             operador.set_password(password)
 
@@ -307,24 +331,288 @@ def editar_operador(request, pk):
         messages.success(request, "Operador actualizado correctamente.")
         return redirect("operadores")
 
-    # GET
     ctx = {
         "operador": operador,
         "usar_operador_model": False,
     }
     return render(request, "editar_operadores.html", ctx)
 
+
+@login_required
+def reportes_pdf(request):
+    """
+    Exporta a PDF el mismo conjunto que se ve en reportes_view,
+    respetando ?scope=24h|all. Intenta WeasyPrint; si no está disponible,
+    cae a ReportLab (sin dependencias nativas).
+    """
+    scope = (request.GET.get("scope") or "24h").lower()
+    now = timezone.now()
+
+    if scope == "24h":
+        since_dt = now - timedelta(hours=24)
+        since_date = since_dt.date()
+        bienes = (
+            BienPatrimonial.objects
+            .select_related("expediente")
+            .filter(Q(fecha_adquisicion__gte=since_date) | Q(fecha_baja__gte=since_date))
+            .order_by("-fecha_baja", "-fecha_adquisicion", "pk")
+        )
+        notifs = Notificacion.objects.filter(fecha__gte=since_dt).order_by("-fecha")
+        rango_desc = "Últimas 24 horas"
+    else:
+        bienes = (
+            BienPatrimonial.objects
+            .select_related("expediente")
+            .order_by("-fecha_adquisicion", "pk")
+        )
+        notifs = Notificacion.objects.none()
+        rango_desc = "Todos"
+
+    ctx = {
+        "bienes": bienes,
+        "notifs": notifs,
+        "rango_desc": rango_desc,
+        "generado_en": now,
+        "usuario": request.user,
+        **permisos_context(request.user),
+    }
+
+    # --------- Intento 1: WeasyPrint (si está instalado correctamente) ----------
+    try:
+        from weasyprint import HTML, CSS  # import diferido
+        html_str = render_to_string("reportes_pdf.html", ctx, request=request)
+        pdf_bytes = HTML(
+            string=html_str,
+            base_url=request.build_absolute_uri("/")
+        ).write_pdf(
+            stylesheets=[CSS(string="""
+                @page { size: A4; margin: 1.5cm; }
+                body { font-family: sans-serif; font-size: 12px; }
+                h1,h2,h3 { margin: 0 0 .4rem 0; }
+                table { width: 100%; border-collapse: collapse; }
+                th, td { border: 1px solid #ddd; padding: 6px; vertical-align: top; }
+                thead th { background: #f2f2f2; }
+                .muted { color: #666; }
+            """)]
+        )
+        resp = HttpResponse(pdf_bytes, content_type="application/pdf")
+        resp["Content-Disposition"] = f'inline; filename="reporte_{scope}.pdf"'
+        return resp
+
+    # --------- Fallback: ReportLab puro (sin DLLs) ----------
+    except Exception:
+        def money(v):
+            if not v:
+                return "—"
+            return f"${int(round(float(v))):,}".replace(",", ".")
+
+        # Estilos base
+        styles = getSampleStyleSheet()
+        title_style = styles["Title"]
+        meta_style = styles["Normal"]
+
+        # Estilos de celda (con wrapping)
+        p_cell = ParagraphStyle(
+            "p_cell",
+            parent=styles["Normal"],
+            fontName="Helvetica",
+            fontSize=9,
+            leading=11,
+            wordWrap="CJK",      # permite cortar palabras largas
+            spaceAfter=0,
+        )
+        p_head = ParagraphStyle(
+            "p_head",
+            parent=p_cell,
+            fontName="Helvetica-Bold"
+        )
+
+        def P(texto, head: bool = False):
+            if texto is None or texto == "":
+                texto = "—"
+            txt = escape(str(texto)).replace("\n", "<br/>")
+            return Paragraph(txt, p_head if head else p_cell)
+
+        # Construcción del documento
+        bio = io.BytesIO()
+        doc = SimpleDocTemplate(
+            bio, pagesize=A4,
+            leftMargin=1.5*cm, rightMargin=1.5*cm, topMargin=1.5*cm, bottomMargin=1.5*cm
+        )
+        elems = []
+
+        # Encabezado
+        title = f"Reporte de Bienes Patrimoniales – {rango_desc}"
+        meta = f"Generado: {now.strftime('%d/%m/%Y %H:%M')} · Usuario: {request.user.username}"
+        elems.append(Paragraph(title, title_style))
+        elems.append(Paragraph(meta, meta_style))
+        elems.append(Spacer(1, 8))
+
+        # ----- TABLA DE BIENES -----
+        data = [[
+            P("ID", True), P("Clave", True), P("Descripción", True), P("Servicios", True),
+            P("Estado", True), P("Alta", True), P("Baja", True), P("Valor", True),
+        ]]
+
+        for b in bienes:
+            estado = b.get_estado_display() if hasattr(b, "get_estado_display") else (b.estado or "—")
+            alta = b.fecha_adquisicion.strftime("%d/%m/%Y") if b.fecha_adquisicion else "—"
+            baja = b.fecha_baja.strftime("%d/%m/%Y") if b.fecha_baja else "—"
+            data.append([
+                P(b.pk or ""),
+                P(b.clave_unica or "—"),
+                P(b.descripcion or "—"),
+                P(b.servicios or "—"),
+                P(estado),
+                P(alta),
+                P(baja),
+                P(money(b.valor_adquisicion)),
+            ])
+
+        # Ancho útil (puntos) y cálculo de colWidths escalado
+        PAGE_W, _ = A4
+        usable_w = PAGE_W - (doc.leftMargin + doc.rightMargin)
+        base_col_cm = [1.2, 2.0, 9.0, 2.2, 2.0, 2.0, 2.0, 1.6]  # suma ~22 cm, luego se escala
+        base_col_pts = [w * cm for w in base_col_cm]
+        scale = float(usable_w) / float(sum(base_col_pts))
+        colWidths = [w * scale for w in base_col_pts]
+
+        table = Table(data, repeatRows=1, colWidths=colWidths)
+        ts = TableStyle([
+            ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#f2f2f2")),
+            ("FONTNAME",   (0,0), (-1,0), "Helvetica-Bold"),
+            ("FONTSIZE",   (0,0), (-1,0), 10),
+            ("TEXTCOLOR",  (0,0), (-1,0), colors.black),
+
+            ("VALIGN",     (0,0), (-1,-1), "TOP"),
+            ("GRID",       (0,0), (-1,-1), 0.25, colors.HexColor("#cccccc")),
+
+            ("LEFTPADDING",(0,0), (-1,-1), 4),
+            ("RIGHTPADDING",(0,0), (-1,-1), 4),
+            ("TOPPADDING", (0,0), (-1,-1), 3),
+            ("BOTTOMPADDING",(0,0), (-1,-1), 3),
+
+            ("ALIGN",      (0,1), (0,-1), "CENTER"),  # ID centrado
+            ("ALIGN",      (-1,1), (-1,-1), "RIGHT"), # Valor a la derecha
+        ])
+        for i in range(1, len(data)):  # zebra rows
+            if i % 2 == 0:
+                ts.add("BACKGROUND", (0,i), (-1,i), colors.whitesmoke)
+
+        table.setStyle(ts)
+        elems.append(table)
+
+        # ----- NOTIFICACIONES (solo para 24h) -----
+        if notifs:
+            elems.append(Spacer(1, 10))
+            elems.append(Paragraph("Acciones registradas", styles["Heading3"]))
+            notif_data = [[P("Fecha", True), P("Mensaje", True)]]
+            for n in notifs:
+                notif_data.append([
+                    P(n.fecha.strftime("%d/%m/%Y %H:%M")),
+                    P(n.mensaje),
+                ])
+            nt_col_w = [3.2*cm, usable_w - 3.2*cm]
+            nt = Table(notif_data, repeatRows=1, colWidths=nt_col_w)
+            nt.setStyle(TableStyle([
+                ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#f2f2f2")),
+                ("GRID", (0,0), (-1,-1), 0.25, colors.HexColor("#cccccc")),
+                ("VALIGN", (0,0), (-1,-1), "TOP"),
+                ("LEFTPADDING",(0,0), (-1,-1), 4),
+                ("RIGHTPADDING",(0,0), (-1,-1), 4),
+                ("TOPPADDING", (0,0), (-1,-1), 3),
+                ("BOTTOMPADDING",(0,0), (-1,-1), 3),
+            ]))
+            elems.append(nt)
+
+        # Render
+        doc.build(elems)
+        pdf_bytes = bio.getvalue()
+        bio.close()
+
+        resp = HttpResponse(pdf_bytes, content_type="application/pdf")
+        resp["Content-Disposition"] = f'inline; filename="reporte_{scope}_fallback.pdf"'
+        return resp
+
+
 @login_required
 def reportes_view(request):
-    context = permisos_context(request.user)
-    context.update({"reportes": []})
-    return render(request, 'reportes.html', context)
+    
+    scope = (request.GET.get("scope") or "24h").lower()
+    now = timezone.now()
+
+    if scope == "24h":
+        since_dt = now - timedelta(hours=24)
+        since_date = since_dt.date()
+        bienes = (
+            BienPatrimonial.objects
+            .select_related("expediente")
+            .filter(
+                Q(fecha_adquisicion__gte=since_date) |
+                Q(fecha_baja__gte=since_date)
+            )
+            .order_by("-fecha_baja", "-fecha_adquisicion", "pk")
+        )
+    else:
+        bienes = (
+            BienPatrimonial.objects
+            .select_related("expediente")
+            .order_by("-fecha_adquisicion", "pk")
+        )
+
+    ctx = permisos_context(request.user)
+    ctx.update({
+        "bienes": bienes,
+        "scope": scope,  # útil para armar el link a PDF: {% url 'reportes_pdf' %}?scope={{ scope }}
+    })
+    return render(request, "reportes.html", ctx)
+    
+    
+# ========= Helpers de orden =========
+
+def _build_ordering(orden_param: str):
+    """
+    Lista general y por operador:
+      - '-fecha' / 'fecha'     -> fecha_adquisicion (desempate: pk, clave_unica)
+      - '-precio' / 'precio'   -> valor_adquisicion (desempate: fecha, pk, clave_unica)
+    """
+    mapping = {
+        '-fecha':  [F('fecha_adquisicion').desc(nulls_last=True), 'pk', 'clave_unica'],
+        'fecha':   [F('fecha_adquisicion').asc(nulls_last=True),  'pk', 'clave_unica'],
+
+        '-precio': [F('valor_adquisicion').desc(nulls_last=True),
+                    F('fecha_adquisicion').desc(nulls_last=True),
+                    'pk', 'clave_unica'],
+        'precio':  [F('valor_adquisicion').asc(nulls_last=True),
+                    F('fecha_adquisicion').asc(nulls_last=True),
+                    'pk', 'clave_unica'],
+    }
+    return mapping.get(orden_param, [F('fecha_adquisicion').desc(nulls_last=True), 'pk', 'clave_unica'])
+
+
+def _build_ordering_baja(orden_param: str):
+    """
+    Lista de BAJA:
+      - '-fecha_baja' / 'fecha_baja' -> fecha_baja (desempate: pk, clave_unica)
+      - '-precio' / 'precio'         -> valor_adquisicion (desempate: fecha_baja, pk, clave_unica)
+    """
+    mapping = {
+        '-fecha_baja': [F('fecha_baja').desc(nulls_last=True), 'pk', 'clave_unica'],
+        'fecha_baja':  [F('fecha_baja').asc(nulls_last=True),  'pk', 'clave_unica'],
+
+        '-precio':     [F('valor_adquisicion').desc(nulls_last=True),
+                        F('fecha_baja').desc(nulls_last=True),
+                        'pk', 'clave_unica'],
+        'precio':      [F('valor_adquisicion').asc(nulls_last=True),
+                        F('fecha_baja').asc(nulls_last=True),
+                        'pk', 'clave_unica'],
+    }
+    return mapping.get(orden_param, [F('fecha_baja').desc(nulls_last=True), 'pk', 'clave_unica'])
 
 
 # ============================
 # BIENES - LISTA GENERAL
 # ============================
-
 @login_required
 def lista_bienes(request):
     # Si es operador, redirigir a la vista limitada
@@ -332,7 +620,7 @@ def lista_bienes(request):
     perms = permisos_context(user)
     if not perms['es_admin']:
         return redirect('lista_bienes_operador')
-    # Vista original para admin y otros
+
     # --------- Parámetros de búsqueda / filtros / orden ----------
     q        = (request.GET.get("q") or "").strip()
     f_origen = request.GET.get("f_origen") or ""
@@ -344,7 +632,6 @@ def lista_bienes(request):
     bienes_queryset = (
         BienPatrimonial.objects
         .select_related("expediente")
-        .order_by("clave_unica")
     )
 
     if q:
@@ -383,23 +670,13 @@ def lista_bienes(request):
         if h:
             bienes_queryset = bienes_queryset.filter(fecha_adquisicion__lte=h)
 
-    # Orden
-    if orden == "fecha":
-        bienes_queryset = bienes_queryset.order_by("fecha_adquisicion", "clave_unica")
-    elif orden == "-fecha":
-        bienes_queryset = bienes_queryset.order_by("-fecha_adquisicion", "clave_unica")
-    elif orden == "precio":
-        bienes_queryset = bienes_queryset.order_by("valor_adquisicion", "clave_unica")
-    elif orden == "-precio":
-        bienes_queryset = bienes_queryset.order_by("-valor_adquisicion", "clave_unica")
-    else:
-        bienes_queryset = bienes_queryset.order_by("clave_unica")
+    # Orden final
+    bienes_queryset = bienes_queryset.order_by(*_build_ordering(orden))
 
     # Paginación segura (30 por página)
     per_page = 30
     paginator = Paginator(bienes_queryset, per_page)
 
-    # Página solicitada (como int) con fallback a 1
     page_raw = request.GET.get("page", "1")
     try:
         page_number = int(page_raw)
@@ -413,7 +690,6 @@ def lista_bienes(request):
     except (EmptyPage, PageNotAnInteger):
         page_obj = paginator.page(1)
 
-    # Enlaces prev/next SIN provocar excepciones en el template
     try:
         prev_page = page_obj.previous_page_number()
     except Exception:
@@ -423,123 +699,6 @@ def lista_bienes(request):
     except Exception:
         next_page = None
 
-    # Range con elipsis (1 … n-2 n-1 n n+1 n+2 … last)
-    current = page_obj.number
-    last = paginator.num_pages
-    window = 2
-    nums = set([1, last] + list(range(max(1, current - window), min(last, current + window) + 1)))
-    page_range = []
-    last_added = 0
-    for i in range(1, last + 1):
-        if i in nums:
-            page_range.append(i)
-            last_added = i
-        else:
-            # insertar elipsis solo una vez entre bloques
-            if last_added != "…":
-                page_range.append("…")
-                last_added = "…"
-
-    # Querystring para mantener filtros en links de paginación
-    qs = request.GET.copy()
-    qs.pop("page", None)
-    querystring = qs.urlencode()
-
-    # --------- Contexto ----------
-    context = permisos_context(request.user)
-    context.update({
-        "q": q,
-        "bienes": page_obj.object_list,   # lo que itera la tabla
-        "paginator": paginator,
-        "page_obj": page_obj,
-        "is_paginated": paginator.num_pages > 1,
-        "page_range": page_range,
-        "prev_page": prev_page,
-        "next_page": next_page,
-        "querystring": querystring,
-    })
-    return render(request, "bienes/lista_bienes.html", context)
-def lista_bienes_operador(request):
-    """Vista limitada para operador: solo puede ver y editar bienes."""
-    # Parámetros de búsqueda / filtros / orden
-    q        = (request.GET.get("q") or "").strip()
-    f_origen = request.GET.get("f_origen") or ""
-    f_estado = request.GET.get("f_estado") or ""
-    f_desde  = request.GET.get("f_desde") or ""
-    f_hasta  = request.GET.get("f_hasta") or ""
-    orden    = request.GET.get("orden") or "-fecha"
-
-    bienes_queryset = (
-        BienPatrimonial.objects
-        .select_related("expediente")
-        .order_by("clave_unica")
-    )
-    if q:
-        bienes_queryset = bienes_queryset.filter(
-            Q(clave_unica__icontains=q) |
-            Q(descripcion__icontains=q) |
-            Q(observaciones__icontains=q) |
-            Q(numero_identificacion__icontains=q) |
-            Q(servicios__icontains=q) |
-            Q(cuenta_codigo__icontains=q) |
-            Q(nomenclatura_bienes__icontains=q) |
-            Q(numero_serie__icontains=q) |
-            Q(origen__icontains=q) |
-            Q(estado__icontains=q) |
-            Q(expediente__numero_expediente__icontains=q) |
-            Q(expediente__numero_compra__icontains=q)
-        )
-    # Filtros
-    if f_origen == "__NULL__":
-        bienes_queryset = bienes_queryset.filter(origen__isnull=True)
-    elif f_origen:
-        bienes_queryset = bienes_queryset.filter(origen=f_origen)
-    if f_estado == "__NULL__":
-        bienes_queryset = bienes_queryset.filter(estado__isnull=True)
-    elif f_estado:
-        bienes_queryset = bienes_queryset.filter(estado=f_estado)
-    if f_desde:
-        d = parse_date(f_desde)
-        if d:
-            bienes_queryset = bienes_queryset.filter(fecha_adquisicion__gte=d)
-    if f_hasta:
-        h = parse_date(f_hasta)
-        if h:
-            bienes_queryset = bienes_queryset.filter(fecha_adquisicion__lte=h)
-    # Orden
-    if orden == "fecha":
-        bienes_queryset = bienes_queryset.order_by("fecha_adquisicion", "clave_unica")
-    elif orden == "-fecha":
-        bienes_queryset = bienes_queryset.order_by("-fecha_adquisicion", "clave_unica")
-    elif orden == "precio":
-        bienes_queryset = bienes_queryset.order_by("valor_adquisicion", "clave_unica")
-    elif orden == "-precio":
-        bienes_queryset = bienes_queryset.order_by("-valor_adquisicion", "clave_unica")
-    else:
-        bienes_queryset = bienes_queryset.order_by("clave_unica")
-    # Paginación
-    per_page = 30
-    paginator = Paginator(bienes_queryset, per_page)
-    page_raw = request.GET.get("page", "1")
-    try:
-        page_number = int(page_raw)
-        if page_number < 1:
-            page_number = 1
-    except ValueError:
-        page_number = 1
-    try:
-        page_obj = paginator.page(page_number)
-    except (EmptyPage, PageNotAnInteger):
-        page_obj = paginator.page(1)
-    # Enlaces prev/next
-    try:
-        prev_page = page_obj.previous_page_number()
-    except Exception:
-        prev_page = None
-    try:
-        next_page = page_obj.next_page_number()
-    except Exception:
-        next_page = None
     # Range con elipsis
     current = page_obj.number
     last = paginator.num_pages
@@ -555,9 +714,12 @@ def lista_bienes_operador(request):
             if last_added != "…":
                 page_range.append("…")
                 last_added = "…"
+
+    # Querystring para mantener filtros en links de paginación
     qs = request.GET.copy()
     qs.pop("page", None)
     querystring = qs.urlencode()
+
     context = permisos_context(request.user)
     context.update({
         "q": q,
@@ -570,8 +732,13 @@ def lista_bienes_operador(request):
         "next_page": next_page,
         "querystring": querystring,
     })
-    return render(request, "bienes/lista_bienes_operador.html", context)
-    # --------- Parámetros de búsqueda / filtros / orden ----------
+    return render(request, "bienes/lista_bienes.html", context)
+
+
+@login_required
+def lista_bienes_operador(request):
+    """Vista limitada para operador: solo puede ver y editar bienes."""
+    # Parámetros de búsqueda / filtros / orden
     q        = (request.GET.get("q") or "").strip()
     f_origen = request.GET.get("f_origen") or ""
     f_estado = request.GET.get("f_estado") or ""
@@ -579,11 +746,9 @@ def lista_bienes_operador(request):
     f_hasta  = request.GET.get("f_hasta") or ""
     orden    = request.GET.get("orden") or "-fecha"
 
-    # --------- Query base ----------
     bienes_queryset = (
         BienPatrimonial.objects
         .select_related("expediente")
-        .order_by("clave_unica")
     )
 
     if q:
@@ -622,23 +787,12 @@ def lista_bienes_operador(request):
         if h:
             bienes_queryset = bienes_queryset.filter(fecha_adquisicion__lte=h)
 
-    # Orden
-    if orden == "fecha":
-        bienes_queryset = bienes_queryset.order_by("fecha_adquisicion", "clave_unica")
-    elif orden == "-fecha":
-        bienes_queryset = bienes_queryset.order_by("-fecha_adquisicion", "clave_unica")
-    elif orden == "precio":
-        bienes_queryset = bienes_queryset.order_by("valor_adquisicion", "clave_unica")
-    elif orden == "-precio":
-        bienes_queryset = bienes_queryset.order_by("-valor_adquisicion", "clave_unica")
-    else:
-        bienes_queryset = bienes_queryset.order_by("clave_unica")
+    # Orden determinístico (fecha/precio -> pk -> clave)
+    bienes_queryset = bienes_queryset.order_by(*_build_ordering(orden))
 
-    # --------- Paginación segura (30 por página) ----------
+    # Paginación
     per_page = 30
     paginator = Paginator(bienes_queryset, per_page)
-
-    # Página solicitada (como int) con fallback a 1
     page_raw = request.GET.get("page", "1")
     try:
         page_number = int(page_raw)
@@ -646,13 +800,11 @@ def lista_bienes_operador(request):
             page_number = 1
     except ValueError:
         page_number = 1
-
     try:
         page_obj = paginator.page(page_number)
     except (EmptyPage, PageNotAnInteger):
         page_obj = paginator.page(1)
 
-    # Enlaces prev/next SIN provocar excepciones en el template
     try:
         prev_page = page_obj.previous_page_number()
     except Exception:
@@ -662,7 +814,7 @@ def lista_bienes_operador(request):
     except Exception:
         next_page = None
 
-    # Range con elipsis (1 … n-2 n-1 n n+1 n+2 … last)
+    # Range con elipsis
     current = page_obj.number
     last = paginator.num_pages
     window = 2
@@ -674,21 +826,18 @@ def lista_bienes_operador(request):
             page_range.append(i)
             last_added = i
         else:
-            # insertar elipsis solo una vez entre bloques
             if last_added != "…":
                 page_range.append("…")
                 last_added = "…"
 
-    # Querystring para mantener filtros en links de paginación
     qs = request.GET.copy()
     qs.pop("page", None)
     querystring = qs.urlencode()
 
-    # --------- Contexto ----------
     context = permisos_context(request.user)
     context.update({
         "q": q,
-        "bienes": page_obj.object_list,   # lo que itera la tabla
+        "bienes": page_obj.object_list,
         "paginator": paginator,
         "page_obj": page_obj,
         "is_paginated": paginator.num_pages > 1,
@@ -697,7 +846,8 @@ def lista_bienes_operador(request):
         "next_page": next_page,
         "querystring": querystring,
     })
-    return render(request, "bienes/lista_bienes.html", context)
+    return render(request, "bienes/lista_bienes_operador.html", context)
+
 
 # ============================
 # CRUD SIMPLE
@@ -710,14 +860,12 @@ def editar_bien(request, pk):
         form = BienPatrimonialForm(request.POST, instance=bien)
         if form.is_valid():
             form.save()
-            # Notificación de edición de bien
             Notificacion.objects.create(
                 usuario=request.user,
                 mensaje=f"Se editó el bien '{bien.nombre}' (Clave: {bien.clave_unica}).",
                 leida=False
             )
             messages.success(request, "Bien patrimonial actualizado correctamente.")
-            # Redirigir según tipo de usuario
             if hasattr(request.user, 'tipo_usuario') and request.user.tipo_usuario == 'empleado':
                 return redirect('lista_bienes_operador')
             return redirect('lista_bienes')
@@ -736,7 +884,6 @@ def eliminar_bien(request, pk):
         return redirect('lista_bienes')
 
     bien = get_object_or_404(BienPatrimonial, pk=pk)
-    # Notificación de baja de bien
     Notificacion.objects.create(
         usuario=request.user,
         mensaje=f"Se dio de baja el bien '{bien.nombre}' (Clave: {bien.clave_unica}).",
@@ -852,7 +999,7 @@ def carga_masiva_bienes(request):
 
         for i, row in df.iterrows():
             try:
-                with transaction.atomic():  # savepoint por fila
+                with transaction.atomic():
                     numero_id   = get_first(row, ['n de id','n_de_id','numero_identificacion','id_patrimonial','nº de id','no de id'])
                     nro_exp     = get_first(row, ['n de expediente','n_de_expediente','numero_expediente','nº de expediente','no de expediente','expediente'])
                     nro_compra  = get_first(row, ['n de compra','n_de_compra','numero_compra','nº de compra','no de compra'])
@@ -872,8 +1019,8 @@ def carga_masiva_bienes(request):
                     fecha_alta  = parse_date_any(get_first(row, ['fecha de alta','fecha_de_alta','fecha_alta']))
                     fecha_baja  = parse_date_any(get_first(row, ['fecha de baja','fecha_de_baja','fecha_baja']))
 
-                    origen_val = map_origen(origen_txt)   # puede ser None
-                    estado_val = map_estado(estado_txt)   # puede ser None
+                    origen_val = map_origen(origen_txt)
+                    estado_val = map_estado(estado_txt)
 
                     precio = parse_money(precio_raw)
                     if origen_val != 'COMPRA':
@@ -908,14 +1055,13 @@ def carga_masiva_bienes(request):
                         'expediente': expediente_obj,
                     }
 
-                    # Si el mapeo dio None, omitimos la clave para que aplique el default del modelo
                     if origen_val is not None:
                         defaults['origen'] = origen_val
                     if estado_val is not None:
                         defaults['estado'] = estado_val
 
                     numero_id = (numero_id or '').strip()
-                    numero_id_val = numero_id or None  # None (no '')
+                    numero_id_val = numero_id or None
 
                     if numero_id_val is not None:
                         _, created = BienPatrimonial.objects.update_or_create(
@@ -946,7 +1092,6 @@ def carga_masiva_bienes(request):
         if errores:
             messages.error(request, 'Algunas filas fallaron: ' + ' | '.join(errores[:8]))
 
-        # Notificación de carga masiva
         Notificacion.objects.create(
             usuario=request.user,
             mensaje=f"Se realizó una carga masiva: {creados} bienes registrados. Errores: {len(errores)}.",
@@ -982,6 +1127,82 @@ def eliminar_bienes_seleccionados(request):
     return redirect('lista_bienes')
 
 
+@login_required
+@require_POST
+def eliminar_operador(request, pk):
+    """Eliminar un operador (no staff). Acción restringida a administradores.
+
+    Se usa un POST desde la tabla de operadores y redirige al listado.
+    """
+    perms = permisos_context(request.user)
+    if not perms.get("puede_gestionar_operadores", False):
+        messages.error(request, "No tienes permisos para eliminar operadores.")
+        return redirect('operadores')
+
+    operador = get_object_or_404(Operador, pk=pk, is_staff=False)
+    # No permitir eliminarse a sí mismo por seguridad
+    if operador == request.user:
+        messages.error(request, "No podés eliminar tu propio usuario.")
+        return redirect('operadores')
+
+    identificador = operador.username
+    operador.delete()
+
+    # Crear notificación de auditoría mínima
+    try:
+        Notificacion.objects.create(
+            usuario=request.user,
+            mensaje=f"Se eliminó el operador '{identificador}'.",
+            leida=False
+        )
+    except Exception:
+        # No deben fallar la eliminación si la notificación no puede guardarse
+        pass
+
+    messages.success(request, f"Operador {identificador} eliminado correctamente.")
+    return redirect('operadores')
+
+
+@login_required
+@require_POST
+def dar_baja_operador(request, pk):
+    """Dar de baja (desactivar) a un operador. Acción restringida a administradores.
+
+    Se realiza mediante POST desde la tabla. No permite que un usuario se de baja a sí mismo.
+    """
+    perms = permisos_context(request.user)
+    if not perms.get("puede_gestionar_operadores", False):
+        messages.error(request, "No tienes permisos para dar de baja operadores.")
+        return redirect('operadores')
+
+    operador = get_object_or_404(Operador, pk=pk, is_staff=False)
+    # Evitar autosuspensión
+    if operador == request.user:
+        messages.error(request, "No podés darte de baja a vos mismo.")
+        return redirect('operadores')
+
+    operador.is_active = False
+    if hasattr(operador, 'estado'):
+        try:
+            operador.estado = 'no-habilitado'
+        except Exception:
+            pass
+    operador.save()
+
+    # Registrar notificación mínima
+    try:
+        Notificacion.objects.create(
+            usuario=request.user,
+            mensaje=f"Se dio de baja al operador '{operador.username}'.",
+            leida=False
+        )
+    except Exception:
+        pass
+
+    messages.success(request, f"Operador {operador.username} dado de baja correctamente.")
+    return redirect('operadores')
+
+
 # ============================
 # BAJAS
 # ============================
@@ -1001,23 +1222,15 @@ def lista_baja_bienes(request):
             Q(descripcion_baja__icontains=q) |
             Q(numero_identificacion__icontains=q) |
             Q(servicios__icontains=q) |
-            Q(cuenta_codigo__icontains=q) |
+            Q(cuenta_codigo__icontains=q) |  # ← corregido el typo
             Q(nomenclatura_bienes__icontains=q) |
             Q(numero_serie__icontains=q) |
             Q(expediente__numero_expediente__icontains=q) |
             Q(expediente_baja__icontains=q)
         )
 
-    if orden == "fecha_baja":
-        bienes_baja = bienes_baja.order_by("fecha_baja", "clave_unica")
-    elif orden == "-fecha_baja":
-        bienes_baja = bienes_baja.order_by("-fecha_baja", "clave_unica")
-    elif orden == "precio":
-        bienes_baja = bienes_baja.order_by("valor_adquisicion", "clave_unica")
-    elif orden == "-precio":
-        bienes_baja = bienes_baja.order_by("-valor_adquisicion", "clave_unica")
-    else:
-        bienes_baja = bienes_baja.order_by("-fecha_baja", "clave_unica")
+    # Orden determinístico (fecha_baja/precio -> pk -> clave)
+    bienes_baja = bienes_baja.order_by(*_build_ordering_baja(orden))
 
     # ===== Paginación =====
     try:
@@ -1039,7 +1252,6 @@ def lista_baja_bienes(request):
         page_obj = paginator.page(page_number)
     except (PageNotAnInteger, EmptyPage):
         page_obj = paginator.page(1)
-        page_number = 1
 
     # Querystring sin page=
     qd = request.GET.copy()
@@ -1087,15 +1299,20 @@ def dar_baja_bien(request, pk):
     expediente_baja = (request.POST.get("expediente_baja") or "").strip()
     descripcion_baja = (request.POST.get("descripcion_baja") or "").strip()
 
-    # Cambiar estado y registrar datos de baja
     bien.estado = "BAJA"
-    bien.fecha_baja = fecha_baja
+    update_fields = ["estado"]
+
+    if hasattr(bien, "fecha_baja"):
+        bien.fecha_baja = fecha_baja
+        update_fields.append("fecha_baja")
     if hasattr(bien, "expediente_baja"):
         bien.expediente_baja = expediente_baja
+        update_fields.append("expediente_baja")
     if hasattr(bien, "descripcion_baja"):
         bien.descripcion_baja = descripcion_baja
+        update_fields.append("descripcion_baja")
 
-    bien.save(update_fields=["estado", "fecha_baja", "expediente_baja", "descripcion_baja"])
+    bien.save(update_fields=update_fields)
 
     messages.success(
         request,
@@ -1163,13 +1380,8 @@ def marcar_notificaciones_leidas(request):
 @login_required
 @require_POST
 def eliminar_notificacion(request, pk):
-    """Elimina (o archiva) una notificación del usuario.
-
-    Endpoint pensado para llamadas AJAX desde la UI. Devuelve JSON {ok: True}
-    si la operación fue exitosa.
-    """
+    """Elimina (o archiva) una notificación del usuario (AJAX)."""
     notif = get_object_or_404(Notificacion, pk=pk)
-    # Sólo el propietario o superuser puede eliminar
     if notif.usuario != request.user and not request.user.is_superuser:
         return JsonResponse({"ok": False, "error": "forbidden"}, status=403)
     notif.delete()
@@ -1179,13 +1391,14 @@ def eliminar_notificacion(request, pk):
 @login_required
 @require_POST
 def marcar_notificacion_leida(request, pk):
-    """Marcar una notificación como leída (llamada AJAX)."""
+    """Marcar una notificación como leída (AJAX)."""
     notif = get_object_or_404(Notificacion, pk=pk)
     if notif.usuario != request.user and not request.user.is_superuser:
         return JsonResponse({"ok": False, "error": "forbidden"}, status=403)
     notif.leida = True
     notif.save(update_fields=["leida"])
     return JsonResponse({"ok": True})
+
 
 def crear_notificacion(usuario, mensaje):
     # Crear la notificación
