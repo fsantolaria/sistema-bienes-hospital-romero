@@ -267,6 +267,11 @@
     if (tag === 'INPUT' && (type === 'text' || type === 'search')) {
       el.addEventListener('input', () => { ensurePageReset(); debouncedSubmit(); });
     }
+  });
+
+})();
+
+</script>
 
 <script>
 // Modal de confirmación reutilizable para restaurar/eliminar bienes
