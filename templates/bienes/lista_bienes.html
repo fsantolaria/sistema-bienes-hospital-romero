@@ -25,10 +25,12 @@
       </select>
     </div>
 
-    <!-- BOTONES PRINCIPALES -->
+    <!-- BOTONES PRINCIPALES (Filtros movido al inicio, se removió botón Buscar) -->
     <div class="col-auto d-flex align-items-end gap-2">
-      <button class="btn btn-primary" type="submit">
-        <i class="fas fa-search me-1"></i> Buscar
+      <button class="btn btn-outline-primary" type="button"
+              data-bs-toggle="collapse" data-bs-target="#filtrosBox"
+              aria-expanded="false" aria-controls="filtrosBox" id="btn-filtros">
+        <i class="fas fa-sliders-h me-1"></i> Filtros
       </button>
       <a class="btn btn-outline-secondary" href="{% url 'lista_bienes' %}">Limpiar</a>
       <a class="btn btn-success" href="{% url 'carga_masiva' %}">
@@ -37,11 +39,6 @@
       <a class="btn btn-success" href="{% url 'bienes' %}">
         <i class="fa-solid fa-plus me-1"></i> Cargar bien
       </a>
-      <button class="btn btn-outline-primary" type="button"
-              data-bs-toggle="collapse" data-bs-target="#filtrosBox"
-              aria-expanded="false" aria-controls="filtrosBox" id="btn-filtros">
-        <i class="fas fa-sliders-h me-1"></i> Filtros
-      </button>
     </div>
 
     <!-- CONTROLES DERECHA -->

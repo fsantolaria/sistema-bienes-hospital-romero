@@ -89,7 +89,6 @@
       </div>
 
       <!-- Precio (solo si Origen = COMPRA) -->
-      {# Ocultamos de entrada si el bien NO es de COMPRA para evitar flash #}
       <div class="col-md-4 {% if bien.origen != 'COMPRA' %}d-none{% endif %}" id="grupo-precio">
         <label class="form-label" for="{{ form.valor_adquisicion.id_for_label }}">Precio</label>
         {{ form.valor_adquisicion }}
@@ -102,7 +101,9 @@
         {{ form.fecha_adquisicion }}
         {% for e in form.fecha_adquisicion.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
       </div>
-      <div class="col-md-4">
+
+      <!-- Fecha de Baja (solo visible si estado = BAJA) -->
+      <div class="col-md-4 {% if bien.estado != 'BAJA' %}d-none{% endif %}" id="grupo-baja">
         <label class="form-label" for="{{ form.fecha_baja.id_for_label }}">Fecha de Baja</label>
         {{ form.fecha_baja }}
         {% for e in form.fecha_baja.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
@@ -122,7 +123,7 @@
 {% block extra_js %}
 <script>
 (function () {
-  // Mostrar/ocultar precio según origen = COMPRA
+  // --- Mostrar/ocultar Precio según Origen ---
   const origen = document.getElementById('id_origen');
   const grupoPrecio = document.getElementById('grupo-precio');
   const inputPrecio = document.getElementById('id_valor_adquisicion');
@@ -133,12 +134,36 @@
       grupoPrecio?.classList.remove('d-none');
     } else {
       grupoPrecio?.classList.add('d-none');
-      if (inputPrecio) inputPrecio.value = '';
+      // Opcional: limpiar valor cuando no es COMPRA
+      // if (inputPrecio) inputPrecio.value = '';
     }
   }
 
-  togglePrecio();                  // estado inicial
+  // --- Mostrar/ocultar Fecha de Baja según Estado ---
+  const estado = document.getElementById('id_estado');
+  const grupoBaja = document.getElementById('grupo-baja');
+  const inputFechaBaja = document.getElementById('id_fecha_baja');
+
+  function toggleBaja() {
+    const v = (estado?.value || '').toUpperCase();
+    if (v === 'BAJA') {
+      grupoBaja?.classList.remove('d-none');
+      // Si querés autocompletar hoy si está vacío:
+      // if (inputFechaBaja && !inputFechaBaja.value) inputFechaBaja.value = new Date().toISOString().slice(0,10);
+    } else {
+      grupoBaja?.classList.add('d-none');
+      // No borramos el valor por si el usuario vuelve a BAJA; si querés, descomentá:
+      // if (inputFechaBaja) inputFechaBaja.value = '';
+    }
+  }
+
+  // Estado inicial
+  togglePrecio();
+  toggleBaja();
+
+  // Listeners
   origen?.addEventListener('change', togglePrecio);
+  estado?.addEventListener('change', toggleBaja);
 })();
 </script>
 {% endblock %}

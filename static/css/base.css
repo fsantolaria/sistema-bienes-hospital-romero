@@ -565,3 +565,23 @@ html, body {
 .header-icon:focus-visible .material-symbols-outlined {
     color: #000 !important;
 }
+
+/* ------------------------------------------------------------------
+   Íconos de 'Editar' — forzar lápiz blanco en todo el proyecto
+   - Selecciona elementos con title que contenga "Editar" (Editar, Editar bien, etc.)
+   - También cubre botones/links con clase .btn-edit si se añade en plantillas
+   - Usamos !important para sobreescribir estilos de btn-sm/btn-info
+   ------------------------------------------------------------------ */
+[title*="Editar"] i[class*="fa-"],
+[title*="Editar"] .fa,
+.btn-edit i[class*="fa-"],
+.btn-edit .fa {
+    color: #fff !important;
+}
+
+/* Si el icono está dentro de un enlace o botón con fondo claro, asegurar contraste
+   (en caso de iconos en botones claros se puede ajustar después) */
+[title*="Editar"] i,
+.btn-edit i {
+    vertical-align: middle;
+}

@@ -25,6 +25,8 @@ urlpatterns = [
     path('operadores/', views.operadores, name='operadores'),
     path('operadores/alta/', views.alta_operadores, name='alta_operadores'),
     path('operadores/<int:pk>/editar/', views.editar_operador, name='editar_operador'),
+    path('operadores/<int:pk>/eliminar/', views.eliminar_operador, name='eliminar_operador'),
+    path('operadores/<int:pk>/dar-baja/', views.dar_baja_operador, name='dar_baja_operador'),
 
     # ===== Varias =====
     path('base/', views.base, name='base'),

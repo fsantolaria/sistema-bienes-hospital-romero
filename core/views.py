@@ -207,6 +207,8 @@ def operadores(request):
         "operadores": operadores_qs,
         "usar_operador_model": False,  # por si tus templates usan este flag
     }
+    # Añadir flags de permisos al contexto para que templates puedan condicionar acciones
+    ctx.update(permisos_context(request.user))
     return render(request, "operadores.html", ctx)
 
 
@@ -890,6 +892,82 @@ def eliminar_bienes_seleccionados(request):
     eliminados = BienPatrimonial.objects.filter(pk__in=ids).delete()[0]
     messages.success(request, f"Eliminados: {eliminados}")
     return redirect('lista_bienes')
+
+
+@login_required
+@require_POST
+def eliminar_operador(request, pk):
+    """Eliminar un operador (no staff). Acción restringida a administradores.
+
+    Se usa un POST desde la tabla de operadores y redirige al listado.
+    """
+    perms = permisos_context(request.user)
+    if not perms.get("puede_gestionar_operadores", False):
+        messages.error(request, "No tienes permisos para eliminar operadores.")
+        return redirect('operadores')
+
+    operador = get_object_or_404(Operador, pk=pk, is_staff=False)
+    # No permitir eliminarse a sí mismo por seguridad
+    if operador == request.user:
+        messages.error(request, "No podés eliminar tu propio usuario.")
+        return redirect('operadores')
+
+    identificador = operador.username
+    operador.delete()
+
+    # Crear notificación de auditoría mínima
+    try:
+        Notificacion.objects.create(
+            usuario=request.user,
+            mensaje=f"Se eliminó el operador '{identificador}'.",
+            leida=False
+        )
+    except Exception:
+        # No deben fallar la eliminación si la notificación no puede guardarse
+        pass
+
+    messages.success(request, f"Operador {identificador} eliminado correctamente.")
+    return redirect('operadores')
+
+
+@login_required
+@require_POST
+def dar_baja_operador(request, pk):
+    """Dar de baja (desactivar) a un operador. Acción restringida a administradores.
+
+    Se realiza mediante POST desde la tabla. No permite que un usuario se de baja a sí mismo.
+    """
+    perms = permisos_context(request.user)
+    if not perms.get("puede_gestionar_operadores", False):
+        messages.error(request, "No tienes permisos para dar de baja operadores.")
+        return redirect('operadores')
+
+    operador = get_object_or_404(Operador, pk=pk, is_staff=False)
+    # Evitar autosuspensión
+    if operador == request.user:
+        messages.error(request, "No podés darte de baja a vos mismo.")
+        return redirect('operadores')
+
+    operador.is_active = False
+    if hasattr(operador, 'estado'):
+        try:
+            operador.estado = 'no-habilitado'
+        except Exception:
+            pass
+    operador.save()
+
+    # Registrar notificación mínima
+    try:
+        Notificacion.objects.create(
+            usuario=request.user,
+            mensaje=f"Se dio de baja al operador '{operador.username}'.",
+            leida=False
+        )
+    except Exception:
+        pass
+
+    messages.success(request, f"Operador {operador.username} dado de baja correctamente.")
+    return redirect('operadores')
 
 
 # ============================
