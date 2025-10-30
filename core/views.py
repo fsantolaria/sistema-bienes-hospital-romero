@@ -976,21 +976,60 @@ def lista_bienes_operador(request):
 @login_required
 def editar_bien(request, pk):
     bien = get_object_or_404(BienPatrimonial, pk=pk)
+
     if request.method == 'POST':
         form = BienPatrimonialForm(request.POST, instance=bien)
+
         if form.is_valid():
-            form.save()
+            # No escribir a DB todavía
+            obj = form.save(commit=False)
+
+            # --- Reglas de preservación/negocio ---
+            # 1) Si fecha de alta viene vacía, conservar la anterior
+            fecha_alta_nueva = form.cleaned_data.get('fecha_adquisicion')
+            if not fecha_alta_nueva:
+                obj.fecha_adquisicion = bien.fecha_adquisicion  # preservar
+
+            # 2) Si estado es BAJA y no cargaron fecha_baja, completar con hoy
+            estado_nuevo = form.cleaned_data.get('estado') or obj.estado
+            if (estado_nuevo or '').upper() == 'BAJA':
+                if not form.cleaned_data.get('fecha_baja') and not obj.fecha_baja:
+                    obj.fecha_baja = date.today()
+            # Si no es BAJA, no tocamos fecha_baja (se mantiene lo que tenga)
+
+            # 3) Si origen no es COMPRA, anular valor_adquisicion
+            origen_nuevo = form.cleaned_data.get('origen') or obj.origen
+            if (origen_nuevo or '').upper() != 'COMPRA':
+                obj.valor_adquisicion = None
+
+            # 4) Nombre robusto por si viene vacío
+            if not getattr(obj, 'nombre', None):
+                obj.nombre = (obj.descripcion or obj.numero_serie or 'SIN NOMBRE')[:200]
+
+            # Guardar en DB
+            obj.save()
+            # form.save_m2m()  # por si en el futuro agregás M2M
+
+            # Notificación y feedback
+            nombre_bien = getattr(obj, 'nombre', None) or getattr(obj, 'descripcion', 'Sin nombre')
             Notificacion.objects.create(
                 usuario=request.user,
-                mensaje=f"Se editó el bien '{bien.nombre}' (Clave: {bien.clave_unica}).",
+                mensaje=f"Se editó el bien '{nombre_bien}' (Clave: {obj.clave_unica}).",
                 leida=False
             )
             messages.success(request, "Bien patrimonial actualizado correctamente.")
-            if hasattr(request.user, 'tipo_usuario') and request.user.tipo_usuario == 'empleado':
-                return redirect('lista_bienes_operador')
-            return redirect('lista_bienes')
+
+            # Redirección por rol real
+            perms = permisos_context(request.user)
+            if perms.get('es_admin', False):
+                return redirect('lista_bienes')
+            return redirect('lista_bienes_operador')
+
+        # Si hay errores de validación, mostrar el form con errores
+        messages.error(request, "Revisá los datos del formulario.")
     else:
         form = BienPatrimonialForm(instance=bien)
+
     context = permisos_context(request.user)
     context.update({'form': form, 'bien': bien})
     return render(request, 'bienes/editar_bien.html', context)
