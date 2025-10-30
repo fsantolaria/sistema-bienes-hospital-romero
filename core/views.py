@@ -16,6 +16,7 @@ from django.contrib.messages import get_messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.utils.text import slugify
 from core.models.notificacion import Notificacion
+from core.constants import MAX_NOTIFICACIONES
 from django.http import JsonResponse, HttpResponse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.template.loader import render_to_string
@@ -184,6 +185,7 @@ def logout_view(request):
     logout(request)
     list(get_messages(request))  # limpiar mensajes previos
     messages.success(request, 'Sesión cerrada exitosamente')
+    # Redirigir a inicio para que el usuario vea el mensaje de sesión cerrada
     return redirect('inicio')
 
 
@@ -328,6 +330,16 @@ def editar_operador(request, pk):
             operador.set_password(password)
 
         operador.save()
+        # Crear notificación mínima de auditoría (intentar helper crear_notificacion si existe)
+        try:
+            try:
+                crear_notificacion(request.user, f"Se editó el operador '{operador.username}'.")
+            except Exception:
+                Notificacion.objects.create(usuario=request.user, mensaje=f"Se editó el operador '{operador.username}'.", leida=False)
+        except Exception:
+            # No bloquear la operación si falla la creación de la notificación
+            pass
+
         messages.success(request, "Operador actualizado correctamente.")
         return redirect("operadores")
 
@@ -397,6 +409,38 @@ def reportes_pdf(request):
         )
         resp = HttpResponse(pdf_bytes, content_type="application/pdf")
         resp["Content-Disposition"] = f'inline; filename="reporte_{scope}.pdf"'
+        # Crear notificaciones: actor + administradores
+        try:
+            mensaje = f"Reporte {rango_desc} generado por {request.user.username}. Bienes incluidos: {bienes.count()}."
+            try:
+                crear_notificacion(request.user, mensaje)
+            except Exception:
+                # fallback directo si crear_notificacion no está disponible
+                Notificacion.objects.create(usuario=request.user, mensaje=mensaje, leida=False)
+
+            # Notificar a administradores según rol del autor
+            User = get_user_model()
+            # Todos los administradores (is_superuser o tipo_usuario=='admin')
+            all_admins = User.objects.filter(Q(is_superuser=True) | Q(tipo_usuario='admin'))
+            if hasattr(request.user, 'tipo_usuario') and request.user.tipo_usuario == 'empleado':
+                # Autor es operador -> notificar a administradores excluyendo al autor (por si tiene flags especiales)
+                admins = all_admins.exclude(pk=request.user.pk)
+            else:
+                # Autor es admin (o superuser) -> notificar a todos los administradores (incluyendo al autor)
+                admins = all_admins
+
+            for a in admins:
+                try:
+                    crear_notificacion(a, f"Usuario {request.user.username} generó un reporte: {rango_desc}.")
+                except Exception:
+                    try:
+                        Notificacion.objects.create(usuario=a, mensaje=f"Usuario {request.user.username} generó un reporte: {rango_desc}.", leida=False)
+                    except Exception:
+                        pass
+        except Exception:
+            # No bloquear la descarga por errores en notificaciones
+            pass
+
         return resp
 
     # --------- Fallback: ReportLab puro (sin DLLs) ----------
@@ -532,12 +576,38 @@ def reportes_pdf(request):
 
         resp = HttpResponse(pdf_bytes, content_type="application/pdf")
         resp["Content-Disposition"] = f'inline; filename="reporte_{scope}_fallback.pdf"'
+        # Crear notificaciones para actor y administradores (igual que en el flujo WeasyPrint)
+        try:
+            mensaje = f"Reporte {rango_desc} generado por {request.user.username}. Bienes incluidos: {bienes.count()}."
+            try:
+                crear_notificacion(request.user, mensaje)
+            except Exception:
+                Notificacion.objects.create(usuario=request.user, mensaje=mensaje, leida=False)
+
+            User = get_user_model()
+            all_admins = User.objects.filter(Q(is_superuser=True) | Q(tipo_usuario='admin'))
+            if hasattr(request.user, 'tipo_usuario') and request.user.tipo_usuario == 'empleado':
+                admins = all_admins.exclude(pk=request.user.pk)
+            else:
+                admins = all_admins
+
+            for a in admins:
+                try:
+                    crear_notificacion(a, f"Usuario {request.user.username} generó un reporte: {rango_desc}.")
+                except Exception:
+                    try:
+                        Notificacion.objects.create(usuario=a, mensaje=f"Usuario {request.user.username} generó un reporte: {rango_desc}.", leida=False)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
         return resp
 
 
 @login_required
 def reportes_view(request):
-    
+
     scope = (request.GET.get("scope") or "24h").lower()
     now = timezone.now()
 
@@ -559,15 +629,65 @@ def reportes_view(request):
             .select_related("expediente")
             .order_by("-fecha_adquisicion", "pk")
         )
+    # ----- PAGINACIÓN (similar a lista_bienes) -----
+    try:
+        per_page = int(request.GET.get("per_page") or 30)
+    except ValueError:
+        per_page = 30
+
+    paginator = Paginator(bienes, per_page)
+    page_raw = request.GET.get("page") or "1"
+    try:
+        page_number = int(page_raw)
+    except ValueError:
+        page_number = 1
+    if page_number < 1:
+        page_number = 1
+
+    try:
+        page_obj = paginator.page(page_number)
+    except (PageNotAnInteger, EmptyPage):
+        page_obj = paginator.page(1)
+
+    try:
+        prev_page = page_obj.previous_page_number()
+    except Exception:
+        prev_page = None
+    try:
+        next_page = page_obj.next_page_number()
+    except Exception:
+        next_page = None
+
+    # Range comprimido (…)
+    current = page_obj.number
+    total = paginator.num_pages
+    window = 2
+    page_range = []
+    for num in range(1, total + 1):
+        if num == 1 or num == total or (current - window) <= num <= (current + window):
+            page_range.append(num)
+        elif page_range and page_range[-1] != "…":
+            page_range.append("…")
+
+    qd = request.GET.copy()
+    qd.pop("page", None)
+    querystring = qd.urlencode()
 
     ctx = permisos_context(request.user)
     ctx.update({
-        "bienes": bienes,
-        "scope": scope,  # útil para armar el link a PDF: {% url 'reportes_pdf' %}?scope={{ scope }}
+        "bienes": page_obj.object_list,
+        "scope": scope,
+        "paginator": paginator,
+        "page_obj": page_obj,
+        "is_paginated": paginator.num_pages > 1,
+        "page_range": page_range,
+        "prev_page": prev_page,
+        "next_page": next_page,
+        "querystring": querystring,
     })
     return render(request, "reportes.html", ctx)
-    
-    
+
+
 # ========= Helpers de orden =========
 
 def _build_ordering(orden_param: str):
@@ -1405,6 +1525,6 @@ def crear_notificacion(usuario, mensaje):
     Notificacion.objects.create(usuario=usuario, mensaje=mensaje)
     # Limitar a 5 notificaciones por usuario, borrar las más antiguas
     notificaciones = Notificacion.objects.filter(usuario=usuario).order_by('-fecha')
-    if notificaciones.count() > 5:
-        for n in notificaciones[5:]:
+    if notificaciones.count() > MAX_NOTIFICACIONES:
+        for n in notificaciones[MAX_NOTIFICACIONES:]:
             n.delete()

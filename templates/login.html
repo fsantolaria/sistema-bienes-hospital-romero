@@ -6,6 +6,9 @@
 {% block header %}{% endblock %}
 {% block footer %}{% endblock %}
 
+{# Evitar el include global de messages en la parte superior y mostrar los mensajes dentro del card #}
+{% block messages %}{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/login.css' %}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -26,8 +29,11 @@
             </div>
         </div>
 
-        <!-- Formulario de inicio de sesión -->
-        <form id="loginForm" method="post" action="{% url 'login' %}">
+    <!-- Mensajes (dentro del card) -->
+    {% include 'includes/messages.html' %}
+
+    <!-- Formulario de inicio de sesión -->
+    <form id="loginForm" method="post" action="{% url 'login' %}">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ next|default_if_none:'' }}"/>
             <input type="hidden" name="tipo_usuario" value="{{ tipo_value|default:tipo_default|default:'' }}"/>
