@@ -15,6 +15,8 @@ from django.utils.dateparse import parse_date
 from django.contrib.messages import get_messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.utils.text import slugify
+from core.models.notificacion import Notificacion
+from django.http import JsonResponse
 
 
 def _role_route_name(user) -> str:
@@ -122,7 +124,14 @@ def bienes(request):
     if request.method == "POST":
         form = BienPatrimonialForm(request.POST)
         if form.is_valid():
-            form.save()
+            bien = form.save()
+            # ...existing code...
+            nombre_bien = getattr(bien, 'nombre', None) or getattr(bien, 'descripcion', 'Sin nombre')
+            Notificacion.objects.create(
+                usuario=request.user,
+                mensaje=f"Se registró el bien '{nombre_bien}' (Clave: {bien.clave_unica}) correctamente.",
+                leida=False
+            )
             messages.success(request, "Bien creado correctamente.")
             return redirect("lista_bienes")
         messages.error(request, "Revisá los datos del formulario.")
@@ -151,6 +160,12 @@ def home_admin(request):
     if not perms["es_admin"]:
         messages.error(request, 'No tienes permisos para acceder a esta página')
         return redirect('home_operador')
+    notificaciones = Notificacion.objects.filter(usuario=request.user).order_by('-fecha')[:5]
+    notificaciones_count = Notificacion.objects.filter(usuario=request.user, leida=False).count()
+    perms.update({
+        'notificaciones': notificaciones,
+        'notificaciones_count': notificaciones_count,
+    })
     return render(request, 'home_admin.html', perms)
 
 
@@ -169,6 +184,11 @@ def operadores(request):
 
 
 def recuperar_password(request):
+    if request.method == "POST":
+        # Acá podrías enviar el correo o guardar el pedido en la base
+        messages.success(request, "✅ Solicitud enviada correctamente.")
+        return redirect('recuperar_password')  # vuelve a la misma página
+
     return render(request, 'recuperar_password.html')
 
 
@@ -221,7 +241,29 @@ def alta_operadores(request):
             operador.numero_doc = numero_doc
         if hasattr(operador, "estado"):
             operador.estado = estado  # guarda cadena 'habilitado' / 'no-habilitado'
-        operador.save()
+        # Intentar guardar el usuario con reintentos en caso de colisiones únicas
+        saved = False
+        attempts = 0
+        while not saved and attempts < 10:
+            try:
+                operador.save()
+                saved = True
+            except IntegrityError:
+                # Probablemente una colisión en username; generar una variante y reintentar
+                attempts += 1
+                i += 1
+                username = f"{base_username}{i}"
+                operador.username = username
+        if not saved:
+            messages.error(request, "No se pudo crear el usuario debido a un conflicto de nombre. Intentá de nuevo más tarde o con otro nombre.")
+            return redirect("alta_operadores")
+
+        # Notificación de creación de operador
+        Notificacion.objects.create(
+            usuario=request.user,
+            mensaje=f"Se creó el operador '{operador.username}'.",
+            leida=False
+        )
 
         messages.success(request, f"Operador {nombre} {apellido} creado. Usuario: {operador.username}")
         return redirect("operadores")  # ← vuelve al listado
@@ -668,6 +710,12 @@ def editar_bien(request, pk):
         form = BienPatrimonialForm(request.POST, instance=bien)
         if form.is_valid():
             form.save()
+            # Notificación de edición de bien
+            Notificacion.objects.create(
+                usuario=request.user,
+                mensaje=f"Se editó el bien '{bien.nombre}' (Clave: {bien.clave_unica}).",
+                leida=False
+            )
             messages.success(request, "Bien patrimonial actualizado correctamente.")
             # Redirigir según tipo de usuario
             if hasattr(request.user, 'tipo_usuario') and request.user.tipo_usuario == 'empleado':
@@ -688,6 +736,12 @@ def eliminar_bien(request, pk):
         return redirect('lista_bienes')
 
     bien = get_object_or_404(BienPatrimonial, pk=pk)
+    # Notificación de baja de bien
+    Notificacion.objects.create(
+        usuario=request.user,
+        mensaje=f"Se dio de baja el bien '{bien.nombre}' (Clave: {bien.clave_unica}).",
+        leida=False
+    )
     bien.delete()
     messages.success(request, "Bien eliminado correctamente.")
     return redirect('lista_bienes')
@@ -892,6 +946,13 @@ def carga_masiva_bienes(request):
         if errores:
             messages.error(request, 'Algunas filas fallaron: ' + ' | '.join(errores[:8]))
 
+        # Notificación de carga masiva
+        Notificacion.objects.create(
+            usuario=request.user,
+            mensaje=f"Se realizó una carga masiva: {creados} bienes registrados. Errores: {len(errores)}.",
+            leida=False
+        )
+
         return redirect('lista_bienes')
 
     except (FileNotFoundError, pd.errors.EmptyDataError, KeyError) as e:
@@ -1089,3 +1150,48 @@ def eliminar_bien_definitivo(request, pk):
     bien.delete()
     messages.success(request, f"Bien {identificador} eliminado definitivamente.")
     return redirect("lista_baja_bienes")
+
+
+@login_required
+def marcar_notificaciones_leidas(request):
+    if request.method == "POST":
+        Notificacion.objects.filter(usuario=request.user, leida=False).update(leida=True)
+        return JsonResponse({"ok": True})
+    return JsonResponse({"ok": False}, status=400)
+
+
+@login_required
+@require_POST
+def eliminar_notificacion(request, pk):
+    """Elimina (o archiva) una notificación del usuario.
+
+    Endpoint pensado para llamadas AJAX desde la UI. Devuelve JSON {ok: True}
+    si la operación fue exitosa.
+    """
+    notif = get_object_or_404(Notificacion, pk=pk)
+    # Sólo el propietario o superuser puede eliminar
+    if notif.usuario != request.user and not request.user.is_superuser:
+        return JsonResponse({"ok": False, "error": "forbidden"}, status=403)
+    notif.delete()
+    return JsonResponse({"ok": True})
+
+
+@login_required
+@require_POST
+def marcar_notificacion_leida(request, pk):
+    """Marcar una notificación como leída (llamada AJAX)."""
+    notif = get_object_or_404(Notificacion, pk=pk)
+    if notif.usuario != request.user and not request.user.is_superuser:
+        return JsonResponse({"ok": False, "error": "forbidden"}, status=403)
+    notif.leida = True
+    notif.save(update_fields=["leida"])
+    return JsonResponse({"ok": True})
+
+def crear_notificacion(usuario, mensaje):
+    # Crear la notificación
+    Notificacion.objects.create(usuario=usuario, mensaje=mensaje)
+    # Limitar a 5 notificaciones por usuario, borrar las más antiguas
+    notificaciones = Notificacion.objects.filter(usuario=usuario).order_by('-fecha')
+    if notificaciones.count() > 5:
+        for n in notificaciones[5:]:
+            n.delete()

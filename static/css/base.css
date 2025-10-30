@@ -1,3 +1,32 @@
+.notificaciones-dropdown {
+    position: absolute;
+    top: 36px;
+    right: 0;
+    min-width: 220px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    padding: 12px 0 8px 0;
+    z-index: 10;
+    font-size: 15px;
+}
+.dropdown-header {
+    font-weight: bold;
+    padding: 0 16px 8px 16px;
+    color: #0097b2;
+}
+.dropdown-list {
+    list-style: none;
+    margin: 0;
+    padding: 0 16px;
+}
+.dropdown-list li {
+    padding: 6px 0;
+    border-bottom: 1px solid #eee;
+}
+.dropdown-list li:last-child {
+    border-bottom: none;
+}
 /* --- ESTILOS BASE GLOBALES --- */
 
 :root {
@@ -237,7 +266,7 @@ html, body {
     display: flex;
     align-items: center;
     gap: 18px;
-    margin-left: -10; 
+    margin-left: -10;
 }
 
 .logo-link {
@@ -366,6 +395,29 @@ html, body {
     padding: 10px 15px;
     z-index: 100;
 }
+    .notificaciones-wrapper {
+         position: relative;
+         display: inline-block;
+    }
+    .notificaciones-container {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        min-width: 24px;
+        height: 24px;
+        background: #ff3b3b;
+        color: #fff;
+        font-size: 16px;
+        font-weight: bold;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+        z-index: 2;
+        padding: 0 6px;
+        border: 2px solid #fff;
+    }
 
 .notification-panel.active {
     display: block;
@@ -467,4 +519,49 @@ html, body {
 .header-icon:hover {
     color: #000 !important;
     transform: scale(1.1) !important;
+}
+
+/* -------------------------------------------------------------------------
+   Efecto: transición de COLOR de claro -> oscuro al hover/focus.
+   - Color por defecto (claro) en los iconos del header.
+   - Al entrar (hover / focus) transicionar a oscuro (#000) en 150ms.
+   - Al salir vuelve al color claro (también con transición).
+   - Se fuerza con !important para garantizar comportamiento consistente
+     en todos los templates donde se incluya el header.
+   ------------------------------------------------------------------------- */
+.header-icon,
+.header-icon .material-symbols-outlined,
+.notificaciones-wrapper .material-symbols-outlined,
+.notificaciones-wrapper.header-icon {
+    /* Color claro por defecto */
+    color: #0087a3 !important; /* azul/teal claro por defecto */
+    transition: color 150ms ease, transform 0.2s ease !important;
+}
+
+/* Asegurar que el ícono interno herede y tenga transición (aplica a home/logout) */
+.header-icon .material-symbols-outlined {
+    color: #0087a3 !important;
+    transition: color 150ms ease !important;
+}
+
+/* Al hover / focus transicionamos a negro (oscuro) */
+.header-icon:hover,
+.header-icon:focus,
+.header-icon:focus-visible,
+.notificaciones-wrapper:hover .material-symbols-outlined,
+.notificaciones-wrapper:focus .material-symbols-outlined {
+    color: #000 !important;
+}
+
+/* Estado activo (touch): mantener oscuro mientras está presionado */
+.header-icon:active,
+.notificaciones-wrapper:active {
+    color: #000 !important;
+}
+
+/* Aplicar color oscuro al icono interno cuando el padre recibe hover/focus */
+.header-icon:hover .material-symbols-outlined,
+.header-icon:focus .material-symbols-outlined,
+.header-icon:focus-visible .material-symbols-outlined {
+    color: #000 !important;
 }

@@ -12,21 +12,38 @@
 
         <!-- Íconos de acciones -->
         <div class="icon-section">
-            <a href="{% url 'inicio' %}" class="header-icon" title="Volver al inicio">
-                <span class="material-symbols-outlined">home</span>
-            </a>
-            <span class="notificaciones-container">
-                <span class="material-symbols-outlined header-icon" title="Notificaciones">notifications</span>
-                <span class="notificaciones-badge">2</span>
-            </span>
-            <a href="{% url 'logout' %}" class="header-icon" title="Cerrar sesión">
-                <span class="material-symbols-outlined">logout</span>
-            </a>
+                <a href="{% url 'inicio' %}" class="header-icon" title="Volver al inicio">
+                    <span class="material-symbols-outlined">home</span>
+                </a>
+                {% if user.is_superuser %}
+                    <span class="notificaciones-wrapper" title="Notificaciones" id="notificacionesBell">
+                        <span class="material-symbols-outlined header-icon" aria-hidden="true">notifications</span>
+                        {% if notificaciones_count and notificaciones_count > 0 %}
+                            <!-- Badge positioned above the bell (no cambia la alineación del header) -->
+                            <span class="notificaciones-badge" aria-hidden="false">{{ notificaciones_count }}</span>
+                        {% endif %}
+                        <div id="notificacionesDropdown" class="notificaciones-dropdown" style="display:none;">
+                            <div class="dropdown-header">Notificaciones</div>
+                            <ul class="dropdown-list">
+                                {% for n in notificaciones %}
+                                    <li class="dropdown-notif-item {% if not n.leida %}notificacion-no-leida{% endif %}" data-id="{{ n.id }}" data-leida="{% if n.leida %}1{% else %}0{% endif %}">
+                                        <span class="dropdown-notif-text">{{ n.mensaje }}</span>
+                                        <button class="btn-eliminar-notificacion" title="Eliminar notificación" data-id="{{ n.id }}">
+                                            <i class="fa fa-trash" aria-hidden="true"></i>
+                                            <span class="sr-only">Eliminar notificación</span>
+                                        </button>
+                                    </li>
+                                {% empty %}
+                                    <li>No tienes notificaciones nuevas</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </span>
+                    <!-- Dropdown behavior handled by static JS (notificaciones.js) -->
+                {% endif %}
+                <a href="{% url 'logout' %}" class="header-icon" title="Cerrar sesión">
+                    <span class="material-symbols-outlined">logout</span>
+                </a>
         </div>
     </div>
 </header>
-
-
-
-
-

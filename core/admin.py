@@ -3,6 +3,7 @@ from django.apps import apps
 from sistema_bienes.admin import custom_admin_site  # tu admin personalizado
 from .models.expediente import Expediente
 from .models.bien_patrimonial import BienPatrimonial
+from .models.notificacion import Notificacion
 
 
 # ===== Helpers seguros =====
@@ -136,3 +137,7 @@ class BienPatrimonialAdmin(admin.ModelAdmin):
         # Mantiene tu validación del modelo
         obj.full_clean()
         super().save_model(request, obj, form, change)
+
+
+# ===== Notificacion Admin =====
+admin.site.register(Notificacion)
