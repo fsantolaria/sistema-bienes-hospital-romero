@@ -148,16 +148,37 @@
     const v = (estado?.value || '').toUpperCase();
     if (v === 'BAJA') {
       grupoBaja?.classList.remove('d-none');
-      // Si querés autocompletar hoy si está vacío:
-      // if (inputFechaBaja && !inputFechaBaja.value) inputFechaBaja.value = new Date().toISOString().slice(0,10);
+      if (inputFechaBaja && !inputFechaBaja.value) {
+        inputFechaBaja.value = new Date().toISOString().slice(0,10);
+      }
     } else {
       grupoBaja?.classList.add('d-none');
-      // No borramos el valor por si el usuario vuelve a BAJA; si querés, descomentá:
+      // Si querés limpiar cuando no es BAJA:
       // if (inputFechaBaja) inputFechaBaja.value = '';
     }
   }
 
-  // Estado inicial
+  // === Mantener la fecha de ALTA si el usuario la deja vacía al guardar ===
+  const form = document.querySelector('form[method="post"]');
+  const inputFechaAlta = document.getElementById('id_fecha_adquisicion');
+  // Guardamos el valor inicial renderizado por Django (la fecha previa del bien)
+  const fechaAltaInicial = inputFechaAlta ? (inputFechaAlta.value || '') : '';
+
+  // Si el usuario borra y deja vacío, restauramos al salir del campo
+  inputFechaAlta?.addEventListener('blur', function () {
+    if (!this.value && fechaAltaInicial) {
+      this.value = fechaAltaInicial;
+    }
+  });
+
+  // Y, por seguridad, antes del submit también restauramos si está vacío
+  form?.addEventListener('submit', function () {
+    if (inputFechaAlta && !inputFechaAlta.value && fechaAltaInicial) {
+      inputFechaAlta.value = fechaAltaInicial;
+    }
+  });
+
+  // Estado inicial de UI
   togglePrecio();
   toggleBaja();
 

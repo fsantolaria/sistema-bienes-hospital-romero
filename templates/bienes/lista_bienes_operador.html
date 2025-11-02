@@ -32,11 +32,23 @@
             <div class="row g-2">
                 <div class="col-md-3">
                     <label class="form-label">Origen</label>
-                    <input type="text" name="f_origen" class="form-control auto-submit" value="{{ f_origen }}">
+                    <select name="f_origen" class="form-select auto-submit">
+                        <option value="">Todos</option>
+                        <option value="COMPRA" {% if f_origen == "COMPRA" %}selected{% endif %}>Compra</option>
+                        <option value="DONACION" {% if f_origen == "DONACION" %}selected{% endif %}>Donación</option>
+                        <option value="OMISION" {% if f_origen == "OMISION" %}selected{% endif %}>Omisión</option>
+                        <option value="TRANSFERENCIA" {% if f_origen == "TRANSFERENCIA" %}selected{% endif %}>Transferencia</option>
+                    </select>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Estado</label>
-                    <input type="text" name="f_estado" class="form-control auto-submit" value="{{ f_estado }}">
+                    <select name="f_estado" class="form-select auto-submit">
+                        <option value="">Todos</option>
+                        <option value="ACTIVO" {% if f_estado == "ACTIVO" %}selected{% endif %}>Activo</option>
+                        <option value="INACTIVO" {% if f_estado == "INACTIVO" %}selected{% endif %}>Inactivo</option>
+                        <option value="MANTENIMIENTO" {% if f_estado == "MANTENIMIENTO" %}selected{% endif %}>Mantenimiento</option>
+                        <option value="BAJA" {% if f_estado == "BAJA" %}selected{% endif %}>Baja</option>
+                    </select>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Desde (Alta)</label>
@@ -87,8 +99,40 @@
                     <td class="text-nowrap">{{ b.cuenta_codigo|default:"—" }}</td>
                     <td class="text-nowrap">{{ b.nomenclatura_bienes|default:"—" }}</td>
                     <td class="text-nowrap">{{ b.numero_serie|default:"—" }}</td>
-                    <td class="text-nowrap">{{ b.get_origen_display|default:b.origen|default:"—" }}</td>
-                    <td class="text-nowrap">{{ b.get_estado_display|default:b.estado|default:"—" }}</td>
+                    <td class="text-nowrap">
+                        {% with label=b.get_origen_display|default:b.origen|default:"—" %}
+                            {% if b.origen == "COMPRA" %}
+                                <span class="badge bg-primary">{{ label }}</span>
+                            {% elif b.origen == "DONACION" %}
+                                <span class="badge bg-success">{{ label }}</span>
+                            {% elif b.origen == "OMISION" %}
+                                <span class="badge bg-secondary">{{ label }}</span>
+                            {% elif b.origen == "TRANSFERENCIA" %}
+                                <span class="badge bg-info text-white">{{ label }}</span>
+                            {% elif b.origen == "__NULL__" or not b.origen %}
+                                <span class="text-muted">{{ label }}</span>
+                            {% else %}
+                                <span class="badge bg-light text-dark">{{ label }}</span>
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+                    <td class="text-nowrap">
+                        {% with label=b.get_estado_display|default:b.estado|default:"—" %}
+                            {% if b.estado == "ACTIVO" %}
+                                <span class="badge bg-success">{{ label }}</span>
+                            {% elif b.estado == "INACTIVO" %}
+                                <span class="badge bg-secondary">{{ label }}</span>
+                            {% elif b.estado == "MANTENIMIENTO" %}
+                                <span class="badge bg-info text-dark">{{ label }}</span>
+                            {% elif b.estado == "BAJA" %}
+                                <span class="badge bg-danger text-white">{{ label }}</span>
+                            {% elif b.estado == "__NULL__" or not b.estado %}
+                                <span class="text-muted">{{ label }}</span>
+                            {% else %}
+                                <span class="badge bg-light text-dark">{{ label }}</span>
+                            {% endif %}
+                        {% endwith %}
+                    </td>
                     <td class="text-nowrap">{{ b.servicios|default:"—" }}</td>
                     <td style="min-width:220px;">{{ b.observaciones|default:"—" }}</td>
                     <td class="text-end">

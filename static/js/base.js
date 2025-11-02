@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function handleButtonClick(userType, button) {
         const originalText = button.innerHTML;
-        
+
         button.classList.add('loading');
         button.disabled = true;
         button.innerHTML = 'Cargando...';
