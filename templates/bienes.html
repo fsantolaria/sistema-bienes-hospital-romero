@@ -72,7 +72,7 @@
               <div class="card card-body border border-primary bg-light">
                 <div class="row g-3">
                   <div class="col-md-6">
-                    <label class="form-label" for="{{ form.numero_expediente.id_for_label }}">N° de Expediente (obligatorio) </label>
+                    <label class="form-label" for="{{ form.numero_expediente.id_for_label }}">N° de Expediente </label>
                     {{ form.numero_expediente }}
                     {% for e in form.numero_expediente.errors %}
                       <div class="invalid-feedback d-block">{{ e }}</div>
@@ -80,7 +80,7 @@
                   </div>
 
                   <div class="col-md-6">
-                    <label class="form-label" for="{{ form.numero_compra.id_for_label }}">N° de Compra (opcional) </label>
+                    <label class="form-label" for="{{ form.numero_compra.id_for_label }}">N° de Compra    </label>
                     {{ form.numero_compra }}
                     {% for e in form.numero_compra.errors %}
                       <div class="invalid-feedback d-block">{{ e }}</div>
