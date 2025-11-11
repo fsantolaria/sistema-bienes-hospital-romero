@@ -98,14 +98,17 @@ dir .env
 
 #### 🚀 Paso 5: Base de datos y migraciones
 ```powershell
-# 1. Aplicar migraciones
+#  Antes de aplicar migraciones
+python manage.py makemigrations core
+
+#  Aplicar migraciones
 python manage.py migrate
 
-# 2. Crear superusuario
+#  Crear superusuario
 python manage.py createsuperuser
 # Seguir prompts: usuario, email, password
 
-# 3. Verificar que la BD se creó
+#  Verificar que la BD se creó
 dir *.sqlite3
 ```
 
