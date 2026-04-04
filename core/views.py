@@ -28,7 +28,7 @@ from reportlab.lib.units import cm
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 import io
 from xml.sax.saxutils import escape
-
+from core.models import Usuario
 
 def _role_route_name(user) -> str:
     """Devuelve el nombre de la ruta según el rol del usuario."""
@@ -281,6 +281,19 @@ def alta_operadores(request):
 
         numero_doc = form.cleaned_data["dni"]
 
+        nombre     = (request.POST.get("nombre") or "").strip()
+        apellido   = (request.POST.get("apellido") or "").strip()
+        pais       = (request.POST.get("pais") or "").strip()
+        numero_doc = (request.POST.get("numero_doc") or "").strip()
+        email      = (request.POST.get("email") or "").strip()
+        estado     = (request.POST.get("estado") or "habilitado").strip()
+        password   = (request.POST.get("password") or "").strip()
+
+        # Validación DNI duplicado
+        if numero_doc and Usuario.objects.filter(numero_doc=numero_doc).exists():
+            messages.error(request, f"Ya existe un operador con el DNI {numero_doc}.")
+            return redirect("alta_operadores")
+
         base_username = slugify(f"{nombre}.{apellido}") or (email.split("@")[0] if email else "")
         if not base_username:
             messages.error(request, "No se pudo generar un usuario. Completá Nombre/Apellido o Email.")
@@ -363,7 +376,6 @@ def alta_operadores(request):
         'password': '',
     })
     return render(request, "alta_operadores.html", {"usar_operador_model": False, "form": form})
-
 
 @login_required
 def editar_operador(request, pk):

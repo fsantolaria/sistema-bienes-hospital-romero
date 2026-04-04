@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="{% static 'libs/fontawesome/css/all.min.css' %}">
 {% endblock %}
 
+
 {% block content %}
 <div id="alta-operador-view" class="view active">
   <div class="alta-header">
@@ -28,6 +29,16 @@
       {% endfor %}
     </div>
   {% endif %}
+
+
+    {% for message in messages %}
+      <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
 
   <form id="form-alta-operador"
         class="form-alta"
