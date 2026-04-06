@@ -1,6 +1,8 @@
 # core/forms.py
 from django import forms
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
+from django.contrib.auth import get_user_model
 from core.models import BienPatrimonial
 from core.models.expediente import Expediente
 from datetime import date
@@ -121,3 +123,59 @@ class BienPatrimonialForm(forms.ModelForm):
             bien.save()
             self.save_m2m()
         return bien
+
+
+class OperadorForm(forms.Form):
+    nombre = forms.CharField(max_length=200, required=True, label='Nombre')
+    apellido = forms.CharField(max_length=200, required=True, label='Apellido')
+    pais = forms.CharField(max_length=100, required=False, label='País')
+    dni = forms.CharField(
+        max_length=8,
+        required=True,
+        label='DNI',
+        validators=[
+            RegexValidator(r'^\d{1,8}$', 'El DNI debe tener sólo números y hasta 8 dígitos.')
+        ]
+    )
+    email = forms.EmailField(required=False, label='Email')
+    estado = forms.ChoiceField(
+        choices=[('habilitado', 'Habilitado'), ('no-habilitado', 'No Habilitado')],
+        initial='habilitado',
+        label='Estado'
+    )
+    password = forms.CharField(required=False, widget=forms.PasswordInput, label='Contraseña')
+
+    def __init__(self, *args, operador_pk=None, **kwargs):
+        self.operador_pk = operador_pk
+        super().__init__(*args, **kwargs)
+        if self.operador_pk:
+            self.fields['dni'].required = False
+
+    def clean_dni(self):
+        dni = (self.cleaned_data.get('dni') or '').strip()
+        if not dni:
+            return dni
+
+        if not dni.isdigit() or len(dni) > 8:
+            raise ValidationError('El DNI debe tener sólo números y hasta 8 dígitos.')
+
+        Operador = get_user_model()
+        operadores = Operador.objects.filter(numero_doc__iexact=dni)
+        if self.operador_pk:
+            operadores = operadores.exclude(pk=self.operador_pk)
+        if operadores.exists():
+            raise ValidationError('Ya existe un operador con ese DNI')
+        return dni
+
+    def clean_email(self):
+        email = (self.cleaned_data.get('email') or '').strip()
+        if not email:
+            return email
+
+        Operador = get_user_model()
+        operadores = Operador.objects.filter(email__iexact=email)
+        if self.operador_pk:
+            operadores = operadores.exclude(pk=self.operador_pk)
+        if operadores.exists():
+            raise ValidationError('Ya existe un operador con ese email')
+        return email

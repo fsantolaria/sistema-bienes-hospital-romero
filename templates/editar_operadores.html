@@ -14,6 +14,21 @@
       <h2>EDITAR OPERADOR</h2>
   </div>
 
+  {% if messages %}
+    <div class="contenedor-mensajes">
+      {% for message in messages %}
+        <div class="
+          mensaje
+          {% if message.tags == 'error' %}mensaje-error{% endif %}
+          {% if message.tags == 'warning' %}mensaje-warning{% endif %}
+          {% if message.tags == 'success' %}mensaje-success{% endif %}
+        ">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
   <form method="POST" class="form-alta">
     {% csrf_token %}
     <div class="form-section">
@@ -27,11 +42,6 @@
       <div class="form-group-item">
         <label for="apellido">Apellido:</label>
         <input type="text" id="apellido" name="apellido" value="{{ operador.last_name }}" required>
-      </div>
-
-      <div class="form-group-item">
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email" value="{{ operador.email|default:'' }}">
       </div>
 
       <div class="form-group-item">
@@ -52,11 +62,23 @@
       {% endif %}
 
       {% if operador.numero_doc is not None %}
-      <div class="form-group-item">
-        <label for="numero_doc">Número de Documento:</label>
-        <input type="text" id="numero_doc" name="numero_doc" value="{{ operador.numero_doc }}">
+      <div class="form-group-item {% if form.errors.dni %}campo-error{% endif %}">
+        <label for="dni">Número de Documento:</label>
+        <input type="text" id="dni" name="dni" maxlength="8" pattern="\d{1,8}"
+               inputmode="numeric" title="Hasta 8 números" value="{{ form.dni.value|default:'' }}">
+        {% if form.dni.errors %}
+          <small class="text-error">{{ form.dni.errors.0 }}</small>
+        {% endif %}
       </div>
       {% endif %}
+
+      <div class="form-group-item {% if form.errors.email %}campo-error{% endif %}">
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" value="{{ form.email.value|default:'' }}">
+        {% if form.errors.email %}
+          <small class="text-error">{{ form.email.errors.0 }}</small>
+        {% endif %}
+      </div>
 
       <div class="form-group-item">
         <label for="password">Nueva contraseña (opcional):</label>

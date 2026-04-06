@@ -4,7 +4,7 @@ from datetime import date, timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from core.forms import CargaMasivaForm, BienPatrimonialForm
+from core.forms import CargaMasivaForm, BienPatrimonialForm, OperadorForm
 from core.models import BienPatrimonial
 from django.db.models import Q, F
 from django.views.decorators.http import require_POST
@@ -246,41 +246,28 @@ def alta_operadores(request):
         nombre = " ".join((request.POST.get("nombre") or "").strip().split())
         apellido = " ".join((request.POST.get("apellido") or "").strip().split())
         pais = (request.POST.get("pais") or "").strip()
-        numero_doc = (request.POST.get("numero_doc") or "").strip()
+        dni = (request.POST.get("dni") or "").strip()
         email = (request.POST.get("email") or "").strip()
         estado = (request.POST.get("estado") or "habilitado").strip()
         password = (request.POST.get("password") or "").strip()
 
-        initial = {
-            "nombre": nombre,
-            "apellido": apellido,
-            "pais": pais,
-            "numero_doc": numero_doc,
-            "email": email,
-            "estado": estado,
-        }
+        form = OperadorForm(request.POST)
+        if not form.is_valid():
+            return render(
+                request,
+                "alta_operadores.html",
+                {"usar_operador_model": False, "form": form},
+            )
 
         if not nombre or not apellido:
             messages.error(request, "Debés completar nombre y apellido.")
             return render(
                 request,
                 "alta_operadores.html",
-                {"usar_operador_model": False, "initial": initial},
+                {"usar_operador_model": False, "form": form},
             )
 
-        operador_duplicado = Operador.objects.filter(
-            first_name__iexact=nombre,
-            last_name__iexact=apellido,
-            is_staff=False,
-        ).exists()
-
-        if operador_duplicado:
-            messages.error(request, "⚠️ Usuario ya ingresado. No se puede repetir nombre y apellido.")
-            return render(
-                request,
-                "alta_operadores.html",
-                {"usar_operador_model": False, "initial": initial},
-            )
+        numero_doc = form.cleaned_data["dni"]
 
         base_username = slugify(f"{nombre}.{apellido}") or (email.split("@")[0] if email else "")
         if not base_username:
@@ -288,7 +275,7 @@ def alta_operadores(request):
             return render(
                 request,
                 "alta_operadores.html",
-                {"usar_operador_model": False, "initial": initial},
+                {"usar_operador_model": False, "form": form},
             )
 
         username = base_username
@@ -342,7 +329,7 @@ def alta_operadores(request):
             return render(
                 request,
                 "alta_operadores.html",
-                {"usar_operador_model": False, "initial": initial},
+                {"usar_operador_model": False, "form": form},
             )
 
         Notificacion.objects.create(
@@ -354,7 +341,16 @@ def alta_operadores(request):
         messages.success(request, f"Operador {nombre} {apellido} creado. Usuario: {operador.username}")
         return redirect("operadores")
 
-    return render(request, "alta_operadores.html", {"usar_operador_model": False})
+    form = OperadorForm(initial={
+        'nombre': '',
+        'apellido': '',
+        'pais': 'Argentina',
+        'dni': '',
+        'email': '',
+        'estado': 'habilitado',
+        'password': '',
+    })
+    return render(request, "alta_operadores.html", {"usar_operador_model": False, "form": form})
 
 
 @login_required
@@ -367,50 +363,104 @@ def editar_operador(request, pk):
         email = (request.POST.get("email") or "").strip()
         estado = (request.POST.get("estado") or "habilitado").strip()
         pais = (request.POST.get("pais") or "").strip()
-        numero_doc = (request.POST.get("numero_doc") or "").strip()
+        dni = (request.POST.get("dni") or "").strip()
         password = (request.POST.get("password") or "").strip()
+
+        form = OperadorForm(request.POST, operador_pk=operador.pk)
+        if not form.is_valid():
+            ctx = {
+                "operador": operador,
+                "usar_operador_model": False,
+                "form": form,
+            }
+            return render(request, "editar_operadores.html", ctx)
+
+        numero_doc = form.cleaned_data["dni"]
 
         if not nombre or not apellido:
             messages.error(request, "Debés completar nombre y apellido.")
-            return redirect("editar_operador", pk=pk)
+            ctx = {
+                "operador": operador,
+                "usar_operador_model": False,
+                "form": form,
+            }
+            return render(request, "editar_operadores.html", ctx)
 
-        operador_duplicado = Operador.objects.filter(
-            first_name__iexact=nombre,
-            last_name__iexact=apellido,
-            is_staff=False,
-        ).exclude(pk=operador.pk).exists()
+        hubo_cambio = False
 
-        if operador_duplicado:
-            messages.error(request, "⚠️ Usuario ya ingresado. No se puede repetir nombre y apellido.")
-            return redirect("editar_operador", pk=pk)
+        if operador.first_name != nombre:
+            operador.first_name = nombre
+            hubo_cambio = True
+        else:
+            operador.first_name = nombre
 
-        operador.first_name = nombre
-        operador.last_name = apellido
-        operador.email = email or None
-        operador.is_active = estado == "habilitado"
+        if operador.last_name != apellido:
+            operador.last_name = apellido
+            hubo_cambio = True
+        else:
+            operador.last_name = apellido
+
+        email_normalizado = email or None
+        if operador.email != email_normalizado:
+            operador.email = email_normalizado
+            hubo_cambio = True
+        else:
+            operador.email = email_normalizado
+
+        is_active_nuevo = estado == "habilitado"
+        if operador.is_active != is_active_nuevo:
+            operador.is_active = is_active_nuevo
+            hubo_cambio = True
+        else:
+            operador.is_active = is_active_nuevo
 
         if hasattr(operador, "estado"):
-            operador.estado = estado
+            if operador.estado != estado:
+                operador.estado = estado
+                hubo_cambio = True
+            else:
+                operador.estado = estado
+
         if hasattr(operador, "pais"):
-            operador.pais = pais
+            if operador.pais != pais:
+                operador.pais = pais
+                hubo_cambio = True
+            else:
+                operador.pais = pais
+
         if hasattr(operador, "numero_doc"):
-            operador.numero_doc = numero_doc
+            if operador.numero_doc != numero_doc:
+                operador.numero_doc = numero_doc
+                hubo_cambio = True
+            else:
+                operador.numero_doc = numero_doc
+
         if password:
             operador.set_password(password)
+            hubo_cambio = True
 
-        operador.save()
+        if hubo_cambio:
+            operador.save()
+            try:
+                crear_notificacion(request.user, f"Se editó el operador '{operador.username}'.")
+            except Exception:
+                pass
 
-        try:
-            crear_notificacion(request.user, f"Se editó el operador '{operador.username}'.")
-        except Exception:
-            pass
-
-        messages.success(request, "Operador actualizado correctamente.")
         return redirect("operadores")
+
+    form = OperadorForm(initial={
+        'nombre': operador.first_name,
+        'apellido': operador.last_name,
+        'email': operador.email or '',
+        'dni': operador.numero_doc or '',
+        'pais': getattr(operador, 'pais', '') or '',
+        'estado': 'habilitado' if operador.is_active else 'no-habilitado',
+    }, operador_pk=operador.pk)
 
     ctx = {
         "operador": operador,
         "usar_operador_model": False,
+        "form": form,
     }
     return render(request, "editar_operadores.html", ctx)
 
@@ -441,7 +491,6 @@ def eliminar_operador(request, pk):
     except Exception:
         pass
 
-    messages.success(request, f"Operador {identificador} eliminado correctamente.")
     return redirect("operadores")
 
 

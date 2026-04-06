@@ -3,6 +3,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // BOTONES DE LOGIN
     // ---------------------------
     document.addEventListener('click', function(e) {
+        const dismissibleMessage = e.target.closest('.mensaje-success-distintivo');
+        if (dismissibleMessage) {
+            dismissibleMessage.remove();
+            return;
+        }
+
         if (e.target.id === 'admin-btn' || e.target.closest('#admin-btn')) {
             handleButtonClick('admin', e.target);
         } else if (e.target.id === 'user-btn' || e.target.closest('#user-btn')) {
@@ -41,4 +47,9 @@ document.addEventListener('DOMContentLoaded', function() {
             e.target.style.boxShadow = '2px 3px 4px rgba(0, 0, 0, 0.2)';
         }
     });
+
+    // ---------------------------
+    // NO REMOVER MENSAJES AUTOMÁTICAMENTE
+    // ---------------------------
+    // Los mensajes de éxito se muestran de forma estática y no se eliminan ni animan.
 });

@@ -41,46 +41,53 @@
       <div class="form-group-item">
         <label for="nombre">Nombre del operador:</label>
         <input type="text" id="nombre" name="nombre" required
-               value="{{ initial.nombre|default:'' }}">
+               value="{{ form.nombre.value|default:'' }}">
       </div>
 
       <div class="form-group-item">
         <label for="apellido">Apellido del operador:</label>
         <input type="text" id="apellido" name="apellido" required
-               value="{{ initial.apellido|default:'' }}">
+               value="{{ form.apellido.value|default:'' }}">
       </div>
 
       <div class="form-group-item">
         <label for="pais">Nacionalidad:</label>
         <input type="text" id="pais" name="pais" required
-               value="{{ initial.pais|default:'Argentina' }}">
+               value="{{ form.pais.value|default:'Argentina' }}">
       </div>
 
-      <div class="form-group-item">
-        <label for="numero_doc">Número de Documento:</label>
-        <input type="text" id="numero_doc" name="numero_doc" required
-               value="{{ initial.numero_doc|default:'' }}">
+      <div class="form-group-item {% if form.errors.dni %}campo-error{% endif %}">
+        <label for="dni">Número de Documento:</label>
+        <input type="text" id="dni" name="dni" required maxlength="8" pattern="\d{1,8}"
+               inputmode="numeric" title="Hasta 8 números" value="{{ form.dni.value|default:'' }}">
+        {% if form.dni.errors %}
+          <small class="text-error">{{ form.dni.errors.0 }}</small>
+        {% endif %}
       </div>
 
-      <div class="form-group-item">
+      <div class="form-group-item {% if form.errors.email %}campo-error{% endif %}">
         <label for="email">Email:</label>
         <input type="email" id="email" name="email" required
-               value="{{ initial.email|default:'' }}">
+               value="{{ form.email.value|default:'' }}">
+        {% if form.email.errors %}
+          <small class="text-error">{{ form.email.errors.0 }}</small>
+        {% endif %}
       </div>
 
       <div class="form-group-item">
         <label for="estado">Estado:</label>
         <div class="input-container">
           <select id="estado" name="estado" required>
-            <option value="habilitado" {% if initial.estado == 'habilitado' %}selected{% endif %}>Habilitado</option>
-            <option value="no-habilitado" {% if initial.estado == 'no-habilitado' %}selected{% endif %}>No Habilitado</option>
+            <option value="habilitado" {% if form.estado.value == 'habilitado' %}selected{% endif %}>Habilitado</option>
+            <option value="no-habilitado" {% if form.estado.value == 'no-habilitado' %}selected{% endif %}>No Habilitado</option>
           </select>
         </div>
       </div>
 
       <div class="form-group-item">
         <label for="password">Contraseña:</label>
-        <input type="password" id="password" name="password" placeholder="....." required>
+        <input type="password" id="password" name="password" placeholder="....." required
+               value="{{ form.password.value|default:'' }}">
       </div>
     </div>
 
