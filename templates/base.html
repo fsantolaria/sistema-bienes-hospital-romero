@@ -51,6 +51,25 @@
     <!-- JS para notificaciones -->
     <script src="{% static 'js/notificaciones.js' %}"></script>
 
+    {% if user.is_authenticated and not es_admin %}
+    <script>
+    (function () {
+        if (window.__operatorBackLogoutBound) return;
+        window.__operatorBackLogoutBound = true;
+
+        try {
+            history.pushState({ operatorGuard: true }, "", location.href);
+        } catch (e) {
+            return;
+        }
+
+        window.addEventListener("popstate", function () {
+            window.location.href = "{% url 'logout' %}";
+        });
+    })();
+    </script>
+    {% endif %}
+
     {% block extra_js %}{% endblock %}
 
 </body>

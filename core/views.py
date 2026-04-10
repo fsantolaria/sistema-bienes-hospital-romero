@@ -46,6 +46,8 @@ def permisos_context(user):
             "es_admin": False,
             "puede_eliminar": False,
             "puede_gestionar_operadores": False,
+            "notificaciones": [],
+            "notificaciones_count": 0,
         }
 
     if hasattr(user, "tipo_usuario"):
@@ -53,10 +55,18 @@ def permisos_context(user):
     else:
         es_admin = user.is_superuser
 
+    notificaciones = []
+    notificaciones_count = 0
+    if es_admin:
+        notificaciones = Notificacion.objects.filter(usuario=user).order_by("-fecha")[:5]
+        notificaciones_count = Notificacion.objects.filter(usuario=user, leida=False).count()
+
     return {
         "es_admin": es_admin,
         "puede_eliminar": es_admin,
         "puede_gestionar_operadores": es_admin,
+        "notificaciones": notificaciones,
+        "notificaciones_count": notificaciones_count,
     }
 
 
@@ -123,7 +133,6 @@ def login_view(request):
         else:
             return _rerender_error("Tipo de usuario no válido.")
 
-        messages.success(request, f"¡Bienvenido {user.username}!")
         if next_url and url_has_allowed_host_and_scheme(
             next_url,
             allowed_hosts={request.get_host()},
@@ -162,23 +171,23 @@ def base(request):
 
 @login_required
 def bienes(request):
+    perms = permisos_context(request.user)
     if request.method == "POST":
         form = BienPatrimonialForm(request.POST)
         if form.is_valid():
             bien = form.save()
             nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
-            Notificacion.objects.create(
-                usuario=request.user,
-                mensaje=f"Se registró el bien '{nombre_bien}' (Clave: {bien.clave_unica}) correctamente.",
-                leida=False,
+            crear_notificacion_admins(
+                f"Se registró el bien '{nombre_bien}' (Clave: {bien.clave_unica}) correctamente."
             )
-            messages.success(request, "Bien creado correctamente.")
-            return redirect("lista_bienes")
+            if perms.get("es_admin", False):
+                return redirect("lista_bienes")
+            return redirect("lista_bienes_operador")
         messages.error(request, "Revisá los datos del formulario.")
     else:
         form = BienPatrimonialForm()
 
-    context = permisos_context(request.user)
+    context = perms
     context.update({"form": form})
     return render(request, "bienes.html", context)
 
@@ -200,16 +209,6 @@ def home_admin(request):
     if not perms["es_admin"]:
         messages.error(request, "No tienes permisos para acceder a esta página")
         return redirect("home_operador")
-
-    notificaciones = Notificacion.objects.filter(usuario=request.user).order_by("-fecha")[:5]
-    notificaciones_count = Notificacion.objects.filter(usuario=request.user, leida=False).count()
-
-    perms.update(
-        {
-            "notificaciones": notificaciones,
-            "notificaciones_count": notificaciones_count,
-        }
-    )
     return render(request, "home_admin.html", perms)
 
 
@@ -235,7 +234,20 @@ def operadores(request):
 
 def recuperar_password(request):
     if request.method == "POST":
-        messages.success(request, "✅ Solicitud enviada correctamente.")
+        identificador = (request.POST.get("usuario_o_email") or "").strip()
+        if not identificador:
+            messages.error(request, "Ingresá tu usuario o email para enviar la solicitud.")
+            return render(
+                request,
+                "recuperar_password.html",
+                {"usuario_o_email": identificador},
+                status=400,
+            )
+
+        crear_notificacion_admins(
+            f"El operador '{identificador}' solicitó recuperación de contraseña."
+        )
+        messages.success(request, "Solicitud enviada correctamente.")
         return redirect("recuperar_password")
     return render(request, "recuperar_password.html")
 
@@ -1121,12 +1133,9 @@ def editar_bien(request, pk):
             obj.save()
 
             nombre_bien = getattr(obj, "nombre", None) or getattr(obj, "descripcion", "Sin nombre")
-            Notificacion.objects.create(
-                usuario=request.user,
-                mensaje=f"Se editó el bien '{nombre_bien}' (Clave: {obj.clave_unica}).",
-                leida=False,
+            crear_notificacion_admins(
+                f"Se editó el bien '{nombre_bien}' (Clave: {obj.clave_unica})."
             )
-            messages.success(request, "Bien patrimonial actualizado correctamente.")
 
             perms = permisos_context(request.user)
             if perms.get("es_admin", False):
@@ -1150,13 +1159,10 @@ def eliminar_bien(request, pk):
         return redirect("lista_bienes")
 
     bien = get_object_or_404(BienPatrimonial, pk=pk)
-    Notificacion.objects.create(
-        usuario=request.user,
-        mensaje=f"Se dio de baja el bien '{bien.nombre}' (Clave: {bien.clave_unica}).",
-        leida=False,
+    crear_notificacion_admins(
+        f"Se dio de baja el bien '{bien.nombre}' (Clave: {bien.clave_unica})."
     )
     bien.delete()
-    messages.success(request, "Bien eliminado correctamente.")
     return redirect("lista_bienes")
 
 
@@ -1500,10 +1506,8 @@ def dar_baja_bien(request, pk):
         update_fields.append("descripcion_baja")
 
     bien.save(update_fields=update_fields)
-
-    messages.success(
-        request,
-        f"Bien {bien.clave_unica or bien.pk} dado de baja correctamente. Ahora aparece en la lista general con estado BAJA.",
+    crear_notificacion_admins(
+        f"Se dio de baja el bien '{bien.nombre}' (Clave: {bien.clave_unica})."
     )
     return redirect("lista_bienes")
 
@@ -1536,7 +1540,9 @@ def restablecer_bien(request, pk):
         update_fields.append("descripcion_baja")
 
     bien.save(update_fields=update_fields)
-    messages.success(request, f"Bien {bien.clave_unica or bien.pk} restablecido a ACTIVO.")
+    crear_notificacion_admins(
+        f"Se restableció el bien '{bien.nombre}' (Clave: {bien.clave_unica}) a ACTIVO."
+    )
     return redirect("lista_bienes")
 
 
@@ -1551,8 +1557,11 @@ def eliminar_bien_definitivo(request, pk):
 
     bien = get_object_or_404(BienPatrimonial, pk=pk)
     identificador = bien.clave_unica or bien.pk
+    nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
     bien.delete()
-    messages.success(request, f"Bien {identificador} eliminado definitivamente.")
+    crear_notificacion_admins(
+        f"Se eliminó definitivamente el bien '{nombre_bien}' (Clave: {identificador})."
+    )
     return redirect("lista_baja_bienes")
 
 
@@ -1595,3 +1604,10 @@ def crear_notificacion(usuario, mensaje):
     if notificaciones.count() > MAX_NOTIFICACIONES:
         for n in notificaciones[MAX_NOTIFICACIONES:]:
             n.delete()
+
+
+def crear_notificacion_admins(mensaje):
+    UserModel = get_user_model()
+    admins = UserModel.objects.filter(Q(is_superuser=True) | Q(tipo_usuario="admin")).distinct()
+    for admin in admins:
+        crear_notificacion(admin, mensaje)
