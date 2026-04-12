@@ -13,6 +13,14 @@ class Usuario(AbstractUser):
         default='empleado'
     )
 
+    numero_doc = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        unique=True,
+        verbose_name='Número de Documento'
+    )
+
     groups = models.ManyToManyField(
         'auth.Group',
         verbose_name='grupos',

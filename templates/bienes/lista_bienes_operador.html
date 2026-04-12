@@ -6,7 +6,12 @@
 
 {% block content %}
 <div class="container-fluid py-3">
-    <h3 class="m-0">Lista de Bienes Patrimoniales - Operador</h3>
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <h3 class="m-0">Lista de Bienes Patrimoniales - Operador</h3>
+        <a href="{% url 'bienes' %}" class="btn btn-success">
+            <i class="fas fa-plus me-1"></i> Alta de bien patrimonial
+        </a>
+    </div>
     <!-- BÚSQUEDA + BOTONES -->
     <form id="filtros-form" method="get" class="row g-2 align-items-end mb-3">
         <div class="col-md-4">

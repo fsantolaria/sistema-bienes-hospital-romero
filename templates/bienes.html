@@ -15,21 +15,25 @@
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h2 class="mb-0">Alta de Bien Patrimonial</h2>
     <div class="d-flex gap-2">
-      <a class="btn btn-outline-primary" href="{% url 'lista_bienes' %}">
+      <a class="btn btn-outline-primary" href="{% if es_admin %}{% url 'lista_bienes' %}{% else %}{% url 'lista_bienes_operador' %}{% endif %}">
         <i class="fa-solid fa-list me-1"></i> Ver lista de bienes
       </a>
+      {% if es_admin %}
       <a class="btn btn-dark" href="{% url 'lista_baja_bienes' %}">
         <i class="fa-solid fa-trash-can me-1"></i> Ver bienes de baja
       </a>
+      {% endif %}
     </div>
   </div>
 
   <!-- Barra de acciones -->
+  {% if es_admin %}
   <div class="d-flex align-items-center gap-2 mb-3">
     <a class="btn btn-warning" href="{% url 'carga_masiva' %}">
       <i class="fa-solid fa-file-import me-1"></i> Carga masiva
     </a>
   </div>
+  {% endif %}
 
   <!-- FORMULARIO DE ALTA -->
   <div class="card shadow-sm" id="form-alta">
@@ -72,7 +76,7 @@
               <div class="card card-body border border-primary bg-light">
                 <div class="row g-3">
                   <div class="col-md-6">
-                    <label class="form-label" for="{{ form.numero_expediente.id_for_label }}">N° de Expediente (obligatorio) </label>
+                    <label class="form-label" for="{{ form.numero_expediente.id_for_label }}">N° de Expediente </label>
                     {{ form.numero_expediente }}
                     {% for e in form.numero_expediente.errors %}
                       <div class="invalid-feedback d-block">{{ e }}</div>
@@ -80,7 +84,7 @@
                   </div>
 
                   <div class="col-md-6">
-                    <label class="form-label" for="{{ form.numero_compra.id_for_label }}">N° de Compra (opcional) </label>
+                    <label class="form-label" for="{{ form.numero_compra.id_for_label }}">N° de Compra    </label>
                     {{ form.numero_compra }}
                     {% for e in form.numero_compra.errors %}
                       <div class="invalid-feedback d-block">{{ e }}</div>
@@ -166,7 +170,7 @@
           <button type="submit" class="btn btn-success">
             <i class="fas fa-save me-1"></i> Guardar bien
           </button>
-          <a href="{% url 'lista_bienes' %}" class="btn btn-secondary">
+          <a href="{% if es_admin %}{% url 'lista_bienes' %}{% else %}{% url 'lista_bienes_operador' %}{% endif %}" class="btn btn-secondary">
             Ir a lista
           </a>
         </div>

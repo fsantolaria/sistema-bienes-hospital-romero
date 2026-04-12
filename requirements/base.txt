@@ -7,3 +7,4 @@ crispy_bootstrap5
 Pillow
 pandas
 openpyxl
+reportlab==4.4.4
