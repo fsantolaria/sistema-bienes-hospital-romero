@@ -51,14 +51,14 @@
     <!-- JS para notificaciones -->
     <script src="{% static 'js/notificaciones.js' %}"></script>
 
-    {% if user.is_authenticated and not es_admin %}
+    {% if user.is_authenticated %}
     <script>
     (function () {
-        if (window.__operatorBackLogoutBound) return;
-        window.__operatorBackLogoutBound = true;
+        if (window.__backLogoutBound) return;
+        window.__backLogoutBound = true;
 
         try {
-            history.pushState({ operatorGuard: true }, "", location.href);
+            history.pushState({ backLogoutGuard: true }, "", location.href);
         } catch (e) {
             return;
         }
