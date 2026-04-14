@@ -209,6 +209,18 @@ def home_admin(request):
     if not perms["es_admin"]:
         messages.error(request, "No tienes permisos para acceder a esta página")
         return redirect("home_operador")
+
+
+    notificaciones = Notificacion.objects.filter(usuario=request.user).order_by("-fecha")[:50]
+    notificaciones_count = Notificacion.objects.filter(usuario=request.user, leida=False).count()
+
+    perms.update(
+        {
+            "notificaciones": notificaciones,
+            "notificaciones_count": notificaciones_count,
+        }
+    )
+>>>>>>> 313bbc9 (10 notificaciones,fila y mensaje de exito)
     return render(request, "home_admin.html", perms)
 
 
