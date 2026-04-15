@@ -4,41 +4,28 @@
 {% block title %}Alta de Operadores - Sistema de Gestión de Bienes Patrimoniales{% endblock %}
 
 {% block extra_css %}
+
 <link rel="stylesheet" href="{% static 'css/alta_operadores.css' %}">
 <link rel="stylesheet" href="{% static 'libs/fontawesome/css/all.min.css' %}">
 {% endblock %}
 
-
 {% block content %}
+
 <div id="alta-operador-view" class="view active">
   <div class="alta-header">
     <h2>ALTA DEL OPERADOR</h2>
   </div>
 
-  {% if messages %}
-    <div class="contenedor-mensajes">
-      {% for message in messages %}
-        <div class="
-          mensaje
-          {% if message.tags == 'error' %}mensaje-error{% endif %}
-          {% if message.tags == 'warning' %}mensaje-warning{% endif %}
-          {% if message.tags == 'success' %}mensaje-success{% endif %}
-        ">
-          {{ message }}
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
-
-
-    {% for message in messages %}
-      <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
-    {% endfor %}
-  {% endif %}
-
+{% if messages %} <div class="contenedor-mensajes">
+{% for message in messages %} <div class="
+       mensaje
+       {% if message.tags == 'error' %}mensaje-error{% endif %}
+       {% if message.tags == 'warning' %}mensaje-warning{% endif %}
+       {% if message.tags == 'success' %}mensaje-success{% endif %}
+     ">
+{{ message }} </div>
+{% endfor %} </div>
+{% endif %}
 
   <form id="form-alta-operador"
         class="form-alta"
@@ -46,73 +33,76 @@
         action="{% url 'alta_operadores' %}">
     {% csrf_token %}
 
-    <div class="form-section">
-      <h3 class="section-title">Datos del operador</h3>
+```
+<div class="form-section">
+  <h3 class="section-title">Datos del operador</h3>
 
-      <div class="form-group-item">
-        <label for="nombre">Nombre del operador:</label>
-        <input type="text" id="nombre" name="nombre" required
-               value="{{ form.nombre.value|default:'' }}">
-      </div>
+  <div class="form-group-item">
+    <label for="nombre">Nombre del operador:</label>
+    <input type="text" id="nombre" name="nombre" required
+           value="{{ form.nombre.value|default:'' }}">
+  </div>
 
-      <div class="form-group-item">
-        <label for="apellido">Apellido del operador:</label>
-        <input type="text" id="apellido" name="apellido" required
-               value="{{ form.apellido.value|default:'' }}">
-      </div>
+  <div class="form-group-item">
+    <label for="apellido">Apellido del operador:</label>
+    <input type="text" id="apellido" name="apellido" required
+           value="{{ form.apellido.value|default:'' }}">
+  </div>
 
-      <div class="form-group-item">
-        <label for="pais">Nacionalidad:</label>
-        <input type="text" id="pais" name="pais" required
-               value="{{ form.pais.value|default:'Argentina' }}">
-      </div>
+  <div class="form-group-item">
+    <label for="pais">Nacionalidad:</label>
+    <input type="text" id="pais" name="pais" required
+           value="{{ form.pais.value|default:'Argentina' }}">
+  </div>
 
-      <div class="form-group-item {% if form.errors.dni %}campo-error{% endif %}">
-        <label for="dni">Número de Documento:</label>
-        <input type="text" id="dni" name="dni" required maxlength="8" pattern="\d{1,8}"
-               inputmode="numeric" title="Hasta 8 números" value="{{ form.dni.value|default:'' }}">
-        {% if form.dni.errors %}
-          <small class="text-error">{{ form.dni.errors.0 }}</small>
-        {% endif %}
-      </div>
+  <div class="form-group-item {% if form.errors.dni %}campo-error{% endif %}">
+    <label for="dni">Número de Documento:</label>
+    <input type="text" id="dni" name="dni" required maxlength="8" pattern="\d{1,8}"
+           inputmode="numeric" title="Hasta 8 números" value="{{ form.dni.value|default:'' }}">
+    {% if form.dni.errors %}
+      <small class="text-error">{{ form.dni.errors.0 }}</small>
+    {% endif %}
+  </div>
 
-      <div class="form-group-item {% if form.errors.email %}campo-error{% endif %}">
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required
-               value="{{ form.email.value|default:'' }}">
-        {% if form.email.errors %}
-          <small class="text-error">{{ form.email.errors.0 }}</small>
-        {% endif %}
-      </div>
+  <div class="form-group-item {% if form.errors.email %}campo-error{% endif %}">
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" required
+           value="{{ form.email.value|default:'' }}">
+    {% if form.email.errors %}
+      <small class="text-error">{{ form.email.errors.0 }}</small>
+    {% endif %}
+  </div>
 
-      <div class="form-group-item">
-        <label for="estado">Estado:</label>
-        <div class="input-container">
-          <select id="estado" name="estado" required>
-            <option value="habilitado" {% if form.estado.value == 'habilitado' %}selected{% endif %}>Habilitado</option>
-            <option value="no-habilitado" {% if form.estado.value == 'no-habilitado' %}selected{% endif %}>No Habilitado</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-group-item">
-        <label for="password">Contraseña:</label>
-        <input type="password" id="password" name="password" placeholder="....." required
-               value="{{ form.password.value|default:'' }}">
-      </div>
+  <div class="form-group-item">
+    <label for="estado">Estado:</label>
+    <div class="input-container">
+      <select id="estado" name="estado" required>
+        <option value="habilitado" {% if form.estado.value == 'habilitado' %}selected{% endif %}>Habilitado</option>
+        <option value="no-habilitado" {% if form.estado.value == 'no-habilitado' %}selected{% endif %}>No Habilitado</option>
+      </select>
     </div>
+  </div>
 
-    <div class="form-buttons">
-      <button type="submit" class="btn btn-success btn-lg me-2">
-        <i class="fas fa-save me-1"></i> Guardar
-      </button>
-      <a href="{% url 'home_admin' %}" class="btn btn-danger btn-lg me-2">
-        <i class="fas fa-times me-1"></i> Cancelar
-      </a>
-      <a href="{% url 'operadores' %}" class="btn btn-primary btn-lg">
-        <i class="fas fa-users me-1"></i> Ver operadores
-      </a>
-    </div>
+  <div class="form-group-item">
+    <label for="password">Contraseña:</label>
+    <input type="password" id="password" name="password" placeholder="....." required
+           value="{{ form.password.value|default:'' }}">
+  </div>
+</div>
+
+<div class="form-buttons">
+  <button type="submit" class="btn btn-success btn-lg me-2">
+    <i class="fas fa-save me-1"></i> Guardar
+  </button>
+  <a href="{% url 'home_admin' %}" class="btn btn-danger btn-lg me-2">
+    <i class="fas fa-times me-1"></i> Cancelar
+  </a>
+  <a href="{% url 'operadores' %}" class="btn btn-primary btn-lg">
+    <i class="fas fa-users me-1"></i> Ver operadores
+  </a>
+</div>
+```
+
   </form>
 </div>
 {% endblock %}
