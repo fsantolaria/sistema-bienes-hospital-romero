@@ -1,8 +1,19 @@
 {% if messages %}
-<div class="messages-container">
+<div id="popup-container">
     {% for message in messages %}
-    <div class="alert alert-{{ message.tags }}">
-        {{ message }}
+    <div class="popup {{ message.tags }}">
+        <span class="icon">
+            {% if message.tags == 'success' %}
+                ✔
+            {% elif message.tags == 'error' %}
+                ✖
+            {% elif message.tags == 'warning' %}
+                ⚠
+            {% else %}
+                ℹ
+            {% endif %}
+        </span>
+        <span class="text">{{ message }}</span>
     </div>
     {% endfor %}
 </div>

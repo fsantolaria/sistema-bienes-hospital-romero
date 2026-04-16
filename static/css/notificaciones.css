@@ -307,3 +307,73 @@
     outline: 2px solid rgba(59,130,246,0.08);
     border-radius: 8px;
 }
+/* =========================
+   POPUPS (DJANGO MESSAGES)
+========================= */
+
+#popup-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.popup {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 280px;
+    padding: 14px 18px;
+    margin-top: 10px;
+    border-radius: 12px;
+    background: white;
+    border-left: 6px solid;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+    animation: slideIn 0.4s ease, fadeOut 0.4s ease 3.5s forwards;
+    font-size: 14px;
+}
+
+.popup .icon {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* COLORES */
+.popup.success {
+    border-color: #22c55e;
+    color: #22c55e;
+}
+
+.popup.error {
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.popup.warning {
+    border-color: #f59e0b;
+    color: #f59e0b;
+}
+
+.popup.info {
+    border-color: #3b82f6;
+    color: #3b82f6;
+}
+
+/* ANIMACIONES */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}

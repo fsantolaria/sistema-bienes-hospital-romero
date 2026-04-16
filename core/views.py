@@ -180,10 +180,14 @@ def bienes(request):
             crear_notificacion_admins(
                 f"Se registró el bien '{nombre_bien}' (Clave: {bien.clave_unica}) correctamente."
             )
+            # Mensaje de éxito
+            messages.success(request, f"✅ Bien '{nombre_bien}' registrado correctamente.")
+            
             if perms.get("es_admin", False):
                 return redirect("lista_bienes")
             return redirect("lista_bienes_operador")
-        messages.error(request, "Revisá los datos del formulario.")
+        # Mensaje de error
+        messages.error(request, "❌ No se pudo guardar el bien. Revisá los datos del formulario.")
     else:
         form = BienPatrimonialForm()
 
@@ -194,10 +198,8 @@ def bienes(request):
 
 def logout_view(request):
     logout(request)
-    list(get_messages(request))
     messages.success(request, "Sesión cerrada exitosamente")
     return redirect("inicio")
-
 
 # ============================
 # ÁREA PRIVADA
@@ -350,7 +352,7 @@ def alta_operadores(request):
             leida=False,
         )
 
-        messages.success(request, f"Operador {nombre} {apellido} creado. Usuario: {operador.username}")
+        messages.success(request, f"✅ Operador {nombre} {apellido} creado. Usuario: {operador.username}")
         return redirect("operadores")
 
     form = OperadorForm(initial={
@@ -453,10 +455,14 @@ def editar_operador(request, pk):
 
         if hubo_cambio:
             operador.save()
+            # Mensaje de éxito
+            messages.success(request, f"✅ Operador '{operador.username}' actualizado correctamente.")
             try:
                 crear_notificacion(request.user, f"Se editó el operador '{operador.username}'.")
             except Exception:
                 pass
+        else:
+            messages.info(request, "No se realizaron cambios en el operador.")
 
         return redirect("operadores")
 
@@ -482,17 +488,21 @@ def editar_operador(request, pk):
 def eliminar_operador(request, pk):
     perms = permisos_context(request.user)
     if not perms.get("puede_gestionar_operadores", False):
-        messages.error(request, "No tienes permisos para eliminar operadores.")
+        messages.error(request, "❌ No tienes permisos para eliminar operadores.")
         return redirect("operadores")
 
     operador = get_object_or_404(Operador, pk=pk, is_staff=False)
 
     if operador == request.user:
-        messages.error(request, "No podés eliminar tu propio usuario.")
+        messages.error(request, "❌ No podés eliminar tu propio usuario.")
         return redirect("operadores")
 
     identificador = operador.username
+    nombre_completo = f"{operador.first_name} {operador.last_name}".strip()
     operador.delete()
+
+    # Mensaje de éxito
+    messages.success(request, f"✅ Operador '{identificador}' ({nombre_completo}) eliminado correctamente.")
 
     try:
         Notificacion.objects.create(
@@ -539,7 +549,7 @@ def dar_baja_operador(request, pk):
     except Exception:
         pass
 
-    messages.success(request, f"Operador {operador.username} dado de baja correctamente.")
+    messages.success(request, f"✅ Operador {operador.username} dado de baja correctamente.")
     return redirect("operadores")
 
 
@@ -1136,13 +1146,15 @@ def editar_bien(request, pk):
             crear_notificacion_admins(
                 f"Se editó el bien '{nombre_bien}' (Clave: {obj.clave_unica})."
             )
+            # Mensaje de éxito
+            messages.success(request, f"✅ Bien '{nombre_bien}' actualizado correctamente.")
 
             perms = permisos_context(request.user)
             if perms.get("es_admin", False):
                 return redirect("lista_bienes")
             return redirect("lista_bienes_operador")
-
-        messages.error(request, "Revisá los datos del formulario.")
+        # Mensaje de error
+        messages.error(request, "❌ No se pudo guardar el bien. Revisá los datos del formulario.")
     else:
         form = BienPatrimonialForm(instance=bien)
 
@@ -1159,10 +1171,13 @@ def eliminar_bien(request, pk):
         return redirect("lista_bienes")
 
     bien = get_object_or_404(BienPatrimonial, pk=pk)
+    nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
     crear_notificacion_admins(
-        f"Se dio de baja el bien '{bien.nombre}' (Clave: {bien.clave_unica})."
+        f"Se dio de baja el bien '{nombre_bien}' (Clave: {bien.clave_unica})."
     )
     bien.delete()
+    # Mensaje de éxito
+    messages.success(request, f"✅ Bien '{nombre_bien}' eliminado correctamente.")
     return redirect("lista_bienes")
 
 
@@ -1359,7 +1374,7 @@ def carga_masiva_bienes(request):
         if creados or actualizados:
             messages.success(
                 request,
-                f"Creados: {creados}, Actualizados: {actualizados}. Errores: {len(errores)}",
+                f"✅ Creados: {creados}, Actualizados: {actualizados}. Errores: {len(errores)}",
             )
         else:
             messages.warning(request, "No se crearon ni actualizaron bienes.")
@@ -1398,7 +1413,7 @@ def eliminar_bienes_seleccionados(request):
         return redirect("lista_bienes")
 
     eliminados = BienPatrimonial.objects.filter(pk__in=ids).delete()[0]
-    messages.success(request, f"Eliminados: {eliminados}")
+    messages.success(request, f"✅ Eliminados: {eliminados} bienes correctamente.")
     return redirect("lista_bienes")
 
 
@@ -1506,9 +1521,11 @@ def dar_baja_bien(request, pk):
         update_fields.append("descripcion_baja")
 
     bien.save(update_fields=update_fields)
+    nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
     crear_notificacion_admins(
-        f"Se dio de baja el bien '{bien.nombre}' (Clave: {bien.clave_unica})."
+        f"Se dio de baja el bien '{nombre_bien}' (Clave: {bien.clave_unica})."
     )
+    messages.success(request, f"✅ Bien '{nombre_bien}' dado de baja correctamente.")
     return redirect("lista_bienes")
 
 
@@ -1540,9 +1557,11 @@ def restablecer_bien(request, pk):
         update_fields.append("descripcion_baja")
 
     bien.save(update_fields=update_fields)
+    nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
     crear_notificacion_admins(
-        f"Se restableció el bien '{bien.nombre}' (Clave: {bien.clave_unica}) a ACTIVO."
+        f"Se restableció el bien '{nombre_bien}' (Clave: {bien.clave_unica}) a ACTIVO."
     )
+    messages.success(request, f"✅ Bien '{nombre_bien}' restablecido a ACTIVO.")
     return redirect("lista_bienes")
 
 
@@ -1562,6 +1581,7 @@ def eliminar_bien_definitivo(request, pk):
     crear_notificacion_admins(
         f"Se eliminó definitivamente el bien '{nombre_bien}' (Clave: {identificador})."
     )
+    messages.success(request, f"✅ Bien '{nombre_bien}' eliminado definitivamente.")
     return redirect("lista_baja_bienes")
 
 

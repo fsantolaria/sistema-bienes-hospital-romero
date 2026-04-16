@@ -387,11 +387,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function mostrarMensaje(mensaje, tipo) {
-        // Puedes usar la misma función de mensajes que en operadores.js
-        console.log(mensaje, tipo);
-        // Temporal - puedes reemplazar con tu sistema de mensajes
-        alert(mensaje);
+    let container = document.getElementById("popup-container");
+
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "popup-container";
+        document.body.appendChild(container);
     }
+
+    const popup = document.createElement("div");
+    popup.className = `popup ${tipo}`;
+
+    let icono = "ℹ";
+    if (tipo === "success") icono = "✔";
+    if (tipo === "error") icono = "✖";
+    if (tipo === "warning") icono = "⚠";
+
+    popup.innerHTML = `
+        <span class="icon">${icono}</span>
+        <span>${mensaje}</span>
+    `;
+
+    container.appendChild(popup);
+
+    setTimeout(() => {
+        popup.remove();
+    }, 4000);
+}
 
     // Inicializar
     inicializarNotificaciones();
