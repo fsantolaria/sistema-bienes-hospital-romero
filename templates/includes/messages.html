@@ -1,20 +1,9 @@
 {% if messages %}
-<div id="popup-container">
+<script>
+document.addEventListener("DOMContentLoaded", function () {
     {% for message in messages %}
-    <div class="popup {{ message.tags }}">
-        <span class="icon">
-            {% if message.tags == 'success' %}
-                ✔
-            {% elif message.tags == 'error' %}
-                ✖
-            {% elif message.tags == 'warning' %}
-                ⚠
-            {% else %}
-                ℹ
-            {% endif %}
-        </span>
-        <span class="text">{{ message }}</span>
-    </div>
+        mostrarMensaje("{{ message|escapejs }}", "{{ message.tags }}");
     {% endfor %}
-</div>
+});
+</script>
 {% endif %}

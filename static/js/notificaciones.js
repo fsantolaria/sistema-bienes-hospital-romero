@@ -395,6 +395,11 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.appendChild(container);
     }
 
+    // 🔥 Evita duplicados con mismo mensaje
+    if ([...container.children].some(el => el.textContent.includes(mensaje))) {
+        return;
+    }
+
     const popup = document.createElement("div");
     popup.className = `popup ${tipo}`;
 
