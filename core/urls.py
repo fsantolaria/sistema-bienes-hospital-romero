@@ -47,8 +47,7 @@ urlpatterns = [
     # Acciones sobre bajas
     path('bienes/<int:pk>/dar-baja/', views.dar_baja_bien, name='dar_baja_bien'),
     path('bienes/<int:pk>/restablecer/', views.restablecer_bien, name='restablecer_bien'),
-    path('bienes/<int:pk>/eliminar-definitivo/', views.eliminar_bien_definitivo, name='eliminar_bien_definitivo'),
-
+    
     # Carga masiva
     path('carga-masiva/', views.carga_masiva_bienes, name='carga_masiva'),
 

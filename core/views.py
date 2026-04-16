@@ -1546,23 +1546,6 @@ def restablecer_bien(request, pk):
     return redirect("lista_bienes")
 
 
-@login_required
-@require_POST
-@transaction.atomic
-def eliminar_bien_definitivo(request, pk):
-    perms = permisos_context(request.user)
-    if not perms["es_admin"]:
-        messages.error(request, "No tienes permisos para eliminar bienes definitivamente.")
-        return redirect("lista_baja_bienes")
-
-    bien = get_object_or_404(BienPatrimonial, pk=pk)
-    identificador = bien.clave_unica or bien.pk
-    nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
-    bien.delete()
-    crear_notificacion_admins(
-        f"Se eliminó definitivamente el bien '{nombre_bien}' (Clave: {identificador})."
-    )
-    return redirect("lista_baja_bienes")
 
 
 # ============================
