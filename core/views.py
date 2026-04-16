@@ -456,7 +456,7 @@ def editar_operador(request, pk):
         if hubo_cambio:
             operador.save()
             # Mensaje de éxito
-            messages.success(request, f"✅ Operador '{operador.username}' actualizado correctamente.")
+            messages.success(request, f"✅ Operador '{operador.username}' actualizado correctamente.", extra_tags='editar')
             try:
                 crear_notificacion(request.user, f"Se editó el operador '{operador.username}'.")
             except Exception:
@@ -502,7 +502,7 @@ def eliminar_operador(request, pk):
     operador.delete()
 
     # Mensaje de éxito
-    messages.success(request, f"✅ Operador '{identificador}' ({nombre_completo}) eliminado correctamente.")
+    messages.success(request, f"✅ Operador '{identificador}' ({nombre_completo}) eliminado correctamente.", extra_tags='eliminar')
 
     try:
         Notificacion.objects.create(
@@ -1147,7 +1147,7 @@ def editar_bien(request, pk):
                 f"Se editó el bien '{nombre_bien}' (Clave: {obj.clave_unica})."
             )
             # Mensaje de éxito
-            messages.success(request, f"✅ Bien '{nombre_bien}' actualizado correctamente.")
+            messages.success(request, f"✅ Bien '{nombre_bien}' actualizado correctamente.", extra_tags='editar')
 
             perms = permisos_context(request.user)
             if perms.get("es_admin", False):
@@ -1177,7 +1177,7 @@ def eliminar_bien(request, pk):
     )
     bien.delete()
     # Mensaje de éxito
-    messages.success(request, f"✅ Bien '{nombre_bien}' eliminado correctamente.")
+    messages.success(request, f"✅ Bien '{nombre_bien}' eliminado correctamente.", extra_tags='eliminar')
     return redirect("lista_bienes")
 
 
