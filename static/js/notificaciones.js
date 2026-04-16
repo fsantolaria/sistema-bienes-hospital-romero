@@ -423,6 +423,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     window.mostrarMensaje = mostrarMensaje;
+    window.__processPopupMessages = function() {
+        if (!window.__pendingPopupMessages || !window.__pendingPopupMessages.length) return;
+        window.__pendingPopupMessages.forEach(function(item) {
+            if (item && item.text) {
+                mostrarMensaje(item.text, item.type || 'info');
+            }
+        });
+        window.__pendingPopupMessages.length = 0;
+    };
+    window.__processPopupMessages();
 
     // Inicializar
     inicializarNotificaciones();
