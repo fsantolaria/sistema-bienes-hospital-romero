@@ -311,31 +311,72 @@
    POPUPS (DJANGO MESSAGES)
 ========================= */
 
+/* CONTENEDOR centrado */
 #popup-container {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    
     z-index: 9999;
+    align-items: center;
 }
 
+/* POPUP base */
 .popup {
     display: flex;
     align-items: center;
     gap: 10px;
+
+    padding: 14px 20px;
+    border-radius: 10px;
     min-width: 280px;
-    padding: 14px 18px;
-    margin-top: 10px;
-    border-radius: 12px;
-    background: white;
-    border-left: 6px solid;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
-    animation: slideIn 0.4s ease, fadeOut 0.4s ease 3.5s forwards;
-    font-size: 14px;
+    max-width: 400px;
+
+    font-weight: 500;
+    color: white;
+
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+
+    animation: aparecer 0.3s ease;
 }
 
+/* ICONO */
 .popup .icon {
     font-size: 18px;
-    font-weight: bold;
+}
+
+/* COLORES por tipo */
+.popup.success {
+    background-color: #16a34a; /* verde */
+}
+
+.popup.error {
+    background-color: #dc2626; /* rojo */
+}
+
+.popup.info {
+    background-color: #2563eb; /* azul */
+}
+
+.popup.warning {
+    background-color: #f59e0b; /* amarillo */
+}
+
+/* Animación */
+@keyframes aparecer {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 /* COLORES */

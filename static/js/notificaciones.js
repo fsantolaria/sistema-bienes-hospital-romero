@@ -395,7 +395,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.appendChild(container);
     }
 
-    // 🔥 Evita duplicados con mismo mensaje
+    // Evitar duplicados
     if ([...container.children].some(el => el.textContent.includes(mensaje))) {
         return;
     }
@@ -416,8 +416,10 @@ document.addEventListener('DOMContentLoaded', function() {
     container.appendChild(popup);
 
     setTimeout(() => {
-        popup.remove();
-    }, 4000);
+        popup.style.opacity = "0";
+        popup.style.transform = "translateY(-10px)";
+        setTimeout(() => popup.remove(), 300);
+    }, 3500);
 }
 
     // Inicializar
