@@ -403,10 +403,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const popup = document.createElement("div");
         popup.className = `popup ${tipo}`;
 
-        let icono = "ℹ";
-        if (tipo === "success") icono = "✔";
-        if (tipo === "error") icono = "✖";
-        if (tipo === "warning") icono = "⚠";
+        const tipoTokens = (tipo || '').split(/\s+/).filter(Boolean);
+        const tipoBase = tipoTokens.find(t => ['success', 'error', 'warning', 'info'].includes(t)) || 'info';
+        let icono = 'ℹ';
+
+        if (tipoTokens.includes('eliminar')) {
+            icono = '⚠';
+        } else if (tipoTokens.includes('editar')) {
+            icono = '✎';
+        } else if (tipoBase === 'success') {
+            icono = '✔';
+        } else if (tipoBase === 'error') {
+            icono = '✖';
+        } else if (tipoBase === 'warning') {
+            icono = '⚠';
+        }
 
         popup.innerHTML = `
             <span class="icon">${icono}</span>

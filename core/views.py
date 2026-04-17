@@ -1581,7 +1581,7 @@ def eliminar_bien_definitivo(request, pk):
     crear_notificacion_admins(
         f"Se eliminó definitivamente el bien '{nombre_bien}' (Clave: {identificador})."
     )
-    messages.success(request, f"✅ Bien '{nombre_bien}' eliminado definitivamente.")
+    messages.success(request, f"⚠️ Bien '{nombre_bien}' eliminado definitivamente.", extra_tags='eliminar')
     return redirect("lista_baja_bienes")
 
 
