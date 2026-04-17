@@ -376,8 +376,8 @@
 }
 
 .popup.eliminar {
-    background-color: #dc2626;
-    border-color: rgba(220, 38, 38, 0.28);
+    background-color: #b91c1c;
+    border-color: rgba(185, 28, 28, 0.28);
 }
 
 @keyframes popupIn {
