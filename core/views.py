@@ -74,12 +74,6 @@ def permisos_context(user):
 # AUTENTICACIÓN / INICIO
 # ============================
 
-def inicio(request):
-    if request.user.is_authenticated:
-        return redirect(_role_route_name(request.user))
-    return render(request, "inicio.html")
-
-
 def login_view(request):
     if request.user.is_authenticated:
         return redirect(_role_route_name(request.user))
@@ -199,7 +193,7 @@ def bienes(request):
 def logout_view(request):
     logout(request)
     messages.success(request, "Sesión cerrada exitosamente")
-    return redirect("inicio")
+    return redirect("login")
 
 # ============================
 # ÁREA PRIVADA

@@ -5,10 +5,9 @@ from core.views import marcar_notificaciones_leidas
 
 urlpatterns = [
     # ===== Raíz del sitio =====
-    path('', RedirectView.as_view(pattern_name='inicio', permanent=False)),
+    path('', RedirectView.as_view(pattern_name='login', permanent=False)),
 
     # ===== Inicio / Auth =====
-    path('inicio/', views.inicio, name='inicio'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('registro/', views.registro, name='registro'),

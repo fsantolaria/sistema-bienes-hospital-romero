@@ -4,7 +4,7 @@
     <div class="header-container">
         <!-- Logo e Identificación -->
         <div class="logo-section">
-            <a href="{% url 'inicio' %}" class="logo-link">
+            <a href="{% url 'login' %}" class="logo-link">
                 <img src="{% static 'img/logo.png' %}" alt="Logo Hospital" class="logo-img">
                 <span class="system-title">Sistema de Gestión de Bienes Patrimoniales</span>
             </a>
@@ -12,7 +12,7 @@
 
         <!-- Íconos de acciones -->
         <div class="icon-section">
-                <a href="{% url 'inicio' %}" class="header-icon" title="Volver al inicio">
+                <a href="{% url 'login' %}" class="header-icon" title="Volver al inicio">
                     <span class="material-symbols-outlined">home</span>
                 </a>
                 {% if es_admin %}
