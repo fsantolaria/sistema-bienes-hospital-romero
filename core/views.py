@@ -31,12 +31,15 @@ from xml.sax.saxutils import escape
 from core.models import Usuario
  
 def _role_route_name(user) -> str:
-    """Devuelve el nombre de la ruta según el rol del usuario."""
-    if user.is_superuser:
-        return "home_admin"
-    if hasattr(user, "tipo_usuario"):
-        return "home_admin" if user.tipo_usuario == "admin" else "home_operador"
-    return "home_operador"
+        if user.is_superuser:
+            return "home_admin"
+        if hasattr(user, "tipo_usuario"):
+            if user.tipo_usuario == "admin":
+                return "home_admin"
+            if user.tipo_usuario == "supervisor":
+                return "home_supervisor"
+            return "home_operador"
+        return "home_operador"
  
  
 def permisos_context(user):
@@ -132,8 +135,14 @@ def login_view(request):
                 login(request, user)
             else:
                 return _rerender_error("El tipo de usuario seleccionado no coincide con el usuario ingresado.")
+        if user.is_superuser:
+            return _rerender_error("Un admin no puede ingresar como supervisor.")
+        if hasattr(user, "tipo_usuario") and user.tipo_usuario == "supervisor":
+            login(request, user)
+        
         else:
             return _rerender_error("Tipo de usuario no válido.")
+            
  
         if next_url and url_has_allowed_host_and_scheme(
             next_url,
