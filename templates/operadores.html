@@ -16,22 +16,6 @@
   <h2>OPERADORES</h2>
 </div>
 
-{% if messages %}
-  <div class="contenedor-mensajes">
-    {% for message in messages %}
-      <div class="
-        mensaje
-        {% if message.tags == 'error' %}mensaje-error{% endif %}
-        {% if message.tags == 'warning' %}mensaje-warning{% endif %}
-        {% if message.tags == 'success' %}mensaje-success mensaje-success-distintivo{% endif %}
-      ">
-        {% if message.tags == 'success' %}<i class="fas fa-check-circle"></i> {% endif %}
-        {{ message }}
-      </div>
-    {% endfor %}
-  </div>
-{% endif %}
-
 <div class="tabla-operadores-container">
   <table class="tabla-operadores">
     <thead>

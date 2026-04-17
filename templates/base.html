@@ -34,7 +34,12 @@
     {% endblock %}
 
     <main class="main-content">
-        {% block messages %}{% endblock %}
+
+        <!-- ✅ ACA MOSTRAMOS LOS MENSAJES -->
+        {% block messages %}
+            {% include 'includes/messages.html' %}
+        {% endblock %}
+
         {% block content %}{% endblock %}
     </main>
 
@@ -42,7 +47,7 @@
         {% include 'includes/footer.html' %}
     {% endblock %}
 
-    <!-- Bootstrap (solo UNO, no dupliques el bundle) -->
+    <!-- Bootstrap -->
     <script src="{% static 'libs/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
 
     <!-- JS global -->
@@ -71,6 +76,5 @@
     {% endif %}
 
     {% block extra_js %}{% endblock %}
-
 </body>
 </html>

@@ -387,11 +387,52 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function mostrarMensaje(mensaje, tipo) {
-        // Puedes usar la misma función de mensajes que en operadores.js
-        console.log(mensaje, tipo);
-        // Temporal - puedes reemplazar con tu sistema de mensajes
-        alert(mensaje);
+        let container = document.getElementById("popup-container");
+
+        if (!container) {
+            container = document.createElement("div");
+            container.id = "popup-container";
+            document.body.appendChild(container);
+        }
+
+        // Evitar duplicados
+        if ([...container.children].some(el => el.textContent.includes(mensaje))) {
+            return;
+        }
+
+        const popup = document.createElement("div");
+        popup.className = `popup ${tipo}`;
+
+        let icono = "ℹ";
+        if (tipo === "success") icono = "✔";
+        if (tipo === "error") icono = "✖";
+        if (tipo === "warning") icono = "⚠";
+
+        popup.innerHTML = `
+            <span class="icon">${icono}</span>
+            <span>${mensaje}</span>
+        `;
+
+        container.appendChild(popup);
+
+        setTimeout(() => {
+            popup.style.opacity = "0";
+            popup.style.transform = "translateY(-10px)";
+            setTimeout(() => popup.remove(), 300);
+        }, 3500);
     }
+
+    window.mostrarMensaje = mostrarMensaje;
+    window.__processPopupMessages = function() {
+        if (!window.__pendingPopupMessages || !window.__pendingPopupMessages.length) return;
+        window.__pendingPopupMessages.forEach(function(item) {
+            if (item && item.text) {
+                mostrarMensaje(item.text, item.type || 'info');
+            }
+        });
+        window.__pendingPopupMessages.length = 0;
+    };
+    window.__processPopupMessages();
 
     // Inicializar
     inicializarNotificaciones();

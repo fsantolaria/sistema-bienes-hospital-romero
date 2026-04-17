@@ -14,21 +14,6 @@
       <h2>EDITAR OPERADOR</h2>
   </div>
 
-  {% if messages %}
-    <div class="contenedor-mensajes">
-      {% for message in messages %}
-        <div class="
-          mensaje
-          {% if message.tags == 'error' %}mensaje-error{% endif %}
-          {% if message.tags == 'warning' %}mensaje-warning{% endif %}
-          {% if message.tags == 'success' %}mensaje-success{% endif %}
-        ">
-          {{ message }}
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
-
   <form method="POST" class="form-alta">
     {% csrf_token %}
     <div class="form-section">

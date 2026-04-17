@@ -14,21 +14,6 @@
     <h2>ALTA DEL OPERADOR</h2>
   </div>
 
-  {% if messages %}
-    <div class="contenedor-mensajes">
-      {% for message in messages %}
-        <div class="
-          mensaje
-          {% if message.tags == 'error' %}mensaje-error{% endif %}
-          {% if message.tags == 'warning' %}mensaje-warning{% endif %}
-          {% if message.tags == 'success' %}mensaje-success{% endif %}
-        ">
-          {{ message }}
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
-
   <form id="form-alta-operador"
         class="form-alta"
         method="POST"
