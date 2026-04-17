@@ -269,12 +269,21 @@
     transform-origin: top right;
 }
 .notificaciones-dropdown .dropdown-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
     font-weight: 700;
     color: #0f1724;
     padding: 6px 12px 10px 12px;
     font-size: 15px;
     border-bottom: 1px solid rgba(15, 23, 42, 0.05);
     margin-bottom: 8px;
+}
+.dropdown-notif-actions {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
 }
 .dropdown-list .dropdown-notif-item {
     background: transparent;
