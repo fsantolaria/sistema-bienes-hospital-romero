@@ -546,4 +546,4 @@ python manage.py createsuperuser
 
 ¡Todos los instructivos están listos para que los equipos comiencen a trabajar! 🚀🎯
 
-¡ Despliegue Vercel !
+¡¡ Despliegue Vercel !!
