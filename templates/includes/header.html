@@ -25,7 +25,16 @@
                 {% endif %}
 
                 <div id="notificacionesDropdown" class="notificaciones-dropdown" style="display:none;">
-                    <div class="dropdown-header">Notificaciones</div>
+                    <div class="dropdown-header">
+                        <span>Notificaciones</span>
+                        <button id="btn-marcar-todas" type="button" title="Marcar todas como leídas"
+                                style="background:none; border:none; cursor:pointer; font-size:12px;
+                                       color:#fff; opacity:0.85; padding:0; margin-left:auto;
+                                       display:flex; align-items:center; gap:4px;">
+                            <i class="fa fa-check-double"></i>
+                            Marcar todas
+                        </button>
+                    </div>
 
                     <ul class="dropdown-list">
                         {% for n in notificaciones %}

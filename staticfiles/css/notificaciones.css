@@ -41,14 +41,18 @@
 /* ── Header del dropdown ───────────────────────────────── */
 .notificaciones-dropdown .dropdown-header {
     font-weight: 700;
-    color: #0f1724;
+    color: #ffffff;
     padding: 12px 14px;
     font-size: 15px;
-    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.15);
     position: sticky;
     top: 0;
-    background: #ffffff;
+    background: #0087a3;
     z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
 }
 
 /* ── Lista ─────────────────────────────────────────────── */
@@ -193,85 +197,4 @@
     clip: rect(0, 0, 0, 0) !important;
     white-space: nowrap !important;
     border: 0 !important;
-
-#popup-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    left: auto;
-    transform: none;
-
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-
-    z-index: 9999;
-    align-items: flex-end;
-    pointer-events: none;
-}
-
-.popup {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-
-    padding: 14px 20px;
-    border-radius: 14px;
-    min-width: 300px;
-    max-width: 420px;
-
-    font-weight: 500;
-    color: #ffffff;
-
-    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
-    border: 1px solid transparent;
-    pointer-events: auto;
-    animation: popupIn 0.35s ease-out;
-}
-
-.popup .icon {
-    font-size: 18px;
-}
-
-.popup.success {
-    background-color: #16a34a;
-    border-color: rgba(22, 163, 74, 0.28);
-}
-
-.popup.error {
-    background-color: #dc2626;
-    border-color: rgba(220, 38, 38, 0.28);
-}
-
-.popup.info {
-    background-color: #2563eb;
-    border-color: rgba(37, 99, 235, 0.28);
-}
-
-.popup.warning {
-    background-color: #f59e0b;
-    border-color: rgba(245, 158, 11, 0.28);
-}
-
-.popup.editar {
-    background-color: #0ea5e9;
-    border-color: rgba(14, 165, 233, 0.28);
-}
-
-.popup.eliminar {
-    background-color: #b91c1c;
-    border-color: rgba(185, 28, 28, 0.28);
-}
-
-@keyframes popupIn {
-    from {
-        opacity: 0;
-        transform: translateX(30px) scale(0.96);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0) scale(1);
-    }
-}
-=======
 }

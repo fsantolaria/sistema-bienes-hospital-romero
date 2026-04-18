@@ -202,7 +202,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
  
-            // Botón marcar leída
+            // Botón marcar leída individual
             var btnLeida = ev.target.closest('.btn-marcar-leida');
             if (btnLeida) {
                 var id = btnLeida.getAttribute('data-id');
@@ -210,7 +210,36 @@ document.addEventListener('DOMContentLoaded', function () {
                 marcarComoLeido(id, li);
                 return;
             }
- 
+
+            // Botón marcar TODAS como leídas
+            var btnTodas = ev.target.closest('#btn-marcar-todas');
+            if (btnTodas) {
+                ev.stopPropagation();
+                fetch('/notificaciones/leidas/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken') || ''
+                    },
+                    body: '{}'
+                })
+                .then(function (resp) {
+                    if (resp.ok) {
+                        todosLosItems().forEach(function (li) {
+                            li.setAttribute('data-leida', '1');
+                            li.classList.remove('notificacion-no-leida');
+                            li.style.opacity = '0.55';
+                            var btnL = li.querySelector('.btn-marcar-leida');
+                            if (btnL) btnL.remove();
+                        });
+                        contadorNoLeidas = 0;
+                        renderBadge();
+                    }
+                })
+                .catch(function (err) { console.error(err); });
+                return;
+            }
+
             // Click fuera → cerrar
             if (!wrapper.contains(ev.target) && dd.style.display === 'block') {
                 dd.style.display = 'none';
