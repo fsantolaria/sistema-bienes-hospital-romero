@@ -1,6 +1,6 @@
-# Dependencias base del proyecto
--r requirements/base.txt
-
+dj-database-url==2.1.0
+psycopg2-binary==2.9.9
+gunicorn==21.2.0
 asgiref==3.10.0
 asttokens==3.0.0
 backcall==0.2.0
