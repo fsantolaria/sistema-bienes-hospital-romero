@@ -193,71 +193,6 @@
     clip: rect(0, 0, 0, 0) !important;
     white-space: nowrap !important;
     border: 0 !important;
-<<<<<<< HEAD
-}
-
-/* Mejoras estéticas para el dropdown (sin imágenes) */
-.notificaciones-dropdown {
-    min-width: 280px;
-    padding: 10px 8px;
-    background: linear-gradient(0deg, #ffffff 0%, #fbfcfd 100%);
-    border-radius: 12px;
-    box-shadow: 0 6px 20px rgba(13, 38, 59, 0.12);
-    border: 1px solid rgba(15, 23, 42, 0.04);
-    transition: transform 120ms ease, opacity 120ms ease;
-    transform-origin: top right;
-}
-.notificaciones-dropdown .dropdown-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    font-weight: 700;
-    color: #0f1724;
-    padding: 6px 12px 10px 12px;
-    font-size: 15px;
-    border-bottom: 1px solid rgba(15, 23, 42, 0.05);
-    margin-bottom: 8px;
-}
-.dropdown-notif-actions {
-    display: inline-flex;
-    gap: 6px;
-    align-items: center;
-}
-.dropdown-list .dropdown-notif-item {
-    background: transparent;
-    border-radius: 8px;
-    padding: 8px 10px;
-    transition: background-color 160ms ease, transform 120ms ease;
-}
-.dropdown-list .dropdown-notif-item:hover {
-    background: rgba(2,6,23,0.03);
-    transform: translateY(-1px);
-}
-.dropdown-list .dropdown-notif-item .dropdown-notif-text {
-    color: #0b1220;
-    font-size: 14px;
-}
-.notificaciones-dropdown .dropdown-list li + li {
-    margin-top: 4px;
-}
-
-/* Hacer el tacho más sencillo (gris) */
-.btn-eliminar-notificacion {
-    color: #6b7280; /* gris neutro */
-}
-.btn-eliminar-notificacion i {
-    font-size: 14px;
-}
-
-/* Focus claro para accesibilidad */
-.dropdown-notif-item:focus-within {
-    outline: 2px solid rgba(59,130,246,0.08);
-    border-radius: 8px;
-}
-/* =========================
-   POPUPS (DJANGO MESSAGES)
-========================= */
 
 #popup-container {
     position: fixed;
@@ -340,4 +275,3 @@
 }
 =======
 }
->>>>>>> blackboxai/fix-back-log
