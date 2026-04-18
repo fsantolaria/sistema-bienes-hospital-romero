@@ -127,37 +127,63 @@
 
     {% if logout_on_back %}
     <script>
+    // ── Cierre de sesion con boton Atras ─────────────────────────────────
+    // Logica:
+    // - Cuando el usuario navega HACIA ADELANTE desde esta pagina (home) a
+    //   cualquier otra, marcamos sessionStorage.beyondHome = '1'.
+    // - Cuando vuelve ATRAS a esta pagina:
+    //     * beyondHome = '1'  → vino de dentro de la app → OK, resetear flag
+    //     * beyondHome = '0'  → vino de la pagina de login   → LOGOUT
+    // Esto NO afecta a ninguna otra pagina del sistema.
     (function () {
         var LOGOUT_URL = '{% url "logout" %}';
+        var KEY = 'appBeyondHome';
 
-        // Solo se ejecuta en home_admin/home_operador. NO toca el historial
-        // del navegador, por lo que no afecta a ninguna otra pagina.
-        // Detectamos como llego el usuario a ESTA pagina:
-        //   "navigate"     = acceso normal
-        //   "reload"       = F5 / recargar
-        //   "back_forward" = boton Atras o Adelante del navegador
-        // Solo en "back_forward" cerramos sesion.
+        var navType = 'navigate';
+        try {
+            var e = performance.getEntriesByType('navigation');
+            if (e.length) navType = e[0].type;
+        } catch (_) {}
 
-        function checkNavType() {
-            try {
-                var entries = performance.getEntriesByType('navigation');
-                if (entries.length > 0 && entries[0].type === 'back_forward') {
-                    window.location.replace(LOGOUT_URL);
-                    return true;
-                }
-            } catch (e) {}
-            return false;
+        if (navType === 'back_forward' || navType === 'prerender') {
+            // Usuario llego aqui con boton Atras
+            if (sessionStorage.getItem(KEY) === '1') {
+                // Vino desde dentro de la app (ej: bienes/) → NO cerrar sesion
+                sessionStorage.setItem(KEY, '0');
+            } else {
+                // Vino desde el login (o fuera de la app) → CERRAR SESION
+                window.location.replace(LOGOUT_URL);
+            }
+            return;
         }
 
-        if (checkNavType()) return;
+        // Llegada normal (navigate/reload) → marcar que estamos en home
+        sessionStorage.setItem(KEY, '0');
 
-        // Fallback bfcache (Safari / Firefox con bfcache):
-        // pageshow con persisted=true significa que la pagina volvio del cache.
-        window.addEventListener('pageshow', function (e) {
-            if (e.persisted) {
+        // Fallback bfcache (Safari/Firefox): pageshow persisted aplica la misma logica
+        window.addEventListener('pageshow', function (ev) {
+            if (!ev.persisted) return;
+            if (sessionStorage.getItem(KEY) === '1') {
+                sessionStorage.setItem(KEY, '0');
+            } else {
                 window.location.replace(LOGOUT_URL);
             }
         });
+    })();
+    </script>
+    {% else %}
+    <script>
+    // En paginas que NO son home, marcar que el usuario esta "dentro" de la app
+    // para que el guard del home sepa que no debe cerrar sesion al volver.
+    (function () {
+        var navType = 'navigate';
+        try {
+            var e = performance.getEntriesByType('navigation');
+            if (e.length) navType = e[0].type;
+        } catch (_) {}
+        if (navType === 'navigate') {
+            sessionStorage.setItem('appBeyondHome', '1');
+        }
     })();
     </script>
     {% endif %}
