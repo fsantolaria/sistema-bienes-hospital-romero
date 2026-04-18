@@ -74,12 +74,6 @@ def permisos_context(user):
 # AUTENTICACIÓN / INICIO
 # ============================
 
-def inicio(request):
-    if request.user.is_authenticated:
-        return redirect(_role_route_name(request.user))
-    return render(request, "inicio.html")
-
-
 def login_view(request):
     if request.user.is_authenticated:
         return redirect(_role_route_name(request.user))
@@ -181,13 +175,13 @@ def bienes(request):
                 f"Se registró el bien '{nombre_bien}' (Clave: {bien.clave_unica}) correctamente."
             )
             # Mensaje de éxito
-            messages.success(request, f"✅ Bien '{nombre_bien}' registrado correctamente.")
+            messages.success(request, "Carga exitosa")
             
             if perms.get("es_admin", False):
                 return redirect("lista_bienes")
             return redirect("lista_bienes_operador")
         # Mensaje de error
-        messages.error(request, "❌ No se pudo guardar el bien. Revisá los datos del formulario.")
+        messages.error(request, "Error al ejecutar la carga")
     else:
         form = BienPatrimonialForm()
 
@@ -199,7 +193,7 @@ def bienes(request):
 def logout_view(request):
     logout(request)
     messages.success(request, "Sesión cerrada exitosamente")
-    return redirect("inicio")
+    return redirect("login")
 
 # ============================
 # ÁREA PRIVADA
@@ -1581,7 +1575,7 @@ def eliminar_bien_definitivo(request, pk):
     crear_notificacion_admins(
         f"Se eliminó definitivamente el bien '{nombre_bien}' (Clave: {identificador})."
     )
-    messages.success(request, f"✅ Bien '{nombre_bien}' eliminado definitivamente.")
+    messages.success(request, f"⚠️ Bien '{nombre_bien}' eliminado definitivamente.", extra_tags='eliminar')
     return redirect("lista_baja_bienes")
 
 

@@ -544,6 +544,17 @@ html, body {
     transition: color 150ms ease !important;
 }
 
+/* Color rojo específico para el icono de cerrar sesión */
+.header-icon.logout-link .material-symbols-outlined {
+    color: #d32f2f !important;
+}
+
+.header-icon.logout-link:hover .material-symbols-outlined,
+.header-icon.logout-link:focus .material-symbols-outlined,
+.header-icon.logout-link:focus-visible .material-symbols-outlined {
+    color: #b71c1c !important;
+}
+
 /* Al hover / focus transicionamos a negro (oscuro) */
 .header-icon:hover,
 .header-icon:focus,
