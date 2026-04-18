@@ -8,6 +8,7 @@ class Operador(models.Model):
     direccion = models.CharField(max_length=300, blank=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
+    dni = models.CharField(max_length=20, unique=True)
 
     class Meta:
         verbose_name = "Operador"

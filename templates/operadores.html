@@ -23,7 +23,7 @@
         <th>OPERADOR</th>
         <th>NOMBRE Y APELLIDO</th>
         <th class="text-center">EDITAR</th>
-  <th class="text-center">DAR DE BAJA</th>
+        <th class="text-center">DAR DE BAJA</th>
         <th class="text-center">ESTADO</th>
       </tr>
     </thead>
@@ -42,7 +42,6 @@
         <td class="text-center">
           <div style="display:flex; justify-content:center; margin-top:6px;">
             {% if puede_gestionar_operadores %}
-            <!-- Botón que abre modal bonito en vez de usar confirm() -->
             <button type="button" class="btn btn-sm btn-danger btn-eliminar-operador" data-action="{% url 'eliminar_operador' op.pk %}" data-username="{{ op.username }}" title="Eliminar operador" style="padding:6px 8px; display:inline-flex; align-items:center; justify-content:center;">
               <i class="fa-solid fa-trash"></i>
             </button>
@@ -64,36 +63,30 @@
 {% endblock %}
 
 {% block extra_js %}
-{# Este JS NO debe reescribir la tabla con datos estáticos #}
 <script>
-// Si tenías /static/js/operadores.js con datos de ejemplo, quitá su carga o vacíalo.
 console.log('Operadores (render server-side).');
 </script>
 <script>
-// Modal custom para confirmar eliminación de operador
 (function(){
-  // Crear modal HTML y agregar al DOM (para evitar duplicar en cada fila)
   const modalHtml = `
   <div id="confirmDeleteModal" class="confirm-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:2000; align-items:center; justify-content:center;">
     <div style="max-width:480px; width:94%;">
       <style>
-        /* Estilos inline específicos del modal para usar colores del sistema */
-  .confirm-modal{ backdrop-filter: blur(3px); }
-  .confirm-card{ background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 18px 50px rgba(0,0,0,0.35); transform:translateY(0); transition:transform .12s ease, box-shadow .12s ease; }
-  .confirm-card__header{ background: #0087a3; color: #000; padding:14px 18px; font-size:18px; font-weight:600; }
-  .confirm-card__body{ padding:18px; color:#333; background: #fff; }
-  .confirm-card__body p{ margin:0 0 12px; }
-  .confirm-card__actions{ padding:12px 18px 18px; display:flex; gap:10px; justify-content:flex-end; background:#fff; }
+        .confirm-modal{ backdrop-filter: blur(3px); }
+        .confirm-card{ background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 18px 50px rgba(0,0,0,0.35); }
+        .confirm-card__header{ background: #0087a3; color: #000; padding:14px 18px; font-size:18px; font-weight:600; }
+        .confirm-card__body{ padding:18px; color:#333; background: #fff; }
+        .confirm-card__body p{ margin:0 0 12px; }
+        .confirm-card__actions{ padding:12px 18px 18px; display:flex; gap:10px; justify-content:flex-end; background:#fff; }
         .confirm-card__actions .btn{ min-width:96px; }
         .confirm-card__actions .btn-cancel{ background:#f0f0f0; color:#222; border:1px solid #ddd; }
         .confirm-card__actions .btn-delete{ background:#e74c3c; color:#fff; border:0; }
         .confirm-card__username{ font-weight:700; color:#00444d; }
       </style>
-
       <div class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirmDeleteTitle">
         <div class="confirm-card__header" id="confirmDeleteTitle">Confirmar eliminación</div>
         <div class="confirm-card__body">
-          <p id="confirmDeleteMessage">¿Estás seguro de eliminar al operador <span class="confirm-card__username" id='confirmDeleteUsername'></span>? Esta acción es irreversible.</p>
+          <p>¿Estás seguro de eliminar al operador <span class="confirm-card__username" id="confirmDeleteUsername"></span>? Esta acción es irreversible.</p>
         </div>
         <div class="confirm-card__actions">
           <button type="button" id="confirmDeleteCancel" class="btn btn-cancel">Cancelar</button>
@@ -116,21 +109,15 @@ console.log('Operadores (render server-side).');
     const form = document.getElementById('confirmDeleteForm');
     const btnCancel = document.getElementById('confirmDeleteCancel');
 
-    // Delegación: abrir modal cuando se hace click en un .btn-eliminar-operador
     document.body.addEventListener('click', function(e){
       const btn = e.target.closest('.btn-eliminar-operador');
       if (!btn) return;
       const action = btn.getAttribute('data-action');
       const username = btn.getAttribute('data-username') || '';
       if (!action) return;
-
-      // Setear texto y action del form
       usernameSpan.textContent = username;
       form.setAttribute('action', action);
-
-      // Mostrar modal
       modal.style.display = 'flex';
-      // Focus al botón eliminar del modal
       const submitBtn = form.querySelector('button[type=submit]');
       if (submitBtn) submitBtn.focus();
     });
@@ -139,18 +126,12 @@ console.log('Operadores (render server-side).');
       modal.style.display = 'none';
     }
 
-    btnCancel.addEventListener('click', function(){
-      closeModal();
-    });
+    btnCancel.addEventListener('click', closeModal);
 
-    // Cerrar al presionar Escape
     document.addEventListener('keydown', function(ev){
-      if (ev.key === 'Escape' && modal.style.display === 'flex') {
-        closeModal();
-      }
+      if (ev.key === 'Escape' && modal.style.display === 'flex') closeModal();
     });
 
-    // Cerrar si clic fuera del contenido
     modal.addEventListener('click', function(ev){
       if (ev.target === modal) closeModal();
     });
