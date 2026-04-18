@@ -4,8 +4,7 @@ from decouple import config, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-# ✅ Crea automáticamente la carpeta 'logs' si no existe
-os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
+# No file logging in base to support read-only file systems (like Vercel)
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-cambiar-en-produccion!')
 
@@ -104,7 +103,6 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(os.path.join(BASE_DIR, 'logs', 'app.log')),
         logging.StreamHandler()
     ]
 )
