@@ -1,0 +1,175 @@
+/* --- Reset y tipografía --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: white;
+}
+
+/* -------- Barra superior -------- */
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 24px;
+    background-color: #fff;
+    border-bottom: 1px solid #00a4c6;
+    height: 70px;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.logo {
+    width: 55px;
+    height: 55px;
+    background-color: #f0f0f0; /* Placeholder para la imagen */
+    border-radius: 50%;
+}
+
+.system-title {
+    font-size: 18px;
+    font-weight: 700;
+    color:#000000;
+}
+
+.icons-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.material-symbols-outlined {
+    font-size: 28px;
+    color: #0087a3;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.material-symbols-outlined:hover {
+    color: #006e87;
+}
+
+/* -------- Contenedor principal -------- */
+.main-container {
+    display: flex;
+    flex: 1;
+}
+
+/* -------- Área central -------- */
+.home-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    background-color: #fff;
+    padding: 20px;
+    width: 100%;
+}
+
+/* -------- Información del operador -------- */
+.operador-info {
+    width: 100%;
+    max-width: 800px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f8f8;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.operador-info h2 {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #000;
+    text-align: center;
+}
+
+.datos-operador {
+    margin-bottom: 15px;
+}
+
+.datos-operador p {
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+.operador-actual {
+    text-align: center;
+    font-size: 16px;
+    color: #000;
+    border-top: 1px solid #ccc;
+    padding-top: 10px;
+    margin-top: 10px;
+}
+
+/* -------- Footer vacío -------- */
+.footer {
+    height: 20px;
+    background-color: #fff;
+    border-top: 1px solid #ddd;
+}
+
+/* -------- Responsive Design -------- */
+
+/* Tablets y pantallas medianas */
+@media (max-width: 1024px) {
+    .main-container {
+        flex-direction: column;
+    }
+
+    .home-content {
+        padding: 20px;
+    }
+}
+
+/* Celulares */
+@media (max-width: 600px) {
+    .top-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        height: auto;
+        gap: 10px;
+    }
+
+    .logo {
+        width: 45px;
+        height: 45px;
+    }
+
+    .system-title {
+        font-size: 16px;
+    }
+
+    .icons-container {
+        align-self: flex-end;
+    }
+
+    .operador-info {
+        padding: 10px;
+    }
+
+    .operador-info h2 {
+        font-size: 16px;
+    }
+
+    .datos-operador p {
+        font-size: 12px;
+    }
+
+    .operador-actual {
+        font-size: 14px;
+    }
+}

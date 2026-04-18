@@ -44,7 +44,6 @@ db.sqlite3
 media/
 
 # Static files
-/staticfiles/
 /mediafiles/
 
 # IDE
