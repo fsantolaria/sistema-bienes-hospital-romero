@@ -8,3 +8,5 @@ Pillow
 pandas
 openpyxl
 reportlab==4.4.4
+dj-database-url==2.1.0
+psycopg2-binary==2.9.9
