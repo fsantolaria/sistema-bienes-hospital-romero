@@ -1,12 +1,16 @@
 from .base import *
+import dj_database_url
 
-DEBUG = False
+DEBUG = config('DEBUG', default=True, cast=bool)
+
+ALLOWED_HOSTS = ['*']
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db_hospital.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=config('DATABASE_URL', default='sqlite:///' + str(BASE_DIR / 'db_hospital.sqlite3')),
+        conn_max_age=600,
+        ssl_require=True if config('DATABASE_URL', default='').startswith('postgres') else False
+    )
 }
 
 SECURE_SSL_REDIRECT = True
@@ -17,11 +21,6 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = config('EMAIL_HOST')
-EMAIL_PORT = config('EMAIL_PORT', cast=int)
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 HOSPITAL_NAME = "Gestión de Bienes Patrimoniales - Hospital Melchor Romero"
