@@ -1,7 +1,7 @@
 from .base import *
 import dj_database_url
 
-DEBUG = config('DEBUG', default=False, cast=bool)
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
