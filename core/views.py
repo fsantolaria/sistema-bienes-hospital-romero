@@ -654,7 +654,7 @@ def reportes_pdf(request):
         elems = []
 
         title = f"Reporte de Bienes Patrimoniales – {rango_desc}"
-        meta = f"Generado: {now.strftime('%d/%m/%Y %H:%M')} · Usuario: {request.user.username}"
+        meta = f"Generado: {timezone.localtime(now).strftime('%d/%m/%Y %H:%M')} · Usuario: {request.user.username}"
         elems.append(Paragraph(title, title_style))
         elems.append(Paragraph(meta, meta_style))
         elems.append(Spacer(1, 8))
@@ -715,7 +715,7 @@ def reportes_pdf(request):
             notif_data = [[P("Fecha", True), P("Mensaje", True)]]
             for n in notifs:
                 notif_data.append([
-                    P(n.fecha.strftime("%d/%m/%Y %H:%M")),
+                    P(timezone.localtime(n.fecha).strftime("%d/%m/%Y %H:%M")),
                     P(n.mensaje),
                 ])
             nt_col_w = [3.2 * cm, usable_w - 3.2 * cm]
