@@ -182,14 +182,7 @@ def bienes(request):
             crear_notificacion_admins(
                 f"Se registró el bien '{nombre_bien}' (Clave: {bien.clave_unica}) correctamente."
             )
-<<<<<<< HEAD
             messages.success(request, f"Bien '{nombre_bien}' registrado correctamente.")
-=======
-            messages.success(request, f"✅ Bien '{nombre_bien}' registrado correctamente.")
-            
-=======
-            messages.success(request, f"Bien '{nombre_bien}' registrado correctamente.")
->>>>>>> blackboxai/fix-back-log
             if perms.get("es_admin", False):
                 return redirect("lista_bienes")
             return redirect("lista_bienes_operador")
@@ -207,12 +200,8 @@ def logout_view(request):
     logout(request)
     messages.success(request, "Sesión cerrada exitosamente")
     return redirect("inicio")
-<<<<<<< HEAD
-
-=======
  
  
->>>>>>> blackboxai/fix-back-log
 # ============================
 # ÁREA PRIVADA
 # ============================
@@ -377,13 +366,8 @@ def alta_operadores(request):
             mensaje=f"Se creó el operador '{operador.username}'.",
             leida=False,
         )
-<<<<<<< HEAD
-
-        messages.success(request, f"✅ Operador {nombre} {apellido} creado. Usuario: {operador.username}")
-=======
  
         messages.success(request, f"Operador {nombre} {apellido} creado. Usuario: {operador.username}")
->>>>>>> blackboxai/fix-back-log
         return redirect("operadores")
  
     form = OperadorForm(initial={
@@ -491,14 +475,8 @@ def editar_operador(request, pk):
                 crear_notificacion(request.user, f"Se editó el operador '{operador.username}'.")
             except Exception:
                 pass
-<<<<<<< HEAD
-        else:
-            messages.info(request, "No se realizaron cambios en el operador.")
-
-=======
             messages.success(request, f"Operador '{operador.username}' editado correctamente.")
  
->>>>>>> blackboxai/fix-back-log
         return redirect("operadores")
  
     form = OperadorForm(initial={
@@ -535,14 +513,7 @@ def eliminar_operador(request, pk):
     identificador = operador.username
     nombre_completo = f"{operador.first_name} {operador.last_name}".strip()
     operador.delete()
-<<<<<<< HEAD
-
-    # Mensaje de éxito
-    messages.success(request, f"✅ Operador '{identificador}' ({nombre_completo}) eliminado correctamente.", extra_tags='eliminar')
-
-=======
  
->>>>>>> blackboxai/fix-back-log
     try:
         Notificacion.objects.create(
             usuario=request.user,
@@ -588,13 +559,8 @@ def dar_baja_operador(request, pk):
         )
     except Exception:
         pass
-<<<<<<< HEAD
-
-    messages.success(request, f"✅ Operador {operador.username} dado de baja correctamente.")
-=======
  
     messages.success(request, f"Operador {operador.username} dado de baja correctamente.")
->>>>>>> blackboxai/fix-back-log
     return redirect("operadores")
  
  
@@ -1191,25 +1157,14 @@ def editar_bien(request, pk):
             crear_notificacion_admins(
                 f"Se editó el bien '{nombre_bien}' (Clave: {obj.clave_unica})."
             )
-<<<<<<< HEAD
-            # Mensaje de éxito
-            messages.success(request, f"✅ Bien '{nombre_bien}' actualizado correctamente.", extra_tags='editar')
-
-=======
             messages.success(request, f"Bien '{nombre_bien}' editado correctamente.")
  
->>>>>>> blackboxai/fix-back-log
             perms = permisos_context(request.user)
             if perms.get("es_admin", False):
                 return redirect("lista_bienes")
             return redirect("lista_bienes_operador")
-<<<<<<< HEAD
-        # Mensaje de error
-        messages.error(request, "❌ No se pudo guardar el bien. Revisá los datos del formulario.")
-=======
  
         messages.error(request, "Revisá los datos del formulario.")
->>>>>>> blackboxai/fix-back-log
     else:
         form = BienPatrimonialForm(instance=bien)
  
@@ -1581,11 +1536,7 @@ def dar_baja_bien(request, pk):
     crear_notificacion_admins(
         f"Se dio de baja el bien '{nombre_bien}' (Clave: {bien.clave_unica})."
     )
-<<<<<<< HEAD
-    messages.success(request, f"✅ Bien '{nombre_bien}' dado de baja correctamente.")
-=======
     messages.success(request, f"Bien '{bien.nombre}' dado de baja correctamente.")
->>>>>>> blackboxai/fix-back-log
     return redirect("lista_bienes")
  
  
@@ -1621,11 +1572,7 @@ def restablecer_bien(request, pk):
     crear_notificacion_admins(
         f"Se restableció el bien '{nombre_bien}' (Clave: {bien.clave_unica}) a ACTIVO."
     )
-<<<<<<< HEAD
-    messages.success(request, f"✅ Bien '{nombre_bien}' restablecido a ACTIVO.")
-=======
     messages.success(request, f"Bien '{bien.nombre}' restablecido a ACTIVO.")
->>>>>>> blackboxai/fix-back-log
     return redirect("lista_bienes")
  
  
@@ -1645,11 +1592,7 @@ def eliminar_bien_definitivo(request, pk):
     crear_notificacion_admins(
         f"Se eliminó definitivamente el bien '{nombre_bien}' (Clave: {identificador})."
     )
-<<<<<<< HEAD
-    messages.success(request, f"⚠️ Bien '{nombre_bien}' eliminado definitivamente.", extra_tags='eliminar')
-=======
     messages.success(request, f"Bien '{nombre_bien}' eliminado definitivamente.")
->>>>>>> blackboxai/fix-back-log
     return redirect("lista_baja_bienes")
  
  
