@@ -1,4 +1,4 @@
-﻿# Dependencias base del proyecto
+# Dependencias base del proyecto
 -r requirements/base.txt
 
 asgiref==3.10.0
