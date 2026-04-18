@@ -43,33 +43,33 @@ def _role_route_name(user) -> str:
  
  
 def permisos_context(user):
-    """Booleans útiles para templates y lógica."""
     if not getattr(user, "is_authenticated", False):
         return {
             "es_admin": False,
+            "es_supervisor": False,
             "puede_eliminar": False,
             "puede_gestionar_operadores": False,
             "notificaciones": [],
             "notificaciones_count": 0,
         }
- 
-    if hasattr(user, "tipo_usuario"):
-        es_admin = user.tipo_usuario == "admin" or user.is_superuser
-    else:
-        es_admin = user.is_superuser
- 
+
+    tipo = getattr(user, "tipo_usuario", None)
+    es_admin = tipo == "admin" or user.is_superuser
+    es_supervisor = tipo == "supervisor"
+
     notificaciones = list(
-    Notificacion.objects
-    .filter(usuario=user, eliminada=False)  # ← agregado
-    .order_by("-fecha")
-    [:50]
-)
+        Notificacion.objects
+        .filter(usuario=user, eliminada=False)
+        .order_by("-fecha")
+        [:50]
+    )
     notificaciones_count = Notificacion.objects.filter(
-        usuario=user, leida=False, eliminada=False  # ← agregado
+        usuario=user, leida=False, eliminada=False
     ).count()
- 
+
     return {
         "es_admin": es_admin,
+        "es_supervisor": es_supervisor,
         "puede_eliminar": es_admin,
         "puede_gestionar_operadores": es_admin,
         "notificaciones": notificaciones,
@@ -1653,3 +1653,171 @@ def crear_notificacion_admins(mensaje):
 
     for admin in admins:
         crear_notificacion(admin, mensaje)
+def permisos_context(user):
+    if not getattr(user, "is_authenticated", False):
+        return {
+            "es_admin": False,
+            "es_supervisor": False,
+            "puede_eliminar": False,
+            "puede_gestionar_operadores": False,
+            "notificaciones": [],
+            "notificaciones_count": 0,
+        }
+
+    tipo = getattr(user, "tipo_usuario", None)
+    es_admin = tipo == "admin" or user.is_superuser
+    es_supervisor = tipo == "supervisor"
+
+    notificaciones = list(
+        Notificacion.objects
+        .filter(usuario=user, eliminada=False)
+        .order_by("-fecha")
+        [:50]
+    )
+    notificaciones_count = Notificacion.objects.filter(
+        usuario=user, leida=False, eliminada=False
+    ).count()
+
+    return {
+        "es_admin": es_admin,
+        "es_supervisor": es_supervisor,
+        "puede_eliminar": es_admin,
+        "puede_gestionar_operadores": es_admin,
+        "notificaciones": notificaciones,
+        "notificaciones_count": notificaciones_count,
+    }
+
+@login_required
+def home_supervisor(request):
+    tipo = getattr(request.user, "tipo_usuario", None)
+    if not (request.user.is_superuser or tipo in ("admin", "supervisor")):
+        messages.error(request, "No tenés permisos para acceder a esta página.")
+        return redirect("home_operador")
+
+    total_bienes = BienPatrimonial.objects.count()
+    bienes_activos = BienPatrimonial.objects.filter(estado="ACTIVO").count()
+    bienes_baja = BienPatrimonial.objects.filter(estado="BAJA").count()
+
+    context = permisos_context(request.user)
+    context.update({
+        "total_bienes": total_bienes,
+        "bienes_activos": bienes_activos,
+        "bienes_baja": bienes_baja,
+        "es_supervisor": True,
+    })
+    return render(request, "home_supervisor.html", context)
+
+
+@login_required
+def lista_bienes_supervisor(request):
+    tipo = getattr(request.user, "tipo_usuario", None)
+    if not (request.user.is_superuser or tipo in ("admin", "supervisor")):
+        messages.error(request, "No tenés permisos para acceder a esta sección.")
+        return redirect("home_operador")
+
+    q = (request.GET.get("q") or "").strip()
+    f_origen = request.GET.get("f_origen") or ""
+    f_estado = request.GET.get("f_estado") or ""
+    f_desde = request.GET.get("f_desde") or ""
+    f_hasta = request.GET.get("f_hasta") or ""
+    orden = request.GET.get("orden") or "-fecha"
+
+    bienes_queryset = BienPatrimonial.objects.select_related("expediente")
+
+    if q:
+        bienes_queryset = bienes_queryset.filter(
+            Q(clave_unica__icontains=q)
+            | Q(descripcion__icontains=q)
+            | Q(observaciones__icontains=q)
+            | Q(numero_identificacion__icontains=q)
+            | Q(servicios__icontains=q)
+            | Q(cuenta_codigo__icontains=q)
+            | Q(nomenclatura_bienes__icontains=q)
+            | Q(numero_serie__icontains=q)
+            | Q(origen__icontains=q)
+            | Q(estado__icontains=q)
+            | Q(expediente__numero_expediente__icontains=q)
+            | Q(expediente__numero_compra__icontains=q)
+        )
+
+    if f_origen == "__NULL__":
+        bienes_queryset = bienes_queryset.filter(origen__isnull=True)
+    elif f_origen:
+        bienes_queryset = bienes_queryset.filter(origen=f_origen)
+
+    if f_estado == "__NULL__":
+        bienes_queryset = bienes_queryset.filter(estado__isnull=True)
+    elif f_estado:
+        bienes_queryset = bienes_queryset.filter(estado=f_estado)
+
+    if f_desde:
+        d = parse_date(f_desde)
+        if d:
+            bienes_queryset = bienes_queryset.filter(fecha_adquisicion__gte=d)
+
+    if f_hasta:
+        h = parse_date(f_hasta)
+        if h:
+            bienes_queryset = bienes_queryset.filter(fecha_adquisicion__lte=h)
+
+    bienes_queryset = bienes_queryset.order_by(*_build_ordering(orden))
+
+    per_page = 30
+    paginator = Paginator(bienes_queryset, per_page)
+    page_raw = request.GET.get("page", "1")
+
+    try:
+        page_number = int(page_raw)
+        if page_number < 1:
+            page_number = 1
+    except ValueError:
+        page_number = 1
+
+    try:
+        page_obj = paginator.page(page_number)
+    except (EmptyPage, PageNotAnInteger):
+        page_obj = paginator.page(1)
+
+    try:
+        prev_page = page_obj.previous_page_number()
+    except Exception:
+        prev_page = None
+    try:
+        next_page = page_obj.next_page_number()
+    except Exception:
+        next_page = None
+
+    current = page_obj.number
+    last = paginator.num_pages
+    window = 2
+    nums = set([1, last] + list(range(max(1, current - window), min(last, current + window) + 1)))
+    page_range = []
+    last_added = 0
+    for i in range(1, last + 1):
+        if i in nums:
+            page_range.append(i)
+            last_added = i
+        else:
+            if last_added != "…":
+                page_range.append("…")
+                last_added = "…"
+
+    qs = request.GET.copy()
+    qs.pop("page", None)
+    querystring = qs.urlencode()
+
+    context = permisos_context(request.user)
+    context.update({
+        "q": q,
+        "bienes": page_obj.object_list,
+        "paginator": paginator,
+        "page_obj": page_obj,
+        "is_paginated": paginator.num_pages > 1,
+        "page_range": page_range,
+        "prev_page": prev_page,
+        "next_page": next_page,
+        "querystring": querystring,
+        "solo_lectura": True,
+        "es_supervisor": True,
+    })
+    return render(request, "bienes/lista_bienes_supervisor.html", context)
