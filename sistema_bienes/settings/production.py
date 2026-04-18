@@ -1,15 +1,15 @@
 from .base import *
 import dj_database_url
 
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = ['*']
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=config('DATABASE_URL', default='sqlite:///' + str(BASE_DIR / 'db_hospital.sqlite3')),
+        default=config('DATABASE_URL', default='postgresql://neondb_owner:npg_QPiLZfduy3A9@ep-raspy-shadow-a4rio3ce.us-east-1.aws.neon.tech/neondb?sslmode=require'),
         conn_max_age=600,
-        ssl_require=True if config('DATABASE_URL', default='').startswith('postgres') else False
+        ssl_require=True
     )
 }
 
