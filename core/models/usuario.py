@@ -12,9 +12,6 @@ class Usuario(AbstractUser):
         choices=TIPO_USUARIO,
         default='empleado'
     )
-    
-    numero_doc = models.CharField(max_length=20, unique=True, blank=True, null=True) 
-
 
     numero_doc = models.CharField(
         max_length=50,
