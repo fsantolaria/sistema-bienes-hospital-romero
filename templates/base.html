@@ -22,23 +22,15 @@
     {% endblock %}
 
     <main class="main-content">
-<<<<<<< HEAD
-
         {% block messages %}{% endblock %}
         {% block content %}{% endblock %}
-=======
-    {% block messages %}{% endblock %}
-    {% block content %}{% endblock %}
->>>>>>> blackboxai/fix-back-log
     </main>
 
     {% block footer %}
         {% include 'includes/footer.html' %}
     {% endblock %}
 
-<<<<<<< HEAD
     <!-- Bootstrap -->
-=======
     {% if messages %}
     <div id="toast-container" style="
         position: fixed;
@@ -102,8 +94,6 @@
         {% endfor %}
     </div>
     {% endif %}
-
->>>>>>> blackboxai/fix-back-log
     <script src="{% static 'libs/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'js/base.js' %}"></script>
     <script src="{% static 'js/notificaciones.js' %}"></script>

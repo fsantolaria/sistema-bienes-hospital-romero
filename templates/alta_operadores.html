@@ -16,33 +16,12 @@
     <h2>ALTA DEL OPERADOR</h2>
   </div>
 
-<<<<<<< HEAD
-=======
-{% if messages %}
-  <div class="contenedor-mensajes mb-4">
-    {% for message in messages %}
-      <div class="mensaje {% if message.tags == 'error' %}mensaje-error{% endif %} {% if message.tags == 'warning' %}mensaje-warning{% endif %} {% if message.tags == 'success' %}mensaje-success{% endif %}">
-        {{ message }}
-      </div>
-    {% endfor %}
-  </div>
-  <!-- Bootstrap fallback -->
-  {% for message in messages %}
-    <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show mb-3" role="alert">
-      {{ message }}
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-  {% endfor %}
-{% endif %}
-
->>>>>>> blackboxai/fix-back-log
   <form id="form-alta-operador"
         class="form-alta"
         method="POST"
         action="{% url 'alta_operadores' %}">
     {% csrf_token %}
 
-```
 <div class="form-section">
   <h3 class="section-title">Datos del operador</h3>
 
@@ -110,7 +89,6 @@
     <i class="fas fa-users me-1"></i> Ver operadores
   </a>
 </div>
-```
 
   </form>
 </div>
