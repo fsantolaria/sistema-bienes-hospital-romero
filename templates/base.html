@@ -14,6 +14,13 @@
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     <link rel="stylesheet" href="{% static 'css/notificaciones.css' %}">
 
+    {% if logout_on_back %}
+    {# Impide que el navegador cachee esta página para que el botón Atras no la restaure sin pasar por el servidor #}
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    {% endif %}
+
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -117,6 +124,34 @@
         });
     })();
     </script>
+
+    {% if logout_on_back %}
+    <script>
+    (function () {
+        var LOGOUT_URL = '{% url "logout" %}';
+
+        // 1) Empujar un estado "guardia" en el historial para que el primer
+        //    click en "Atrás" pueda ser interceptado (no lleva al usuario
+        //    a la página anterior de verdad).
+        history.pushState({ backGuard: true }, '', window.location.href);
+
+        // 2) Si el usuario pulsa "Atrás", el estado se revierte y el evento
+        //    popstate se dispara → redirigir al logout inmediatamente.
+        window.addEventListener('popstate', function () {
+            window.location.replace(LOGOUT_URL);
+        });
+
+        // 3) Si el navegador usa bfcache (algunas versiones de Firefox/Safari),
+        //    pageshow con persisted=true indica que la página volvió del caché
+        //    tras presionar "Atrás" → forzar logout igual.
+        window.addEventListener('pageshow', function (e) {
+            if (e.persisted) {
+                window.location.replace(LOGOUT_URL);
+            }
+        });
+    })();
+    </script>
+    {% endif %}
 
     {% block extra_js %}{% endblock %}
 </body>

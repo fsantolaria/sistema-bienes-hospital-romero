@@ -156,6 +156,7 @@ def login_view(request):
 @login_required
 def home_operador(request):
     context = permisos_context(request.user)
+    context['logout_on_back'] = True
     return render(request, "home_operador.html", context)
  
  
@@ -212,7 +213,7 @@ def home_admin(request):
     if not perms["es_admin"]:
         messages.error(request, "No tienes permisos para acceder a esta página")
         return redirect("home_operador")
- 
+    perms['logout_on_back'] = True
     return render(request, "home_admin.html", perms)
  
  
