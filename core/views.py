@@ -116,7 +116,7 @@ def login_view(request):
         if not tipo_usuario:
             if getattr(user, "is_superuser", False):
                 tipo_usuario = "admin"
-            elif hasattr(user, "tipo_usuario") and user.tipo_usuario in ("admin", "empleado", "supervisor"):
+            elif hasattr(user, "tipo_usuario") and user.tipo_usuario in ("admin", "operador", "supervisor"):
                 tipo_usuario = user.tipo_usuario
             else:
                 return _rerender_error("No se pudo determinar el tipo de usuario. Volvé a intentar.")
@@ -133,10 +133,10 @@ def login_view(request):
                 login(request, user)
             else:
                 return _rerender_error("El tipo de usuario seleccionado no coincide con el usuario ingresado.")
-        elif tipo_usuario == "empleado":
+        elif tipo_usuario == "operador":
             if user.is_superuser:
                 return _rerender_error("Un administrador no puede ingresar como operador.")
-            if hasattr(user, "tipo_usuario") and user.tipo_usuario == "empleado":
+            if hasattr(user, "tipo_usuario") and user.tipo_usuario == "operador":
                 login(request, user)
             else:
                 return _rerender_error("El tipo de usuario seleccionado no coincide con el usuario ingresado.")
@@ -275,6 +275,10 @@ def recuperar_password(request):
 
 @login_required
 def alta_operadores(request):
+    perms = permisos_context(request.user)
+    if not perms["es_admin"]:
+        messages.error(request, "No tienes permisos para acceder a esta página")
+        return redirect("home_operador")
     if request.method == "POST":
         nombre = " ".join((request.POST.get("nombre") or "").strip().split())
         apellido = " ".join((request.POST.get("apellido") or "").strip().split())
@@ -380,7 +384,7 @@ def alta_operadores(request):
         'pais': 'Argentina',
         'dni': '',
         'email': '',
-        'tipo_usuario': 'empleado',
+        'tipo_usuario': 'operador',
         'estado': 'habilitado',
         'password': '',
     })
@@ -500,7 +504,7 @@ def editar_operador(request, pk):
         'email': operador.email or '',
         'dni': operador.numero_doc or '',
         'pais': getattr(operador, 'pais', '') or '',
-        'tipo_usuario': getattr(operador, 'tipo_usuario', 'empleado') or 'empleado',
+        'tipo_usuario': getattr(operador, 'tipo_usuario', 'operador') or 'operador',
         'estado': 'habilitado' if operador.is_active else 'no-habilitado',
     }, operador_pk=operador.pk)
 

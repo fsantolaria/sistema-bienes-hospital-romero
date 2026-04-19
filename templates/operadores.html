@@ -24,7 +24,7 @@
         <th>NOMBRE Y APELLIDO</th>
         <th class="text-center">EDITAR</th>
   <th class="text-center">DAR DE BAJA</th>
-        <th class="text-center">ESTADO</th>
+        <th class="text-center">ROL</th>
       </tr>
     </thead>
     <tbody>
@@ -50,7 +50,7 @@
           </div>
         </td>
         <td class="text-center">
-          <span>{% if op.is_active %}habilitado{% else %}no-habilitado{% endif %}</span>
+          <span>{{ op.get_tipo_usuario_display }}</span>
         </td>
       </tr>
       {% empty %}
