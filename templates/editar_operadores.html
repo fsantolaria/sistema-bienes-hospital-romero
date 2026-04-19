@@ -66,6 +66,16 @@
       </div>
 
       <div class="form-group-item">
+        <label for="tipo_usuario">Tipo de Usuario:</label>
+        <div class="input-container">
+          <select id="tipo_usuario" name="tipo_usuario" required>
+            <option value="operador" {% if operador.tipo_usuario == 'operador' %}selected{% endif %}>Operador</option>
+            <option value="supervisor" {% if operador.tipo_usuario == 'supervisor' %}selected{% endif %}>Supervisor</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group-item">
         <label for="password">Nueva contraseña (opcional):</label>
         <input type="password" id="password" name="password" placeholder="Dejar en blanco para no cambiar">
       </div>
