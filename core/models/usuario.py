@@ -4,7 +4,8 @@ from django.db import models
 class Usuario(AbstractUser):
     TIPO_USUARIO = [
         ('admin', 'Administrador'),
-        ('empleado', 'Empleado Hospital'),
+        ('operador', 'Operador'),
+        ('supervisor', 'Supervisor'),
     ]
 
     tipo_usuario = models.CharField(
