@@ -69,6 +69,8 @@ Thumbs.db
 # Logs
 logs/
 *.log
+migrate.log
+migrate_utf8.log
 
 # Coverage reports
 .coverage
@@ -79,3 +81,18 @@ htmlcov/
 */migrations/*.py
 !*/migrations/__init__.py
 */migrations/*.pyc
+
+# Vercel (deployment personal - no subir al repo)
+vercel.json
+
+# Scripts personales / temporales (no subir al repo)
+merge_upstream.py
+fix_all_conflicts.py
+fix_views.py
+scratch_db.py
+scratch_wipe.py
+script.py
+deploy_completo.sh
+python
+sistema_bienes/settings_local.py
+

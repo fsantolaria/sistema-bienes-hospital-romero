@@ -1,6 +1,5 @@
 from pathlib import Path
 import os
-import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -8,7 +7,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'poné-tu-secret-key-aca'
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '.vercel.app']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 
 # ==========================
 # APLICACIONES INSTALADAS
@@ -43,8 +42,8 @@ MIDDLEWARE = [
 # ==========================
 # URLS / WSGI
 # ==========================
-ROOT_URLCONF = 'sistema_bienes.urls'   # ← ajustá al nombre real de tu proyecto (carpeta con urls.py)
-WSGI_APPLICATION = 'sistema_bienes.wsgi.application'  # ← idem
+ROOT_URLCONF = 'sistema_bienes.urls'
+WSGI_APPLICATION = 'sistema_bienes.wsgi.application'
 
 # ==========================
 # TEMPLATES
@@ -66,14 +65,13 @@ TEMPLATES = [
 ]
 
 # ==========================
-# BASE DE DATOS (SQLite)
+# BASE DE DATOS (SQLite local)
 # ==========================
 DATABASES = {
-    'default': dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db_development.sqlite3'}",
-        conn_max_age=600,
-        ssl_require=True if os.environ.get('DATABASE_URL') else False
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db_development.sqlite3',
+    }
 }
 
 # ==========================
@@ -81,9 +79,9 @@ DATABASES = {
 # ==========================
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
-    BASE_DIR / "static",   # donde tenés css/js/fotos fuente
+    BASE_DIR / "static",
 ]
-STATIC_ROOT = BASE_DIR / "staticfiles"  # destino de collectstatic
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -91,10 +89,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # ==========================
 # AUTENTICACIÓN / LOGIN
 # ==========================
-AUTH_USER_MODEL = 'core.Usuario'  # asegurate que el modelo exista
+AUTH_USER_MODEL = 'core.Usuario'
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/inicio/'
-LOGOUT_REDIRECT_URL = '/login/'   # ← sin punto al final
+LOGOUT_REDIRECT_URL = '/login/'
 
 # ==========================
 # REGIONAL

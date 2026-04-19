@@ -4,8 +4,6 @@ from decouple import config, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-# No file logging in base to support read-only file systems (like Vercel)
-
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-cambiar-en-produccion!')
 
 DEBUG = config('DEBUG', default=False, cast=bool)
