@@ -19,6 +19,7 @@ urlpatterns = [
     # ===== Dashboards =====
     path('home_admin/', views.home_admin, name='home_admin'),
     path('home_operador/', views.home_operador, name='home_operador'),
+    path('home_supervisor/', views.home_supervisor, name='home_supervisor'),
 
     # ===== Operadores =====
     path('operadores/', views.operadores, name='operadores'),

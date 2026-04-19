@@ -35,7 +35,12 @@ def _role_route_name(user) -> str:
     if user.is_superuser:
         return "home_admin"
     if hasattr(user, "tipo_usuario"):
-        return "home_admin" if user.tipo_usuario == "admin" else "home_operador"
+        if user.tipo_usuario == "admin":
+            return "home_admin"
+        elif user.tipo_usuario == "supervisor":
+            return "home_supervisor"
+        else:
+            return "home_operador"
     return "home_operador"
 
 
@@ -44,6 +49,7 @@ def permisos_context(user):
     if not getattr(user, "is_authenticated", False):
         return {
             "es_admin": False,
+            "es_supervisor": False,
             "puede_eliminar": False,
             "puede_gestionar_operadores": False,
             "notificaciones": [],
@@ -52,8 +58,10 @@ def permisos_context(user):
 
     if hasattr(user, "tipo_usuario"):
         es_admin = user.tipo_usuario == "admin" or user.is_superuser
+        es_supervisor = user.tipo_usuario == "supervisor"
     else:
         es_admin = user.is_superuser
+        es_supervisor = False
 
     notificaciones = []
     notificaciones_count = 0
@@ -63,6 +71,7 @@ def permisos_context(user):
 
     return {
         "es_admin": es_admin,
+        "es_supervisor": es_supervisor,
         "puede_eliminar": es_admin,
         "puede_gestionar_operadores": es_admin,
         "notificaciones": notificaciones,
@@ -107,13 +116,20 @@ def login_view(request):
         if not tipo_usuario:
             if getattr(user, "is_superuser", False):
                 tipo_usuario = "admin"
-            elif hasattr(user, "tipo_usuario") and user.tipo_usuario in ("admin", "empleado"):
+            elif hasattr(user, "tipo_usuario") and user.tipo_usuario in ("admin", "empleado", "supervisor"):
                 tipo_usuario = user.tipo_usuario
             else:
                 return _rerender_error("No se pudo determinar el tipo de usuario. Volvé a intentar.")
 
         if tipo_usuario == "admin":
             if user.is_superuser or (hasattr(user, "tipo_usuario") and user.tipo_usuario == "admin"):
+                login(request, user)
+            else:
+                return _rerender_error("El tipo de usuario seleccionado no coincide con el usuario ingresado.")
+        elif tipo_usuario == "supervisor":
+            if user.is_superuser:
+                return _rerender_error("Un administrador no puede ingresar como supervisor.")
+            if hasattr(user, "tipo_usuario") and user.tipo_usuario == "supervisor":
                 login(request, user)
             else:
                 return _rerender_error("El tipo de usuario seleccionado no coincide con el usuario ingresado.")
@@ -206,6 +222,15 @@ def home_admin(request):
         messages.error(request, "No tienes permisos para acceder a esta página")
         return redirect("home_operador")
     return render(request, "home_admin.html", perms)
+
+
+@login_required
+def home_supervisor(request):
+    perms = permisos_context(request.user)
+    if not perms["es_supervisor"]:
+        messages.error(request, "No tienes permisos para acceder a esta página")
+        return redirect("home_operador")
+    return render(request, "home_supervisor.html", perms)
 
 
 # ============================
@@ -303,7 +328,7 @@ def alta_operadores(request):
             is_superuser=False,
             is_active=is_active,
         )
-        operador.tipo_usuario = "empleado"
+        operador.tipo_usuario = form.cleaned_data["tipo_usuario"]
 
         if password:
             operador.set_password(password)
@@ -355,6 +380,7 @@ def alta_operadores(request):
         'pais': 'Argentina',
         'dni': '',
         'email': '',
+        'tipo_usuario': 'empleado',
         'estado': 'habilitado',
         'password': '',
     })
@@ -372,6 +398,7 @@ def editar_operador(request, pk):
         estado = (request.POST.get("estado") or "habilitado").strip()
         pais = (request.POST.get("pais") or "").strip()
         dni = (request.POST.get("dni") or "").strip()
+        tipo_usuario = (request.POST.get("tipo_usuario") or "empleado").strip()
         password = (request.POST.get("password") or "").strip()
 
         form = OperadorForm(request.POST, operador_pk=operador.pk)
@@ -443,6 +470,13 @@ def editar_operador(request, pk):
             else:
                 operador.numero_doc = numero_doc
 
+        if hasattr(operador, "tipo_usuario"):
+            if operador.tipo_usuario != tipo_usuario:
+                operador.tipo_usuario = tipo_usuario
+                hubo_cambio = True
+            else:
+                operador.tipo_usuario = tipo_usuario
+
         if password:
             operador.set_password(password)
             hubo_cambio = True
@@ -466,6 +500,7 @@ def editar_operador(request, pk):
         'email': operador.email or '',
         'dni': operador.numero_doc or '',
         'pais': getattr(operador, 'pais', '') or '',
+        'tipo_usuario': getattr(operador, 'tipo_usuario', 'empleado') or 'empleado',
         'estado': 'habilitado' if operador.is_active else 'no-habilitado',
     }, operador_pk=operador.pk)
 
@@ -883,7 +918,7 @@ def _build_ordering_baja(orden_param: str):
 def lista_bienes(request):
     user = request.user
     perms = permisos_context(user)
-    if not perms["es_admin"]:
+    if not perms["es_admin"] and not perms["es_supervisor"]:
         return redirect("lista_bienes_operador")
 
     q = (request.GET.get("q") or "").strip()
