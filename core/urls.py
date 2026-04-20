@@ -2,7 +2,7 @@ from django.urls import path
 from django.views.generic import RedirectView
 from . import views
 from core.views import marcar_notificaciones_leidas
-
+from core.views import home_supervisor, lista_bienes_supervisor
 urlpatterns = [
     # ===== Raíz del sitio =====
     path('', RedirectView.as_view(pattern_name='inicio', permanent=False)),
@@ -20,7 +20,8 @@ urlpatterns = [
     # ===== Dashboards =====
     path('home_admin/', views.home_admin, name='home_admin'),
     path('home_operador/', views.home_operador, name='home_operador'),
-
+    path("supervisor/", home_supervisor, name="home_supervisor"),
+    path("supervisor/bienes/", lista_bienes_supervisor, name="lista_bienes_supervisor"),
     # ===== Operadores =====
     path('operadores/', views.operadores, name='operadores'),
     path('operadores/alta/', views.alta_operadores, name='alta_operadores'),

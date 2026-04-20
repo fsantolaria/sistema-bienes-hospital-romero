@@ -82,6 +82,15 @@
       </select>
     </div>
   </div>
+  <div class="form-group-item">
+    <label for="tipo_usuario">Tipo de usuario:</label>
+    <div class="input-container">
+      <select id="tipo_usuario" name="tipo_usuario" required>
+        <option value="empleado" {% if form.tipo_usuario.value == 'empleado' %}selected{% endif %}>Operador</option>
+        <option value="supervisor" {% if form.tipo_usuario.value == 'supervisor' %}selected{% endif %}>Supervisor</option>
+      </select>
+    </div>
+  </div>
 
   <div class="form-group-item">
     <label for="password">Contraseña:</label>
