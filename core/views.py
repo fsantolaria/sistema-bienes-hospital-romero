@@ -192,12 +192,11 @@ def bienes(request):
             )
             # Mensaje de éxito
             messages.success(request, "Carga exitosa")
-            
-            if perms.get("es_admin", False):
-                return redirect("lista_bienes")
-            return redirect("lista_bienes_operador")
-        # Mensaje de error
-        messages.error(request, "Error al ejecutar la carga")
+            # Limpiar formulario para mostrar mensaje en la misma página
+            form = BienPatrimonialForm()
+        # Mensaje de error (si no es válido, se muestra con el form que tiene errores)
+        else:
+            messages.error(request, "Error al ejecutar la carga")
     else:
         form = BienPatrimonialForm()
 

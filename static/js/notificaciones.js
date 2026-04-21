@@ -411,6 +411,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function mostrarMensaje(mensaje, tipo) {
+        // Si hay contenedor inline, usarlo
+        const inlineContainer = document.getElementById('inline-message');
+        if (inlineContainer) {
+            inlineContainer.textContent = mensaje;
+            inlineContainer.style.display = 'block';
+            // Cambiar color según tipo
+            if (tipo.includes('error')) {
+                inlineContainer.style.backgroundColor = '#ff6b6b'; // Rojo para error
+            } else if (tipo.includes('success')) {
+                inlineContainer.style.backgroundColor = '#87CEEB'; // Celeste para éxito
+            } else {
+                inlineContainer.style.backgroundColor = '#87CEEB'; // Default celeste
+            }
+            setTimeout(() => {
+                inlineContainer.style.display = 'none';
+            }, 4000); // 4 segundos
+            return;
+        }
+
         let container = document.getElementById("popup-container");
 
         if (!container) {
