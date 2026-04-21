@@ -12,6 +12,18 @@
     }
 
     window.showToast = function(message, type = 'success', duration = 4000) {
+        // Si hay un contenedor inline, usarlo en lugar de toast flotante
+        const inlineContainer = document.getElementById('inline-message');
+        if (inlineContainer) {
+            inlineContainer.textContent = message;
+            inlineContainer.style.display = 'block';
+            setTimeout(() => {
+                inlineContainer.style.display = 'none';
+            }, duration);
+            return inlineContainer;
+        }
+
+        // Toast flotante original
         const container = getToastContainer();
         
         const toast = document.createElement('div');
