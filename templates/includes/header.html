@@ -12,6 +12,31 @@
 
         <!-- Íconos de acciones -->
         <div class="icon-section">
+            {% if es_admin %}
+            <!-- Ícono admin -->
+            <span class="header-icon admin-badge" title="Administrador" style="
+                display:inline-flex; align-items:center; gap:4px;
+                font-size:11px; font-weight:600; color:#fff;
+                background: rgba(255,255,255,0.18); border-radius:20px;
+                padding:3px 10px 3px 6px; letter-spacing:0.3px;
+                border: 1px solid rgba(255,255,255,0.3);
+            ">
+                <span class="material-symbols-outlined" style="font-size:16px;">admin_panel_settings</span>
+                Admin
+            </span>
+            {% elif es_supervisor %}
+            <span class="header-icon" title="Supervisor" style="
+                display:inline-flex; align-items:center; gap:4px;
+                font-size:11px; font-weight:600; color:#fff;
+                background: rgba(255,255,255,0.15); border-radius:20px;
+                padding:3px 10px 3px 6px; letter-spacing:0.3px;
+                border: 1px solid rgba(255,255,255,0.25);
+            ">
+                <span class="material-symbols-outlined" style="font-size:16px;">supervisor_account</span>
+                Supervisor
+            </span>
+            {% endif %}
+
             <a href="{% url 'inicio' %}" class="header-icon" title="Volver al inicio">
                 <span class="material-symbols-outlined">home</span>
             </a>
@@ -45,7 +70,12 @@
                                 <div class="notif-content">
                                     <span class="dropdown-notif-text">{{ n.mensaje }}</span>
 
-                                    <button class="btn-marcar-leida btn-link-leida" data-id="{{ n.id }}"
+                                    <!-- Fecha y hora minimalista -->
+                                    <span style="font-size:10px; color:#999; display:block; margin-top:2px;">
+                                        {{ n.fecha|date:"d/m/Y" }} · {{ n.fecha|time:"H:i" }}
+                                    </span>
+
+                                    <button class="btn-marcar-leido btn-link-leida" data-id="{{ n.id }}"
                                         style="{% if n.leida %}display:none{% else %}display:block{% endif %};
                                                color:blue; font-size:12px; background:none;
                                                border:none; cursor:pointer; padding:0; text-align:left;">

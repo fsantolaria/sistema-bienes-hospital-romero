@@ -150,7 +150,14 @@ def login_view(request):
                 return _rerender_error("El tipo de usuario seleccionado no coincide con el usuario ingresado.")
         else:
             return _rerender_error("Tipo de usuario no válido.")
- 
+
+        # Notificar a admins del inicio de sesión
+        tipo_label = {"admin": "Administrador", "supervisor": "Supervisor", "operador": "Operador"}.get(tipo_usuario, tipo_usuario.capitalize())
+        hora_local = timezone.localtime(timezone.now()).strftime("%d/%m/%Y %H:%M")
+        crear_notificacion_admins(
+            f"{tipo_label} '{user.username}' inició sesión — {hora_local}"
+        )
+
         if next_url and url_has_allowed_host_and_scheme(
             next_url,
             allowed_hosts={request.get_host()},
@@ -158,6 +165,7 @@ def login_view(request):
         ):
             return redirect(next_url)
         return redirect(_role_route_name(user))
+
  
     return render(
         request,
