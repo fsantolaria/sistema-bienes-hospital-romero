@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Panel del Supervisor - Sistema de Bienes Patrimoniales{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/home_admin.css' %}">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<!-- Contenedor principal -->
+<main class="main-container">
+    <!-- Panel lateral izquierdo -->
+    <aside class="left-panel">
+        <img src="{% static 'img/diseño-izquierda.png' %}" alt="Gobierno de Buenos Aires" class="panel-image">
+    </aside>
+
+    <!-- Área central -->
+    <section class="home-content">
+        <div class="menu-buttons">
+                <!-- Botón Bienes -->
+                <a href="{% url 'lista_bienes' %}" class="menu-button">
+                    <i class="fas fa-table-cells-large card-icon"></i>
+                    Bienes
+                </a>
+        </div>
+    </section>
+</main>
+
+<footer class="footer"></footer>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/home_admin.js' %}"></script>
+{% endblock %}

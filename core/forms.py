@@ -138,6 +138,11 @@ class OperadorForm(forms.Form):
         ]
     )
     email = forms.EmailField(required=False, label='Email')
+    tipo_usuario = forms.ChoiceField(
+        choices=[('operador', 'Operador'), ('supervisor', 'Supervisor')],
+        initial='operador',
+        label='Tipo de Usuario'
+    )
     estado = forms.ChoiceField(
         choices=[('habilitado', 'Habilitado'), ('no-habilitado', 'No Habilitado')],
         initial='habilitado',
