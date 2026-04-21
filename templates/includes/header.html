@@ -12,31 +12,6 @@
 
         <!-- Íconos de acciones -->
         <div class="icon-section">
-            {% if es_admin %}
-            <!-- Ícono admin -->
-            <span class="header-icon admin-badge" title="Administrador" style="
-                display:inline-flex; align-items:center; gap:4px;
-                font-size:11px; font-weight:600; color:#fff;
-                background: rgba(255,255,255,0.18); border-radius:20px;
-                padding:3px 10px 3px 6px; letter-spacing:0.3px;
-                border: 1px solid rgba(255,255,255,0.3);
-            ">
-                <span class="material-symbols-outlined" style="font-size:16px;">admin_panel_settings</span>
-                Admin
-            </span>
-            {% elif es_supervisor %}
-            <span class="header-icon" title="Supervisor" style="
-                display:inline-flex; align-items:center; gap:4px;
-                font-size:11px; font-weight:600; color:#fff;
-                background: rgba(255,255,255,0.15); border-radius:20px;
-                padding:3px 10px 3px 6px; letter-spacing:0.3px;
-                border: 1px solid rgba(255,255,255,0.25);
-            ">
-                <span class="material-symbols-outlined" style="font-size:16px;">supervisor_account</span>
-                Supervisor
-            </span>
-            {% endif %}
-
             <a href="{% url 'inicio' %}" class="header-icon" title="Volver al inicio">
                 <span class="material-symbols-outlined">home</span>
             </a>
@@ -52,7 +27,7 @@
                 <div id="notificacionesDropdown" class="notificaciones-dropdown" style="display:none;">
                     <div class="dropdown-header">
                         <span>Notificaciones</span>
-                        <button id="btn-marcar-todas" type="button" title="Marcar todas como leídas"
+                        <button id="btn-marcar-todas" class="btn-marcar-todas" type="button" title="Marcar todas como leídas"
                                 style="background:none; border:none; cursor:pointer; font-size:12px;
                                        color:#fff; opacity:0.85; padding:0; margin-left:auto;
                                        display:flex; align-items:center; gap:4px;">

@@ -93,6 +93,7 @@ scratch_db.py
 scratch_wipe.py
 script.py
 deploy_completo.sh
+setup_test_users.py
 python
 sistema_bienes/settings_local.py
 
