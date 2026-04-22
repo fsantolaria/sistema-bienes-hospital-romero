@@ -153,9 +153,8 @@ def login_view(request):
 
         # Notificar a admins del inicio de sesión
         tipo_label = {"admin": "Administrador", "supervisor": "Supervisor", "operador": "Operador"}.get(tipo_usuario, tipo_usuario.capitalize())
-        hora_local = timezone.localtime(timezone.now()).strftime("%d/%m/%Y %H:%M")
         crear_notificacion_admins(
-            f"{tipo_label} '{user.username}' inició sesión — {hora_local}"
+            f"{tipo_label} '{user.username}' inició sesión"
         )
 
         if next_url and url_has_allowed_host_and_scheme(
