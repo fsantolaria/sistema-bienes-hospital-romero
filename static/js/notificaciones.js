@@ -288,7 +288,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function eliminarNotificacion(id, element) {
-        // Llamada al backend para persistir la eliminación
         fetch(`/notificaciones/${id}/eliminar/`, {
             method: 'POST',
             headers: {
@@ -302,14 +301,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (idx !== -1) notificaciones.splice(idx, 1);
                 if (element && element.parentNode) element.parentNode.removeChild(element);
                 actualizarBadge();
-                mostrarMensaje('Notificación eliminada', 'info');
-            } else {
-                mostrarMensaje('No se pudo eliminar la notificación en el servidor', 'error');
             }
-        }).catch(err => {
-            console.error(err);
-            mostrarMensaje('Error de red al eliminar notificación', 'error');
-        });
+        }).catch(err => console.error(err));
     }
 
     function marcarTodasComoLeidas() {
@@ -340,7 +333,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Funciones de manejo de notificaciones
     function marcarComoLeido(id) {
-        // Intentar marcar en backend primero (si existe), luego actualizar UI
         fetch(`/notificaciones/${id}/marcar-leida/`, {
             method: 'POST',
             headers: {
@@ -350,11 +342,9 @@ document.addEventListener('DOMContentLoaded', function() {
             body: '{}'
         }).then(resp => {
             if (resp.ok) {
-                // Actualizar array cliente si aplica
                 const notificacion = notificaciones.find(notif => notif.id == id);
                 if (notificacion) notificacion.leida = true;
 
-                // Si hay dropdown renderizado, actualizar atributo/data y clases
                 const dropdown = document.getElementById('notificacionesDropdown') || wrapperNotificaciones.querySelector('.notificaciones-dropdown');
                 if (dropdown) {
                     const li = dropdown.querySelector(`.dropdown-notif-item[data-id="${id}"]`);
@@ -365,16 +355,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (actionBtn) actionBtn.remove();
                     }
                 }
-
                 actualizarBadge();
-                mostrarMensaje('Notificación marcada como leída', 'success');
-            } else {
-                mostrarMensaje('No se pudo marcar la notificación como leída', 'error');
             }
-        }).catch(err => {
-            console.error(err);
-            mostrarMensaje('Error de red al marcar notificación', 'error');
-        });
+        }).catch(err => console.error(err));
     }
 
     function manejarAceptar(id) {

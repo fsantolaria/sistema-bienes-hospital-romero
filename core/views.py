@@ -421,7 +421,9 @@ def alta_operadores(request):
         'estado': 'habilitado',
         'password': '',
     })
-    return render(request, "alta_operadores.html", {"usar_operador_model": False, "form": form})
+    ctx = permisos_context(request.user)
+    ctx.update({"usar_operador_model": False, "form": form})
+    return render(request, "alta_operadores.html", ctx)
  
 @login_required
 def editar_operador(request, pk):
@@ -439,22 +441,16 @@ def editar_operador(request, pk):
  
         form = OperadorForm(request.POST, operador_pk=operador.pk)
         if not form.is_valid():
-            ctx = {
-                "operador": operador,
-                "usar_operador_model": False,
-                "form": form,
-            }
+            ctx = permisos_context(request.user)
+            ctx.update({"operador": operador, "usar_operador_model": False, "form": form})
             return render(request, "editar_operadores.html", ctx)
  
         numero_doc = form.cleaned_data["dni"]
  
         if not nombre or not apellido:
             messages.error(request, "Debés completar nombre y apellido.")
-            ctx = {
-                "operador": operador,
-                "usar_operador_model": False,
-                "form": form,
-            }
+            ctx = permisos_context(request.user)
+            ctx.update({"operador": operador, "usar_operador_model": False, "form": form})
             return render(request, "editar_operadores.html", ctx)
  
         hubo_cambio = False
@@ -540,11 +536,12 @@ def editar_operador(request, pk):
         'estado': 'habilitado' if operador.is_active else 'no-habilitado',
     }, operador_pk=operador.pk)
  
-    ctx = {
+    ctx = permisos_context(request.user)
+    ctx.update({
         "operador": operador,
         "usar_operador_model": False,
         "form": form,
-    }
+    })
     return render(request, "editar_operadores.html", ctx)
  
  
