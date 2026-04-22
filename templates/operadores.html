@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Operadores - Sistema de Patrimonio{% endblock %}
+{% block title %}Usuarios - Sistema de Patrimonio{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/operadores.css' %}">
@@ -13,14 +13,14 @@
   <a class="btn-icono-agregar" href="{% url 'alta_operadores' %}">
     <i class="fa-solid fa-user-plus"></i>
   </a>
-  <h2>OPERADORES</h2>
+  <h2>USUARIOS</h2>
 </div>
 
 <div class="tabla-operadores-container">
   <table class="tabla-operadores">
     <thead>
       <tr>
-        <th>OPERADOR</th>
+        <th>USUARIO</th>
         <th>NOMBRE Y APELLIDO</th>
         <th class="text-center">EDITAR</th>
   <th class="text-center">DAR DE BAJA</th>
@@ -43,7 +43,7 @@
           <div style="display:flex; justify-content:center; margin-top:6px;">
             {% if puede_gestionar_operadores %}
             <!-- Botón que abre modal bonito en vez de usar confirm() -->
-            <button type="button" class="btn btn-sm btn-danger btn-eliminar-operador" data-action="{% url 'eliminar_operador' op.pk %}" data-username="{{ op.username }}" title="Eliminar operador" style="padding:6px 8px; display:inline-flex; align-items:center; justify-content:center;">
+            <button type="button" class="btn btn-sm btn-danger btn-eliminar-operador" data-action="{% url 'eliminar_operador' op.pk %}" data-username="{{ op.username }}" title="Eliminar usuario" style="padding:6px 8px; display:inline-flex; align-items:center; justify-content:center;">
               <i class="fa-solid fa-trash"></i>
             </button>
             {% endif %}
@@ -55,7 +55,7 @@
       </tr>
       {% empty %}
       <tr>
-        <td colspan="5" class="text-center text-muted py-3">No hay operadores cargados.</td>
+        <td colspan="5" class="text-center text-muted py-3">No hay usuarios cargados.</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -93,7 +93,7 @@ console.log('Operadores (render server-side).');
       <div class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirmDeleteTitle">
         <div class="confirm-card__header" id="confirmDeleteTitle">Confirmar eliminación</div>
         <div class="confirm-card__body">
-          <p id="confirmDeleteMessage">¿Estás seguro de eliminar al operador <span class="confirm-card__username" id='confirmDeleteUsername'></span>? Esta acción es irreversible.</p>
+          <p id="confirmDeleteMessage">¿Estás seguro de eliminar al usuario <span class="confirm-card__username" id='confirmDeleteUsername'></span>? Esta acción es irreversible.</p>
         </div>
         <div class="confirm-card__actions">
           <button type="button" id="confirmDeleteCancel" class="btn btn-cancel">Cancelar</button>

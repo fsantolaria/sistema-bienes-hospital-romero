@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Editar Operador{% endblock %}
+{% block title %}Editar Usuario{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/alta_operadores.css' %}">
@@ -11,13 +11,13 @@
 {% block content %}
 <div id="alta-operador-view" class="view active">
   <div class="alta-header">
-      <h2>EDITAR OPERADOR</h2>
+      <h2>EDITAR USUARIO</h2>
   </div>
 
   <form method="POST" class="form-alta">
     {% csrf_token %}
     <div class="form-section">
-      <h3 class="section-title">Datos del operador</h3>
+      <h3 class="section-title">Datos del usuario</h3>
 
       <div class="form-group-item">
         <label for="nombre">Nombre:</label>
