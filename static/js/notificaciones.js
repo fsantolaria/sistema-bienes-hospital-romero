@@ -362,22 +362,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function manejarAceptar(id) {
         const notificacion = notificaciones.find(notif => notif.id == id);
-        if (notificacion) {
-            // Aquí iría la lógica para aceptar la solicitud
-            console.log('Aceptando notificación:', notificacion);
-            marcarComoLeido(id);
-            mostrarMensaje('Solicitud aceptada correctamente', 'success');
-        }
+        if (notificacion) marcarComoLeido(id);
     }
 
     function manejarRechazar(id) {
         const notificacion = notificaciones.find(notif => notif.id == id);
-        if (notificacion) {
-            // Aquí iría la lógica para rechazar la solicitud
-            console.log('Rechazando notificación:', notificacion);
-            marcarComoLeido(id);
-            mostrarMensaje('Solicitud rechazada', 'info');
-        }
+        if (notificacion) marcarComoLeido(id);
     }
 
     function cerrarModal(modal) {
@@ -389,71 +379,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 300);
     }
 
-    function mostrarMensaje(mensaje, tipo) {
-        // Si hay contenedor inline, usarlo
-        const inlineContainer = document.getElementById('inline-message');
-        if (inlineContainer) {
-            inlineContainer.textContent = mensaje;
-            inlineContainer.style.display = 'block';
-            // Cambiar color según tipo
-            if (tipo.includes('error')) {
-                inlineContainer.style.backgroundColor = '#ff6b6b'; // Rojo para error
-            } else if (tipo.includes('success')) {
-                inlineContainer.style.backgroundColor = '#87CEEB'; // Celeste para éxito
-            } else {
-                inlineContainer.style.backgroundColor = '#87CEEB'; // Default celeste
-            }
-            setTimeout(() => {
-                inlineContainer.style.display = 'none';
-            }, 4000); // 4 segundos
-            return;
-        }
-
-        let container = document.getElementById("popup-container");
-
-        if (!container) {
-            container = document.createElement("div");
-            container.id = "popup-container";
-            document.body.appendChild(container);
-        }
-
-        // Evitar duplicados
-        if ([...container.children].some(el => el.textContent.includes(mensaje))) {
-            return;
-        }
-
-        const popup = document.createElement("div");
-        popup.className = `popup ${tipo}`;
-
-        const tipoTokens = (tipo || '').split(/\s+/).filter(Boolean);
-        const tipoBase = tipoTokens.find(t => ['success', 'error', 'warning', 'info'].includes(t)) || 'info';
-        let icono = 'ℹ';
-
-        if (tipoTokens.includes('eliminar')) {
-            icono = '⚠';
-        } else if (tipoTokens.includes('editar')) {
-            icono = '✎';
-        } else if (tipoBase === 'success') {
-            icono = '✔';
-        } else if (tipoBase === 'error') {
-            icono = '✖';
-        } else if (tipoBase === 'warning') {
-            icono = '⚠';
-        }
-
-        popup.innerHTML = `
-            <span class="icon">${icono}</span>
-            <span>${mensaje}</span>
-        `;
-
-        container.appendChild(popup);
-
-        setTimeout(() => {
-            popup.style.opacity = "0";
-            popup.style.transform = "translateY(-10px)";
-            setTimeout(() => popup.remove(), 300);
-        }, 3500);
-    }
+    // Función desactivada intencionalmente — no mostrar mensajes de notificaciones
+    function mostrarMensaje(mensaje, tipo) { /* no-op */ }
 
     window.mostrarMensaje = mostrarMensaje;
     window.__processPopupMessages = function() {
