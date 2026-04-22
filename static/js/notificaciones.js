@@ -332,13 +332,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 }
                 actualizarBadge();
-                mostrarMensaje('Todas las notificaciones quedaron como leídas', 'success');
-            } else {
-                mostrarMensaje('No se pudo marcar todas las notificaciones como leídas', 'error');
             }
         }).catch(err => {
             console.error(err);
-            mostrarMensaje('Error de red al marcar todas las notificaciones', 'error');
         });
     }
 
