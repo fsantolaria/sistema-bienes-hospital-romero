@@ -1273,7 +1273,22 @@ def carga_masiva_bienes(request):
             engine = 'openpyxl'       # .xlsx, .xlsm y cualquier otro moderno
 
         df = pd.read_excel(archivo, dtype=str, engine=engine)
-        df.columns = [str(c).strip().lower() for c in df.columns]
+        import unicodedata
+
+        def normalizar(texto: str) -> str:
+            """Normaliza un nombre de columna: minúsculas, sin acentos, sin caracteres especiales."""
+            # Reemplazar ° y º (indicadores de grado/ordinal) que acompañan a N
+            texto = texto.replace('\u00b0', '').replace('\u00ba', '')  # °, º
+            # Quitar acentos/diacríticos via NFKD
+            texto = unicodedata.normalize('NFKD', texto)
+            texto = ''.join(c for c in texto if not unicodedata.combining(c))
+            # Solo letras, números y espacio; todo en minúsculas
+            texto = ''.join(c if c.isalnum() or c == ' ' else ' ' for c in texto)
+            # Colapsar espacios múltiples
+            return ' '.join(texto.lower().split())
+
+        # Normalizar todos los nombres de columnas del DataFrame
+        df.columns = [normalizar(str(c)) for c in df.columns]
 
         def s(v: object) -> str:
             """Limpia el valor; devuelve '' si es vacío/nan."""
@@ -1283,18 +1298,20 @@ def carga_masiva_bienes(request):
             return "" if txt.lower() in ("nan", "none", "-") else txt
 
         def sno(v: object) -> str:
-            """Como s() pero devuelve 'NO' si está vacío — para campos de texto opcionales."""
+            """Como s() pero devuelve 'NO' si esta vacio — para campos de texto opcionales."""
             val = s(v)
             return val if val else "NO"
 
         def get_first(row, names) -> str:
+            """Busca el primer match normalizando los nombres de columna."""
             for n in names:
-                if n in df.columns:
-                    return s(row.get(n))
+                key = normalizar(n)
+                if key in df.columns:
+                    return s(row.get(key))
             return ""
 
         def get_first_no(row, names) -> str:
-            """get_first pero devuelve 'NO' si el valor está vacío."""
+            """get_first pero devuelve 'NO' si el valor esta vacio."""
             val = get_first(row, names)
             return val if val else "NO"
 
@@ -1425,10 +1442,13 @@ def carga_masiva_bienes(request):
                         fecha_alta = date.today()
 
                     expediente_obj = None
+                    # N° Expediente y N° Compra son columnas independientes
+                    # Solo se crea Expediente si el N° Expediente tiene un valor real
                     if nro_exp and nro_exp.upper() != "NO":
                         expediente_obj, _ = Expediente.objects.get_or_create(
                             numero_expediente=nro_exp
                         )
+                        # N° Compra se guarda solo dentro del Expediente correspondiente
                         if nro_compra and nro_compra.upper() != "NO":
                             expediente_obj.numero_compra = nro_compra
                             expediente_obj.save(update_fields=["numero_compra"])
