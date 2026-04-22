@@ -4,9 +4,6 @@ from decouple import config, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-# ✅ Crea automáticamente la carpeta 'logs' si no existe
-os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
-
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-cambiar-en-produccion!')
 
 DEBUG = config('DEBUG', default=False, cast=bool)
@@ -31,12 +28,14 @@ AUTH_USER_MODEL = 'core.Usuario'
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "core.middleware.NoCacheMiddleware",
 ]
 
 ROOT_URLCONF = 'sistema_bienes.urls'
@@ -62,7 +61,7 @@ WSGI_APPLICATION = 'sistema_bienes.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': BASE_DIR / 'db_development.sqlite3',
     }
 }
 
@@ -87,9 +86,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-LOGIN_REDIRECT_URL = '/'
-LOGIN_URL = '/accounts/login/'
-LOGOUT_REDIRECT_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/inicio/'
+LOGIN_URL = '/login/'
+LOGOUT_REDIRECT_URL = '/login/'
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
@@ -104,7 +103,6 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(os.path.join(BASE_DIR, 'logs', 'app.log')),
         logging.StreamHandler()
     ]
 )

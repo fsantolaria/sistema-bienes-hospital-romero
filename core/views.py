@@ -37,9 +37,16 @@ def _role_route_name(user) -> str:
     if hasattr(user, "tipo_usuario"):
         if user.tipo_usuario == "admin":
             return "home_admin"
+<<<<<<< HEAD
         if user.tipo_usuario == "supervisor":
             return "home_supervisor"
         return "home_operador"
+=======
+        elif user.tipo_usuario == "supervisor":
+            return "home_supervisor"
+        else:
+            return "home_operador"
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
     return "home_operador"
 
 
@@ -53,9 +60,20 @@ def permisos_context(user):
             "notificaciones": [],
             "notificaciones_count": 0,
         }
+<<<<<<< HEAD
     tipo = getattr(user, "tipo_usuario", None)
     es_admin = tipo == "admin" or user.is_superuser
     es_supervisor = tipo == "supervisor"
+=======
+ 
+    if hasattr(user, "tipo_usuario"):
+        es_admin = user.tipo_usuario == "admin" or user.is_superuser
+        es_supervisor = user.tipo_usuario == "supervisor"
+    else:
+        es_admin = user.is_superuser
+        es_supervisor = False
+
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
     notificaciones = list(
         Notificacion.objects
         .filter(usuario=user, eliminada=False)
@@ -65,6 +83,10 @@ def permisos_context(user):
     notificaciones_count = Notificacion.objects.filter(
         usuario=user, leida=False, eliminada=False
     ).count()
+<<<<<<< HEAD
+=======
+
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
     return {
         "es_admin": es_admin,
         "es_supervisor": es_supervisor,
@@ -118,7 +140,11 @@ def login_view(request):
         if not tipo_usuario:
             if getattr(user, "is_superuser", False):
                 tipo_usuario = "admin"
+<<<<<<< HEAD
             elif hasattr(user, "tipo_usuario") and user.tipo_usuario in ("admin", "empleado", "supervisor"):
+=======
+            elif hasattr(user, "tipo_usuario") and user.tipo_usuario in ("admin", "operador", "supervisor"):
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
                 tipo_usuario = user.tipo_usuario
             else:
                 return _rerender_error("No se pudo determinar el tipo de usuario. Volvé a intentar.")
@@ -135,16 +161,29 @@ def login_view(request):
                 login(request, user)
             else:
                 return _rerender_error("El tipo de usuario seleccionado no coincide con el usuario ingresado.")
+<<<<<<< HEAD
         elif tipo_usuario == "empleado":
+=======
+        elif tipo_usuario == "operador":
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
             if user.is_superuser:
                 return _rerender_error("Un administrador no puede ingresar como operador.")
-            if hasattr(user, "tipo_usuario") and user.tipo_usuario == "empleado":
+            if hasattr(user, "tipo_usuario") and user.tipo_usuario == "operador":
                 login(request, user)
             else:
                 return _rerender_error("El tipo de usuario seleccionado no coincide con el usuario ingresado.")
         else:
             return _rerender_error("Tipo de usuario no válido.")
 
+<<<<<<< HEAD
+=======
+        # Notificar a admins del inicio de sesión
+        tipo_label = {"admin": "Administrador", "supervisor": "Supervisor", "operador": "Operador"}.get(tipo_usuario, tipo_usuario.capitalize())
+        crear_notificacion_admins(
+            f"{tipo_label} '{user.username}' inició sesión"
+        )
+
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
         if next_url and url_has_allowed_host_and_scheme(
             next_url,
             allowed_hosts={request.get_host()},
@@ -153,6 +192,10 @@ def login_view(request):
             return redirect(next_url)
         return redirect(_role_route_name(user))
 
+<<<<<<< HEAD
+=======
+ 
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
     return render(
         request,
         "login.html",
@@ -166,6 +209,7 @@ def login_view(request):
 @login_required
 def home_operador(request):
     context = permisos_context(request.user)
+    context['logout_on_back'] = True
     return render(request, "home_operador.html", context)
 
 
@@ -196,7 +240,9 @@ def bienes(request):
             if perms.get("es_admin", False):
                 return redirect("lista_bienes")
             return redirect("lista_bienes_operador")
-        messages.error(request, "Revisá los datos del formulario.")
+        # Mensaje de error
+        else:
+            messages.error(request, "Error al ejecutar la carga")
     else:
         form = BienPatrimonialForm()
 
@@ -207,11 +253,16 @@ def bienes(request):
 
 def logout_view(request):
     logout(request)
-    list(get_messages(request))
     messages.success(request, "Sesión cerrada exitosamente")
+<<<<<<< HEAD
     return redirect("inicio")
 
 
+=======
+    return redirect("login")
+ 
+ 
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
 # ============================
 # ÁREA PRIVADA
 # ============================
@@ -222,11 +273,16 @@ def home_admin(request):
     if not perms["es_admin"]:
         messages.error(request, "No tienes permisos para acceder a esta página")
         return redirect("home_operador")
+<<<<<<< HEAD
+=======
+    perms['logout_on_back'] = True
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
     return render(request, "home_admin.html", perms)
 
 
 @login_required
 def home_supervisor(request):
+<<<<<<< HEAD
     tipo = getattr(request.user, "tipo_usuario", None)
     if not (request.user.is_superuser or tipo in ("admin", "supervisor")):
         messages.error(request, "No tenés permisos para acceder a esta página.")
@@ -242,6 +298,14 @@ def home_supervisor(request):
         "es_supervisor": True,
     })
     return render(request, "home_supervisor.html", context)
+=======
+    perms = permisos_context(request.user)
+    if not perms["es_supervisor"]:
+        messages.error(request, "No tienes permisos para acceder a esta página")
+        return redirect("home_operador")
+    return render(request, "home_supervisor.html", perms)
+
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
 
 
 # ============================
@@ -285,6 +349,10 @@ def recuperar_password(request):
 
 @login_required
 def alta_operadores(request):
+    perms = permisos_context(request.user)
+    if not perms["es_admin"]:
+        messages.error(request, "No tienes permisos para acceder a esta página")
+        return redirect("home_operador")
     if request.method == "POST":
         nombre = " ".join((request.POST.get("nombre") or "").strip().split())
         apellido = " ".join((request.POST.get("apellido") or "").strip().split())
@@ -350,7 +418,12 @@ def alta_operadores(request):
             is_superuser=False,
             is_active=is_active,
         )
+<<<<<<< HEAD
         operador.tipo_usuario = "empleado"
+=======
+        operador.tipo_usuario = form.cleaned_data["tipo_usuario"]
+
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
 
         if password:
             operador.set_password(password)
@@ -402,12 +475,20 @@ def alta_operadores(request):
         'pais': 'Argentina',
         'dni': '',
         'email': '',
+        'tipo_usuario': 'operador',
         'estado': 'habilitado',
         'password': '',
     })
+<<<<<<< HEAD
     return render(request, "alta_operadores.html", {"usar_operador_model": False, "form": form})
 
 
+=======
+    ctx = permisos_context(request.user)
+    ctx.update({"usar_operador_model": False, "form": form})
+    return render(request, "alta_operadores.html", ctx)
+ 
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
 @login_required
 def editar_operador(request, pk):
     operador = get_object_or_404(Operador, pk=pk, is_staff=False)
@@ -419,26 +500,21 @@ def editar_operador(request, pk):
         estado = (request.POST.get("estado") or "habilitado").strip()
         pais = (request.POST.get("pais") or "").strip()
         dni = (request.POST.get("dni") or "").strip()
+        tipo_usuario = (request.POST.get("tipo_usuario") or "empleado").strip()
         password = (request.POST.get("password") or "").strip()
 
         form = OperadorForm(request.POST, operador_pk=operador.pk)
         if not form.is_valid():
-            ctx = {
-                "operador": operador,
-                "usar_operador_model": False,
-                "form": form,
-            }
+            ctx = permisos_context(request.user)
+            ctx.update({"operador": operador, "usar_operador_model": False, "form": form})
             return render(request, "editar_operadores.html", ctx)
 
         numero_doc = form.cleaned_data["dni"]
 
         if not nombre or not apellido:
             messages.error(request, "Debés completar nombre y apellido.")
-            ctx = {
-                "operador": operador,
-                "usar_operador_model": False,
-                "form": form,
-            }
+            ctx = permisos_context(request.user)
+            ctx.update({"operador": operador, "usar_operador_model": False, "form": form})
             return render(request, "editar_operadores.html", ctx)
 
         hubo_cambio = False
@@ -490,12 +566,25 @@ def editar_operador(request, pk):
             else:
                 operador.numero_doc = numero_doc
 
+<<<<<<< HEAD
+=======
+        if hasattr(operador, "tipo_usuario"):
+            if operador.tipo_usuario != tipo_usuario:
+                operador.tipo_usuario = tipo_usuario
+                hubo_cambio = True
+            else:
+                operador.tipo_usuario = tipo_usuario
+
+
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
         if password:
             operador.set_password(password)
             hubo_cambio = True
 
         if hubo_cambio:
             operador.save()
+            # Mensaje de éxito
+            messages.success(request, f"✅ Operador '{operador.username}' actualizado correctamente.", extra_tags='editar')
             try:
                 crear_notificacion(request.user, f"Se editó el operador '{operador.username}'.")
             except Exception:
@@ -510,14 +599,21 @@ def editar_operador(request, pk):
         'email': operador.email or '',
         'dni': operador.numero_doc or '',
         'pais': getattr(operador, 'pais', '') or '',
+        'tipo_usuario': getattr(operador, 'tipo_usuario', 'operador') or 'operador',
         'estado': 'habilitado' if operador.is_active else 'no-habilitado',
     }, operador_pk=operador.pk)
+<<<<<<< HEAD
 
     ctx = {
+=======
+ 
+    ctx = permisos_context(request.user)
+    ctx.update({
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
         "operador": operador,
         "usar_operador_model": False,
         "form": form,
-    }
+    })
     return render(request, "editar_operadores.html", ctx)
 
 
@@ -526,16 +622,17 @@ def editar_operador(request, pk):
 def eliminar_operador(request, pk):
     perms = permisos_context(request.user)
     if not perms.get("puede_gestionar_operadores", False):
-        messages.error(request, "No tienes permisos para eliminar operadores.")
+        messages.error(request, "❌ No tienes permisos para eliminar operadores.")
         return redirect("operadores")
 
     operador = get_object_or_404(Operador, pk=pk, is_staff=False)
 
     if operador == request.user:
-        messages.error(request, "No podés eliminar tu propio usuario.")
+        messages.error(request, "❌ No podés eliminar tu propio usuario.")
         return redirect("operadores")
 
     identificador = operador.username
+    nombre_completo = f"{operador.first_name} {operador.last_name}".strip()
     operador.delete()
 
     try:
@@ -695,7 +792,7 @@ def reportes_pdf(request):
         elems = []
 
         title = f"Reporte de Bienes Patrimoniales – {rango_desc}"
-        meta = f"Generado: {now.strftime('%d/%m/%Y %H:%M')} · Usuario: {request.user.username}"
+        meta = f"Generado: {timezone.localtime(now).strftime('%d/%m/%Y %H:%M')} · Usuario: {request.user.username}"
         elems.append(Paragraph(title, title_style))
         elems.append(Paragraph(meta, meta_style))
         elems.append(Spacer(1, 8))
@@ -756,7 +853,7 @@ def reportes_pdf(request):
             notif_data = [[P("Fecha", True), P("Mensaje", True)]]
             for n in notifs:
                 notif_data.append([
-                    P(n.fecha.strftime("%d/%m/%Y %H:%M")),
+                    P(timezone.localtime(n.fecha).strftime("%d/%m/%Y %H:%M")),
                     P(n.mensaje),
                 ])
             nt_col_w = [3.2 * cm, usable_w - 3.2 * cm]
@@ -924,7 +1021,7 @@ def _build_ordering_baja(orden_param: str):
 def lista_bienes(request):
     user = request.user
     perms = permisos_context(user)
-    if not perms["es_admin"]:
+    if not perms["es_admin"] and not perms["es_supervisor"]:
         return redirect("lista_bienes_operador")
 
     q = (request.GET.get("q") or "").strip()
@@ -1320,11 +1417,14 @@ def eliminar_bien(request, pk):
         return redirect("lista_bienes")
 
     bien = get_object_or_404(BienPatrimonial, pk=pk)
+    nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
     crear_notificacion_admins(
-        f"Se dio de baja el bien '{bien.nombre}' (Clave: {bien.clave_unica})."
+        f"Se dio de baja el bien '{nombre_bien}' (Clave: {bien.clave_unica})."
     )
     messages.success(request, f"Bien '{bien.nombre}' eliminado correctamente.")
     bien.delete()
+    # Mensaje de éxito
+    messages.success(request, f"✅ Bien '{nombre_bien}' eliminado correctamente.", extra_tags='eliminar')
     return redirect("lista_bienes")
 
 
@@ -1346,24 +1446,91 @@ def carga_masiva_bienes(request):
         return render(request, "carga_masiva.html", {"form": form})
 
     try:
+<<<<<<< HEAD
         archivo = request.FILES["archivo_excel"]
         sector_form = (form.cleaned_data.get("sector") or "").strip()
 
         df = pd.read_excel(archivo, dtype=str)
         df.columns = [str(c).strip().lower() for c in df.columns]
+=======
+        archivos = request.FILES.getlist("archivo_excel")
+        sector_form = (form.cleaned_data.get("servicio") or "").strip()
+ 
+        creados, actualizados, errores = 0, 0, []
+        from core.models import Expediente
+        import unicodedata
+        import os
+
+        def normalizar(texto: str) -> str:
+            """Normaliza un nombre de columna: minúsculas, sin acentos, sin caracteres especiales."""
+            texto = texto.replace('\u00b0', '').replace('\u00ba', '')  # °, º
+            texto = unicodedata.normalize('NFKD', texto)
+            texto = ''.join(c for c in texto if not unicodedata.combining(c))
+            texto = ''.join(c if c.isalnum() or c == ' ' else ' ' for c in texto)
+            return ' '.join(texto.lower().split())
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
 
         def s(v: object) -> str:
+            """Limpia el valor; devuelve '' si es vacío/nan."""
             if v is None:
                 return ""
             txt = str(v).strip()
+<<<<<<< HEAD
             return "" if txt.lower() == "nan" else txt
+=======
+            # Ya no reemplazamos el "-" por vacío, así toma los guiones como válidos
+            return "" if txt.lower() in ("nan", "none") else txt
+
+        def sno(v: object) -> str:
+            """Como s() pero devuelve 'NO' si esta vacio — para campos de texto opcionales."""
+            val = s(v)
+            return val if val else "NO"
+
+        for archivo in archivos:
+            nombre_archivo = getattr(archivo, 'name', '').lower()
+            if nombre_archivo.endswith('.xls'):
+                engine = 'xlrd'
+            elif nombre_archivo.endswith('.xlsb'):
+                engine = 'pyxlsb'
+            elif nombre_archivo.endswith(('.ods', '.odf', '.odt')):
+                engine = 'odf'
+            else:
+                engine = 'openpyxl'
+
+            df = pd.read_excel(archivo, dtype=str, engine=engine)
+            df.columns = [normalizar(str(c)) for c in df.columns]
+
+            # Inferir servicio desde el nombre si no se puso en el form
+            servicio_archivo = sector_form
+            if not servicio_archivo:
+                # Usamos el nombre original sin extension, en mayúsculas
+                servicio_archivo = os.path.splitext(getattr(archivo, 'name', ''))[0].upper()
+
+            def get_first(row, names) -> str:
+                """Busca el primer match normalizando los nombres de columna."""
+                for n in names:
+                    key = normalizar(n)
+                    if key in df.columns:
+                        return s(row.get(key))
+                return ""
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
 
         def get_first(row, names) -> str:
+            """Busca el primer match normalizando los nombres de columna."""
             for n in names:
-                if n in df.columns:
-                    return s(row.get(n))
+                key = normalizar(n)
+                if key in df.columns:
+                    return s(row.get(key))
             return ""
 
+<<<<<<< HEAD
+=======
+        def get_first_no(row, names) -> str:
+            """get_first pero devuelve 'NO' si el valor esta vacio."""
+            val = get_first(row, names)
+            return val if val else "NO"
+
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
         def to_int1(v) -> int:
             txt = s(v)
             if not txt:
@@ -1434,6 +1601,7 @@ def carga_masiva_bienes(request):
         for i, row in df.iterrows():
             try:
                 with transaction.atomic():
+<<<<<<< HEAD
                     numero_id = get_first(row, ["n de id", "n_de_id", "numero_identificacion", "id_patrimonial", "nº de id", "no de id"])
                     nro_exp = get_first(row, ["n de expediente", "n_de_expediente", "numero_expediente", "nº de expediente", "no de expediente", "expediente"])
                     nro_compra = get_first(row, ["n de compra", "n_de_compra", "numero_compra", "nº de compra", "no de compra"])
@@ -1446,12 +1614,58 @@ def carga_masiva_bienes(request):
                     nomencl = get_first(row, ["nomenclatura de bienes", "nomenclatura_de_bienes", "nomenclatura_bienes"])
                     observ = get_first(row, ["observaciones", "obs"])
 
+=======
+                    numero_id = get_first(row, [
+                        "n° id", "nº id", "n° de id", "nº de id",
+                        "n de id", "n_de_id", "numero_identificacion",
+                        "id_patrimonial", "no de id", "n id",
+                    ])
+                    nro_exp = get_first(row, [
+                        "n° expediente", "nº expediente", "n° de expediente",
+                        "n de expediente", "n_de_expediente", "numero_expediente",
+                        "nº de expediente", "no de expediente", "expediente",
+                    ])
+                    nro_compra = get_first(row, [
+                        "n° compra", "nº compra", "n° de compra",
+                        "n de compra", "n_de_compra", "numero_compra",
+                        "nº de compra", "no de compra",
+                    ])
+                    nro_serie = get_first_no(row, [
+                        "n° serie", "nº serie", "n° de serie",
+                        "n de serie", "n_de_serie", "numero_serie",
+                        "nº de serie", "no de serie",
+                    ])
+                    descripcion = get_first(row, [
+                        "descripcion", "descripción", "descripcion_del_bien",
+                    ])
+                    cuenta_cod = get_first_no(row, [
+                        "cuenta código", "cuenta codigo", "cuenta_código", "cuenta_codigo",
+                    ])
+                    nomencl = get_first_no(row, [
+                        "nomenclatura", "nomenclatura de bienes",
+                        "nomenclatura_de_bienes", "nomenclatura_bienes",
+                    ])
+                    observ = get_first_no(row, ["observaciones", "obs"])
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
                     origen_txt = get_first(row, ["origen"])
                     estado_txt = get_first(row, ["estado"])
                     precio_raw = get_first(row, ["precio", "valor", "importe"])
 
+<<<<<<< HEAD
                     fecha_alta = parse_date_any(get_first(row, ["fecha de alta", "fecha_de_alta", "fecha_alta"]))
                     fecha_baja = parse_date_any(get_first(row, ["fecha de baja", "fecha_de_baja", "fecha_baja"]))
+=======
+                    cantidad = to_int1(get_first(row, ["cantidad"]))
+                    servicios_raw = s(get_first(row, ["servicios", "servicio", "sector"]) or servicio_archivo)
+                    servicios = servicios_raw if servicios_raw else "NO"
+
+                    fecha_alta = parse_date_any(get_first(row, [
+                        "fecha alta", "fecha de alta", "fecha_de_alta", "fecha_alta",
+                    ]))
+                    fecha_baja = parse_date_any(get_first(row, [
+                        "fecha de baja", "fecha_de_baja", "fecha_baja",
+                    ]))
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
 
                     origen_val = map_origen(origen_txt)
                     estado_val = map_estado(estado_txt)
@@ -1464,15 +1678,22 @@ def carga_masiva_bienes(request):
                         fecha_alta = date.today()
 
                     expediente_obj = None
-                    if nro_exp:
+                    # N° Expediente y N° Compra son columnas independientes
+                    # Solo se crea Expediente si el N° Expediente tiene un valor real
+                    if nro_exp and nro_exp.upper() != "NO":
                         expediente_obj, _ = Expediente.objects.get_or_create(
                             numero_expediente=nro_exp
                         )
-                        if nro_compra:
+                        # N° Compra se guarda solo dentro del Expediente correspondiente
+                        if nro_compra and nro_compra.upper() != "NO":
                             expediente_obj.numero_compra = nro_compra
                             expediente_obj.save(update_fields=["numero_compra"])
 
+<<<<<<< HEAD
                     nombre = descripcion[:200] if descripcion else (nro_serie or "SIN NOMBRE")
+=======
+                    nombre = descripcion[:200] if descripcion else (nro_serie if nro_serie != "NO" else "SIN NOMBRE")
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
 
                     defaults = {
                         "nombre": nombre,
@@ -1511,17 +1732,29 @@ def carga_masiva_bienes(request):
                     else:
                         BienPatrimonial.objects.create(**defaults)
                         created = True
+<<<<<<< HEAD
 
                     creados += int(created)
                     actualizados += int(not created)
 
             except (ValueError, ValidationError, IntegrityError) as e:
                 errores.append(f"Fila {i + 2}: {e}")
+=======
+ 
+                    if created:
+                        creados += 1
+                    else:
+                        actualizados += 1
+            except Exception as e:
+                errores.append(f"Fila {i+1} en '{getattr(archivo, 'name', 'Excel')}': {str(e)}")
+ 
+        mensaje = f"✅ Carga masiva exitosa. Se procesaron {len(archivos)} archivo(s). Bienes creados: {creados}. Actualizados: {actualizados}."
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
 
         if creados or actualizados:
             messages.success(
                 request,
-                f"Creados: {creados}, Actualizados: {actualizados}. Errores: {len(errores)}",
+                f"✅ Creados: {creados}, Actualizados: {actualizados}. Errores: {len(errores)}",
             )
         else:
             messages.warning(request, "No se crearon ni actualizaron bienes.")
@@ -1560,7 +1793,7 @@ def eliminar_bienes_seleccionados(request):
         return redirect("lista_bienes")
 
     eliminados = BienPatrimonial.objects.filter(pk__in=ids).delete()[0]
-    messages.success(request, f"Eliminados: {eliminados}")
+    messages.success(request, f"✅ Eliminados: {eliminados} bienes correctamente.")
     return redirect("lista_bienes")
 
 
@@ -1668,8 +1901,9 @@ def dar_baja_bien(request, pk):
         update_fields.append("descripcion_baja")
 
     bien.save(update_fields=update_fields)
+    nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
     crear_notificacion_admins(
-        f"Se dio de baja el bien '{bien.nombre}' (Clave: {bien.clave_unica})."
+        f"Se dio de baja el bien '{nombre_bien}' (Clave: {bien.clave_unica})."
     )
     messages.success(request, f"Bien '{bien.nombre}' dado de baja correctamente.")
     return redirect("lista_bienes")
@@ -1703,8 +1937,9 @@ def restablecer_bien(request, pk):
         update_fields.append("descripcion_baja")
 
     bien.save(update_fields=update_fields)
+    nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
     crear_notificacion_admins(
-        f"Se restableció el bien '{bien.nombre}' (Clave: {bien.clave_unica}) a ACTIVO."
+        f"Se restableció el bien '{nombre_bien}' (Clave: {bien.clave_unica}) a ACTIVO."
     )
     messages.success(request, f"Bien '{bien.nombre}' restablecido a ACTIVO.")
     return redirect("lista_bienes")

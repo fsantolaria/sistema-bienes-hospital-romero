@@ -1,0 +1,243 @@
+/* --- Layout principal con sidebar --- */
+.main-container {
+  display: flex;
+  flex: 1;
+  background-color: #fff;
+}
+
+/* Sidebar estilo simple */
+.sidebar {
+  width: 260px;
+  background-color: #fff;
+  border-right: 2px solid #000; /* línea divisoria negra como en la foto */
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Avatar circular */
+.operador-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 2px solid #00a4c6;
+  background-color: #eaeaea;
+  margin-bottom: 10px;
+}
+
+/* Texto debajo del avatar */
+.operador-label {
+  font-weight: bold;
+  color: #000;
+  margin-bottom: 5px;
+}
+
+.operador-nombre {
+  font-size: 16px;
+  font-weight: 600;
+  color: #000;
+}
+
+/* Datos operador */
+.operador-info {
+  width: 100%;
+  text-align: center;
+}
+
+.datos-operador p {
+  margin: 5px 0;
+  font-size: 14px;
+  color: #000;
+}
+
+.form-container {
+  flex: 1;
+  padding: 20px;
+}
+
+/* === Contenedor formulario === */
+.form-alta {
+  background-color: #fff;
+  border: 2px solid #0097c2;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  max-width: 800px;
+  width: 100%;
+  margin: 15px auto 30px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Sección dentro del formulario */
+.form-section {
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  position: relative;
+}
+
+/* Título de sección */
+.section-title {
+  background-color: #00a4c6;
+  color: #000;
+  font-weight: 600;
+  font-size: 16px;
+  padding: 8px 12px;
+  border-radius: 6px 6px 0 0;
+  margin: -20px -20px 15px -20px;
+  text-align: left;
+}
+
+/* === Inputs y labels === */
+.form-group-item {
+  display: flex;
+  align-items: center;
+  background-color: #f8f8f8;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 5px 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-group-item label,
+.horizontal-item label {
+  width: 180px;
+  margin-right: 15px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #000;
+  white-space: nowrap;
+}
+
+.form-group-item input,
+.form-group-item select,
+.horizontal-item input,
+.horizontal-item select {
+  flex-grow: 1;
+  padding: 8px 10px;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: #fff;
+  color: #000;
+}
+
+input:focus,
+select:focus {
+  border-color: #00a4c6;
+  outline: none;
+}
+
+/* === Grupos en fila === */
+.flex-group-complex {
+  display: flex;
+  gap: 20px;
+  flex-direction: row;
+}
+
+.horizontal-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background-color: #f8f8f8;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 5px 10px;
+}
+
+.dni-item {
+  flex: 1;
+  min-width: 0;
+}
+
+/* === Botones === */
+.form-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.btn-guardar {
+  background-color: #4CAF50;
+  color: #fff;
+  padding: 12px 25px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 15px;
+  min-width: 140px;
+  transition: background-color 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.btn-guardar:hover {
+  background-color: #45a049;
+}
+
+.btn-cancelar {
+  background-color: #f44336;
+  color: #fff;
+  padding: 12px 25px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 15px;
+  min-width: 140px;
+  transition: background-color 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.btn-cancelar:hover {
+  background-color: #da190b;
+}
+
+/* === Responsivo === */
+@media (max-width: 768px) {
+  .main-container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .form-group-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .form-group-item label {
+    width: auto;
+    margin-bottom: 5px;
+  }
+
+  .flex-group-complex {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .horizontal-item {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .horizontal-item label {
+    width: auto;
+    margin-bottom: 5px;
+  }
+}

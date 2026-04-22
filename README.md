@@ -191,6 +191,10 @@ ls -la .env
 
 #### 🚀 Paso 5: Base de datos y migraciones
 ```bash
+
+#  Antes de aplicar migraciones
+python manage.py makemigrations core
+
 # 1. Aplicar migraciones
 python manage.py migrate
 
@@ -545,3 +549,5 @@ python manage.py createsuperuser
 ---
 
 ¡Todos los instructivos están listos para que los equipos comiencen a trabajar! 🚀🎯
+
+¡¡ Despliegue Vercel !!

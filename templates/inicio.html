@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Inicio - Sistema de Patrimonio{% endblock %}
+{% block title %}Iniciar Sesión - Sistema de Patrimonio{% endblock %}
 
 {% block header %}{% endblock %}
 {% block footer %}{% endblock %}
@@ -22,14 +22,11 @@
     </div>
 
     <h1 class="title">Sistema<br>Gestión de Patrimonio</h1>
-    <p class="subtitle">Inicia sesión como</p>
+    <p class="subtitle">Inicia sesión</p>
 
     <div class="login-options">
-        <a href="{% url 'login' %}?tipo=admin" class="login-button">
-            <i class="fas fa-user-cog"></i> Administrador
-        </a>
-        <a href="{% url 'login' %}?tipo=empleado" class="login-button">
-            <i class="fas fa-user"></i> Operador
+        <a href="{% url 'login' %}" class="login-button">
+            <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
         </a>
         <a href="{% url 'login' %}?tipo=supervisor" class="login-button">
             <i class="fas fa-eye"></i> Supervisor

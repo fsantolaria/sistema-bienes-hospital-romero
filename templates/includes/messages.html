@@ -1,9 +1,28 @@
 {% if messages %}
-<div class="messages-container">
-    {% for message in messages %}
-    <div class="alert alert-{{ message.tags }}">
-        {{ message }}
-    </div>
-    {% endfor %}
-</div>
+<script>
+window.__pendingPopupMessages = window.__pendingPopupMessages || [];
+{% for message in messages %}
+window.__pendingPopupMessages.push({
+    text: "{{ message|escapejs }}",
+    type: "{{ message.tags }}"
+});
+{% endfor %}
+
+function __processPendingPopupMessages() {
+    if (!window.__pendingPopupMessages || !window.__pendingPopupMessages.length) return;
+    if (typeof window.mostrarMensaje !== 'function') return;
+    window.__pendingPopupMessages.forEach(function (item) {
+        if (item && item.text) {
+            window.mostrarMensaje(item.text, item.type || 'info');
+        }
+    });
+    window.__pendingPopupMessages.length = 0;
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', __processPendingPopupMessages);
+} else {
+    __processPendingPopupMessages();
+}
+</script>
 {% endif %}

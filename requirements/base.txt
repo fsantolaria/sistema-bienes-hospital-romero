@@ -8,3 +8,12 @@ Pillow
 pandas
 openpyxl
 reportlab==4.4.4
+
+# Soporte completo de formatos Excel
+xlrd>=2.0.1
+odfpy
+pyxlsb
+
+# Base de datos PostgreSQL (producción Vercel/Neon)
+dj-database-url
+psycopg2-binary

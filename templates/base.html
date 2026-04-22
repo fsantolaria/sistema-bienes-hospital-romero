@@ -14,6 +14,13 @@
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     <link rel="stylesheet" href="{% static 'css/notificaciones.css' %}">
 
+    {% if logout_on_back %}
+    {# Impide que el navegador cachee esta página para que el botón Atras no la restaure sin pasar por el servidor #}
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    {% endif %}
+
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -22,14 +29,15 @@
     {% endblock %}
 
     <main class="main-content">
-    {% block messages %}{% endblock %}
-    {% block content %}{% endblock %}
+        {% block messages %}{% endblock %}
+        {% block content %}{% endblock %}
     </main>
 
     {% block footer %}
         {% include 'includes/footer.html' %}
     {% endblock %}
 
+    <!-- Bootstrap -->
     {% if messages %}
     <div id="toast-container" style="
         position: fixed;
@@ -93,7 +101,6 @@
         {% endfor %}
     </div>
     {% endif %}
-
     <script src="{% static 'libs/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'js/base.js' %}"></script>
     <script src="{% static 'js/notificaciones.js' %}"></script>
@@ -117,6 +124,69 @@
         });
     })();
     </script>
+
+    {% if logout_on_back %}
+    <script>
+    // ── Cierre de sesion con boton Atras ─────────────────────────────────
+    // Logica:
+    // - Cuando el usuario navega HACIA ADELANTE desde esta pagina (home) a
+    //   cualquier otra, marcamos sessionStorage.beyondHome = '1'.
+    // - Cuando vuelve ATRAS a esta pagina:
+    //     * beyondHome = '1'  → vino de dentro de la app → OK, resetear flag
+    //     * beyondHome = '0'  → vino de la pagina de login   → LOGOUT
+    // Esto NO afecta a ninguna otra pagina del sistema.
+    (function () {
+        var LOGOUT_URL = '{% url "logout" %}';
+        var KEY = 'appBeyondHome';
+
+        var navType = 'navigate';
+        try {
+            var e = performance.getEntriesByType('navigation');
+            if (e.length) navType = e[0].type;
+        } catch (_) {}
+
+        if (navType === 'back_forward' || navType === 'prerender') {
+            // Usuario llego aqui con boton Atras
+            if (sessionStorage.getItem(KEY) === '1') {
+                // Vino desde dentro de la app (ej: bienes/) → NO cerrar sesion
+                sessionStorage.setItem(KEY, '0');
+            } else {
+                // Vino desde el login (o fuera de la app) → CERRAR SESION
+                window.location.replace(LOGOUT_URL);
+            }
+            return;
+        }
+
+        // Llegada normal (navigate/reload) → marcar que estamos en home
+        sessionStorage.setItem(KEY, '0');
+
+        // Fallback bfcache (Safari/Firefox): pageshow persisted aplica la misma logica
+        window.addEventListener('pageshow', function (ev) {
+            if (!ev.persisted) return;
+            if (sessionStorage.getItem(KEY) === '1') {
+                sessionStorage.setItem(KEY, '0');
+            } else {
+                window.location.replace(LOGOUT_URL);
+            }
+        });
+    })();
+    </script>
+    {% else %}
+    <script>
+    // En paginas que NO son home, marcar que el usuario esta "dentro" de la app
+    // para que el guard del home sepa que no debe cerrar sesion al volver.
+    (function () {
+        var navType = 'navigate';
+        try {
+            var e = performance.getEntriesByType('navigation');
+            if (e.length) navType = e[0].type;
+        } catch (_) {}
+        if (navType === 'navigate') {
+            sessionStorage.setItem('appBeyondHome', '1');
+        }
+    })();
+    </script>
+    {% endif %}
 
     {% block extra_js %}{% endblock %}
 </body>

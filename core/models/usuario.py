@@ -5,8 +5,13 @@ from django.db import models
 class Usuario(AbstractUser):
     TIPO_USUARIO = [
         ('admin', 'Administrador'),
+<<<<<<< HEAD
         ('supervisor', 'Supervisor'),        
         ('empleado', 'Empleado Hospital'),
+=======
+        ('operador', 'Operador'),
+        ('supervisor', 'Supervisor'),
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
     ]
     tipo_usuario = models.CharField(
         max_length=10,

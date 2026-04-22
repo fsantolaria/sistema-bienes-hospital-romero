@@ -33,17 +33,19 @@
         <i class="fas fa-sliders-h me-1"></i> Filtros
       </button>
       <a class="btn btn-outline-secondary" href="{% url 'lista_bienes' %}">Limpiar</a>
+      {% if not es_supervisor %}
       <a class="btn btn-success" href="{% url 'carga_masiva' %}">
         <i class="fas fa-file-excel me-1"></i> Carga masiva
       </a>
       <a class="btn btn-success" href="{% url 'bienes' %}">
         <i class="fa-solid fa-plus me-1"></i> Cargar bien
       </a>
+      {% endif %}
     </div>
 
     <!-- CONTROLES DERECHA -->
     <div class="col ms-auto d-flex align-items-end justify-content-end gap-2">
-
+      {% if not es_supervisor %}
       <button type="submit" id="btn-confirm-eliminar"
               form="form-eliminar-bienes"
               class="btn btn-danger d-none" disabled>
@@ -53,6 +55,7 @@
       <a class="btn btn-dark"  href="{% url 'lista_baja_bienes' %}" title="Ver bienes dados de baja">
         <i class="fa-solid fa-trash"></i>
       </a>
+      {% endif %}
     </div>
 
     <!-- FILTROS -->
@@ -124,7 +127,9 @@
             <th>Observaciones</th>
             <th>Precio</th>
             <th>Fecha Alta</th>
+            {% if not es_supervisor %}
             <th>Acciones</th>
+            {% endif %}
           </tr>
         </thead>
         <tbody>
@@ -194,6 +199,7 @@
               {% endif %}
             </td>
 
+            {% if not es_supervisor %}
             <td class="text-center text-nowrap">
               <a class="btn btn-sm btn-info" href="{% url 'editar_bien' b.pk %}" title="Editar">
                 <i class="fas fa-pen"></i>
@@ -209,6 +215,7 @@
                  <i class="fas fa-trash"></i>
               </a>
             </td>
+            {% endif %}
           </tr>
           {% empty %}
           <tr><td colspan="17" class="text-center text-muted py-4">No hay bienes para mostrar.</td></tr>

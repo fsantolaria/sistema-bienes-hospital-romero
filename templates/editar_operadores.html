@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Editar Operador{% endblock %}
+{% block title %}Editar Usuario{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/alta_operadores.css' %}">
@@ -11,28 +11,13 @@
 {% block content %}
 <div id="alta-operador-view" class="view active">
   <div class="alta-header">
-      <h2>EDITAR OPERADOR</h2>
+      <h2>EDITAR USUARIO</h2>
   </div>
-
-  {% if messages %}
-    <div class="contenedor-mensajes">
-      {% for message in messages %}
-        <div class="
-          mensaje
-          {% if message.tags == 'error' %}mensaje-error{% endif %}
-          {% if message.tags == 'warning' %}mensaje-warning{% endif %}
-          {% if message.tags == 'success' %}mensaje-success{% endif %}
-        ">
-          {{ message }}
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
 
   <form method="POST" class="form-alta">
     {% csrf_token %}
     <div class="form-section">
-      <h3 class="section-title">Datos del operador</h3>
+      <h3 class="section-title">Datos del usuario</h3>
 
       <div class="form-group-item">
         <label for="nombre">Nombre:</label>
@@ -78,6 +63,16 @@
         {% if form.errors.email %}
           <small class="text-error">{{ form.email.errors.0 }}</small>
         {% endif %}
+      </div>
+
+      <div class="form-group-item">
+        <label for="tipo_usuario">Tipo de Usuario:</label>
+        <div class="input-container">
+          <select id="tipo_usuario" name="tipo_usuario" required>
+            <option value="operador" {% if operador.tipo_usuario == 'operador' %}selected{% endif %}>Operador</option>
+            <option value="supervisor" {% if operador.tipo_usuario == 'supervisor' %}selected{% endif %}>Supervisor</option>
+          </select>
+        </div>
       </div>
 
       <div class="form-group-item">

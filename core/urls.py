@@ -5,10 +5,10 @@ from core.views import marcar_notificaciones_leidas
 from core.views import home_supervisor, lista_bienes_supervisor
 urlpatterns = [
     # ===== Raíz del sitio =====
-    path('', RedirectView.as_view(pattern_name='inicio', permanent=False)),
+    path('', RedirectView.as_view(pattern_name='login', permanent=False)),
 
     # ===== Inicio / Auth =====
-    path('inicio/', views.inicio, name='inicio'),
+    path('inicio/', views.login_view, name='inicio'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('registro/', views.registro, name='registro'),
@@ -20,8 +20,13 @@ urlpatterns = [
     # ===== Dashboards =====
     path('home_admin/', views.home_admin, name='home_admin'),
     path('home_operador/', views.home_operador, name='home_operador'),
+<<<<<<< HEAD
     path("supervisor/", home_supervisor, name="home_supervisor"),
     path("supervisor/bienes/", lista_bienes_supervisor, name="lista_bienes_supervisor"),
+=======
+    path('home_supervisor/', views.home_supervisor, name='home_supervisor'),
+
+>>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
     # ===== Operadores =====
     path('operadores/', views.operadores, name='operadores'),
     path('operadores/alta/', views.alta_operadores, name='alta_operadores'),
