@@ -1261,7 +1261,14 @@ def carga_masiva_bienes(request):
         archivo = request.FILES["archivo_excel"]
         sector_form = (form.cleaned_data.get("sector") or "").strip()
  
-        df = pd.read_excel(archivo, dtype=str)
+        # Detectar engine según extensión del archivo
+        nombre_archivo = getattr(archivo, 'name', '').lower()
+        if nombre_archivo.endswith('.xls'):
+            engine = 'xlrd'
+        else:
+            engine = 'openpyxl'
+
+        df = pd.read_excel(archivo, dtype=str, engine=engine)
         df.columns = [str(c).strip().lower() for c in df.columns]
  
         def s(v: object) -> str:
@@ -1346,55 +1353,82 @@ def carga_masiva_bienes(request):
         for i, row in df.iterrows():
             try:
                 with transaction.atomic():
-                    numero_id = get_first(row, ["n de id", "n_de_id", "numero_identificacion", "id_patrimonial", "nº de id", "no de id"])
-                    nro_exp = get_first(row, ["n de expediente", "n_de_expediente", "numero_expediente", "nº de expediente", "no de expediente", "expediente"])
-                    nro_compra = get_first(row, ["n de compra", "n_de_compra", "numero_compra", "nº de compra", "no de compra"])
-                    nro_serie = get_first(row, ["n de serie", "n_de_serie", "numero_serie", "nº de serie", "no de serie"])
-                    descripcion = get_first(row, ["descripcion", "descripción", "descripcion_del_bien"])
- 
-                    cantidad = to_int1(get_first(row, ["cantidad"]))
-                    servicios = s(get_first(row, ["servicios", "sector"]) or sector_form) or "Sin especificar"
-                    cuenta_cod = get_first(row, ["cuenta codigo", "cuenta_código", "cuenta_codigo"])
-                    nomencl = get_first(row, ["nomenclatura de bienes", "nomenclatura_de_bienes", "nomenclatura_bienes"])
+                    numero_id = get_first(row, [
+                        "n° id", "nº id", "n° de id", "nº de id",
+                        "n de id", "n_de_id", "numero_identificacion",
+                        "id_patrimonial", "no de id", "n id",
+                    ])
+                    nro_exp = get_first(row, [
+                        "n° expediente", "nº expediente", "n° de expediente",
+                        "n de expediente", "n_de_expediente", "numero_expediente",
+                        "nº de expediente", "no de expediente", "expediente",
+                    ])
+                    nro_compra = get_first(row, [
+                        "n° compra", "nº compra", "n° de compra",
+                        "n de compra", "n_de_compra", "numero_compra",
+                        "nº de compra", "no de compra",
+                    ])
+                    nro_serie = get_first(row, [
+                        "n° serie", "nº serie", "n° de serie",
+                        "n de serie", "n_de_serie", "numero_serie",
+                        "nº de serie", "no de serie",
+                    ])
+                    descripcion = get_first(row, [
+                        "descripcion", "descripción", "descripcion_del_bien",
+                    ])
+                    cuenta_cod = get_first(row, [
+                        "cuenta código", "cuenta codigo", "cuenta_código", "cuenta_codigo",
+                    ])
+                    nomencl = get_first(row, [
+                        "nomenclatura", "nomenclatura de bienes",
+                        "nomenclatura_de_bienes", "nomenclatura_bienes",
+                    ])
                     observ = get_first(row, ["observaciones", "obs"])
- 
                     origen_txt = get_first(row, ["origen"])
                     estado_txt = get_first(row, ["estado"])
                     precio_raw = get_first(row, ["precio", "valor", "importe"])
- 
-                    fecha_alta = parse_date_any(get_first(row, ["fecha de alta", "fecha_de_alta", "fecha_alta"]))
-                    fecha_baja = parse_date_any(get_first(row, ["fecha de baja", "fecha_de_baja", "fecha_baja"]))
- 
+
+                    cantidad = to_int1(get_first(row, ["cantidad"]))
+                    servicios_raw = s(get_first(row, ["servicios", "sector"]) or sector_form)
+                    servicios = servicios_raw if servicios_raw else "NO"
+
+                    fecha_alta = parse_date_any(get_first(row, [
+                        "fecha alta", "fecha de alta", "fecha_de_alta", "fecha_alta",
+                    ]))
+                    fecha_baja = parse_date_any(get_first(row, [
+                        "fecha de baja", "fecha_de_baja", "fecha_baja",
+                    ]))
+
                     origen_val = map_origen(origen_txt)
                     estado_val = map_estado(estado_txt)
- 
+
                     precio = parse_money(precio_raw)
                     if origen_val != "COMPRA":
                         precio = None
- 
+
                     if not fecha_alta:
                         fecha_alta = date.today()
- 
+
                     expediente_obj = None
-                    if nro_exp:
+                    if nro_exp and nro_exp.upper() != "NO":
                         expediente_obj, _ = Expediente.objects.get_or_create(
                             numero_expediente=nro_exp
                         )
-                        if nro_compra:
+                        if nro_compra and nro_compra.upper() != "NO":
                             expediente_obj.numero_compra = nro_compra
                             expediente_obj.save(update_fields=["numero_compra"])
- 
+
                     nombre = descripcion[:200] if descripcion else (nro_serie or "SIN NOMBRE")
- 
+
                     defaults = {
                         "nombre": nombre,
                         "descripcion": descripcion or "",
                         "cantidad": cantidad,
                         "servicios": servicios,
-                        "numero_serie": nro_serie,
-                        "cuenta_codigo": cuenta_cod,
-                        "nomenclatura_bienes": nomencl,
-                        "observaciones": observ,
+                        "numero_serie": nro_serie if nro_serie else "NO",
+                        "cuenta_codigo": cuenta_cod if cuenta_cod else "NO",
+                        "nomenclatura_bienes": nomencl if nomencl else "NO",
+                        "observaciones": observ if observ else "NO",
                         "valor_adquisicion": precio,
                         "fecha_adquisicion": fecha_alta,
                         "fecha_baja": fecha_baja,
