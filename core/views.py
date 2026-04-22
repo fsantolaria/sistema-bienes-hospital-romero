@@ -224,7 +224,7 @@ def bienes(request):
 def logout_view(request):
     logout(request)
     messages.success(request, "Sesión cerrada exitosamente")
-    return redirect("inicio")
+    return redirect("login")
  
  
 # ============================
@@ -1258,49 +1258,62 @@ def carga_masiva_bienes(request):
         return render(request, "carga_masiva.html", {"form": form})
  
     try:
-        archivo = request.FILES["archivo_excel"]
-        sector_form = (form.cleaned_data.get("sector") or "").strip()
+        archivos = request.FILES.getlist("archivo_excel")
+        sector_form = (form.cleaned_data.get("servicio") or "").strip()
  
-        # Detectar engine según extensión — soporta todos los formatos Excel
-        nombre_archivo = getattr(archivo, 'name', '').lower()
-        if nombre_archivo.endswith('.xls'):
-            engine = 'xlrd'           # .xls clásico
-        elif nombre_archivo.endswith('.xlsb'):
-            engine = 'pyxlsb'         # Excel Binary
-        elif nombre_archivo.endswith(('.ods', '.odf', '.odt')):
-            engine = 'odf'            # LibreOffice/OpenDocument
-        else:
-            engine = 'openpyxl'       # .xlsx, .xlsm y cualquier otro moderno
-
-        df = pd.read_excel(archivo, dtype=str, engine=engine)
+        creados, actualizados, errores = 0, 0, []
+        from core.models import Expediente
         import unicodedata
+        import os
 
         def normalizar(texto: str) -> str:
             """Normaliza un nombre de columna: minúsculas, sin acentos, sin caracteres especiales."""
-            # Reemplazar ° y º (indicadores de grado/ordinal) que acompañan a N
             texto = texto.replace('\u00b0', '').replace('\u00ba', '')  # °, º
-            # Quitar acentos/diacríticos via NFKD
             texto = unicodedata.normalize('NFKD', texto)
             texto = ''.join(c for c in texto if not unicodedata.combining(c))
-            # Solo letras, números y espacio; todo en minúsculas
             texto = ''.join(c if c.isalnum() or c == ' ' else ' ' for c in texto)
-            # Colapsar espacios múltiples
             return ' '.join(texto.lower().split())
-
-        # Normalizar todos los nombres de columnas del DataFrame
-        df.columns = [normalizar(str(c)) for c in df.columns]
 
         def s(v: object) -> str:
             """Limpia el valor; devuelve '' si es vacío/nan."""
             if v is None:
                 return ""
             txt = str(v).strip()
-            return "" if txt.lower() in ("nan", "none", "-") else txt
+            # Ya no reemplazamos el "-" por vacío, así toma los guiones como válidos
+            return "" if txt.lower() in ("nan", "none") else txt
 
         def sno(v: object) -> str:
             """Como s() pero devuelve 'NO' si esta vacio — para campos de texto opcionales."""
             val = s(v)
             return val if val else "NO"
+
+        for archivo in archivos:
+            nombre_archivo = getattr(archivo, 'name', '').lower()
+            if nombre_archivo.endswith('.xls'):
+                engine = 'xlrd'
+            elif nombre_archivo.endswith('.xlsb'):
+                engine = 'pyxlsb'
+            elif nombre_archivo.endswith(('.ods', '.odf', '.odt')):
+                engine = 'odf'
+            else:
+                engine = 'openpyxl'
+
+            df = pd.read_excel(archivo, dtype=str, engine=engine)
+            df.columns = [normalizar(str(c)) for c in df.columns]
+
+            # Inferir servicio desde el nombre si no se puso en el form
+            servicio_archivo = sector_form
+            if not servicio_archivo:
+                # Usamos el nombre original sin extension, en mayúsculas
+                servicio_archivo = os.path.splitext(getattr(archivo, 'name', ''))[0].upper()
+
+            def get_first(row, names) -> str:
+                """Busca el primer match normalizando los nombres de columna."""
+                for n in names:
+                    key = normalizar(n)
+                    if key in df.columns:
+                        return s(row.get(key))
+                return ""
 
         def get_first(row, names) -> str:
             """Busca el primer match normalizando los nombres de columna."""
@@ -1421,7 +1434,7 @@ def carga_masiva_bienes(request):
                     precio_raw = get_first(row, ["precio", "valor", "importe"])
 
                     cantidad = to_int1(get_first(row, ["cantidad"]))
-                    servicios_raw = s(get_first(row, ["servicios", "sector"]) or sector_form)
+                    servicios_raw = s(get_first(row, ["servicios", "servicio", "sector"]) or servicio_archivo)
                     servicios = servicios_raw if servicios_raw else "NO"
 
                     fecha_alta = parse_date_any(get_first(row, [
@@ -1493,12 +1506,15 @@ def carga_masiva_bienes(request):
                         BienPatrimonial.objects.create(**defaults)
                         created = True
  
-                    creados += int(created)
-                    actualizados += int(not created)
+                    if created:
+                        creados += 1
+                    else:
+                        actualizados += 1
+            except Exception as e:
+                errores.append(f"Fila {i+1} en '{getattr(archivo, 'name', 'Excel')}': {str(e)}")
  
-            except (ValueError, ValidationError, IntegrityError) as e:
-                errores.append(f"Fila {i + 2}: {e}")
- 
+        mensaje = f"✅ Carga masiva exitosa. Se procesaron {len(archivos)} archivo(s). Bienes creados: {creados}. Actualizados: {actualizados}."
+
         if creados or actualizados:
             messages.success(
                 request,

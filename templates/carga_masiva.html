@@ -19,13 +19,13 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Sector</label>
-                    {{ form.sector }}
-                    <div class="form-text">{{ form.sector.help_text }}</div>
+                    <label class="form-label">Servicio</label>
+                    {{ form.servicio }}
+                    <div class="form-text">{{ form.servicio.help_text }}</div>
                 </div>
 
                 <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-upload"></i> Procesar Archivo
+                    <i class="fas fa-upload"></i> Procesar Archivo(s)
                 </button>
                 <a href="{% url 'lista_bienes' %}" class="btn btn-secondary">Cancelar</a>
             </form>
@@ -35,9 +35,10 @@
     <div class="mt-4">
         <h5>Instrucciones</h5>
         <ul>
-            <li>Columnas recomendadas: <code>id_patrimonial</code>, <code>descripcion</code>, <code>marca</code>, <code>modelo</code>, <code>numero_serie</code>, <code>cantidad</code>, <code>sector</code>.</li>
-            <li>Si falta <code>id_patrimonial</code>, se intenta evitar duplicados con <code>numero_serie + descripcion</code>.</li>
-            <li>Los obligatorios del sistema se completan con valores por defecto.</li>
+            <li>Puede seleccionar múltiples archivos Excel a la vez manteniendo presionada la tecla Ctrl.</li>
+            <li>Columnas recomendadas: <code>n° id</code>, <code>descripcion</code>, <code>cantidad</code>, <code>n° expediente</code>, <code>n° compra</code>, <code>n° serie</code>, <code>origen</code>, <code>estado</code>, <code>servicios</code>.</li>
+            <li>Si el archivo Excel contiene guiones "-", se guardarán como tal y no se vaciarán.</li>
+            <li>Si falta <code>n° id</code>, se intenta evitar duplicados cruzando <code>n° serie</code> con <code>descripcion</code>.</li>
         </ul>
     </div>
 </div>

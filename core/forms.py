@@ -9,18 +9,33 @@ from datetime import date
 
 
 
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+class MultipleFileField(forms.FileField):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("widget", MultipleFileInput(attrs={'class': 'form-control', 'accept': '.xlsx,.xls,.xlsm,.xlsb,.ods'}))
+        super().__init__(*args, **kwargs)
+
+    def clean(self, data, initial=None):
+        single_file_clean = super().clean
+        if isinstance(data, (list, tuple)):
+            result = [single_file_clean(d, initial) for d in data]
+        else:
+            result = single_file_clean(data, initial)
+        return result
+
 # ========== FORMULARIO DE CARGA MASIVA ==========
 class CargaMasivaForm(forms.Form):
-    archivo_excel = forms.FileField(
-        label='Seleccionar archivo Excel',
-        help_text='Formatos soportados: .xlsx, .xls',
-        widget=forms.ClearableFileInput(attrs={'class': 'form-control'})
+    archivo_excel = MultipleFileField(
+        label='Seleccionar archivo(s) Excel',
+        help_text='Formatos soportados: .xlsx, .xls, .xlsm, .xlsb, .ods'
     )
-    sector = forms.CharField(
+    servicio = forms.CharField(
         max_length=100,
         required=False,
-        label='Sector por defecto (opcional)',
-        help_text='Si se deja vacío, se tomará el sector de cada fila del archivo.',
+        label='Servicio por defecto (opcional)',
+        help_text='Si se deja vacío, se tomará el servicio de cada fila del archivo. Si el archivo se llama "RELEVAMIENTO...", se asignará automáticamente.',
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
 

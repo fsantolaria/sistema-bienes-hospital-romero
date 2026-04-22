@@ -96,4 +96,16 @@ deploy_completo.sh
 setup_test_users.py
 python
 sistema_bienes/settings_local.py
+
+# Scripts de configuración y archivos de debug (no subir)
+crear_admin.py
+check_cols.py
+core/views_cleaned.py
+
+# Archivos Excel de datos reales (nunca subir al repo)
+*.xls
+*.xlsx
+*.ods
+*.xlsm
+*.xlsb
 
