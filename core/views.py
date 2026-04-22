@@ -1261,28 +1261,43 @@ def carga_masiva_bienes(request):
         archivo = request.FILES["archivo_excel"]
         sector_form = (form.cleaned_data.get("sector") or "").strip()
  
-        # Detectar engine según extensión del archivo
+        # Detectar engine según extensión — soporta todos los formatos Excel
         nombre_archivo = getattr(archivo, 'name', '').lower()
         if nombre_archivo.endswith('.xls'):
-            engine = 'xlrd'
+            engine = 'xlrd'           # .xls clásico
+        elif nombre_archivo.endswith('.xlsb'):
+            engine = 'pyxlsb'         # Excel Binary
+        elif nombre_archivo.endswith(('.ods', '.odf', '.odt')):
+            engine = 'odf'            # LibreOffice/OpenDocument
         else:
-            engine = 'openpyxl'
+            engine = 'openpyxl'       # .xlsx, .xlsm y cualquier otro moderno
 
         df = pd.read_excel(archivo, dtype=str, engine=engine)
         df.columns = [str(c).strip().lower() for c in df.columns]
- 
+
         def s(v: object) -> str:
+            """Limpia el valor; devuelve '' si es vacío/nan."""
             if v is None:
                 return ""
             txt = str(v).strip()
-            return "" if txt.lower() == "nan" else txt
- 
+            return "" if txt.lower() in ("nan", "none", "-") else txt
+
+        def sno(v: object) -> str:
+            """Como s() pero devuelve 'NO' si está vacío — para campos de texto opcionales."""
+            val = s(v)
+            return val if val else "NO"
+
         def get_first(row, names) -> str:
             for n in names:
                 if n in df.columns:
                     return s(row.get(n))
             return ""
- 
+
+        def get_first_no(row, names) -> str:
+            """get_first pero devuelve 'NO' si el valor está vacío."""
+            val = get_first(row, names)
+            return val if val else "NO"
+
         def to_int1(v) -> int:
             txt = s(v)
             if not txt:
@@ -1368,7 +1383,7 @@ def carga_masiva_bienes(request):
                         "n de compra", "n_de_compra", "numero_compra",
                         "nº de compra", "no de compra",
                     ])
-                    nro_serie = get_first(row, [
+                    nro_serie = get_first_no(row, [
                         "n° serie", "nº serie", "n° de serie",
                         "n de serie", "n_de_serie", "numero_serie",
                         "nº de serie", "no de serie",
@@ -1376,14 +1391,14 @@ def carga_masiva_bienes(request):
                     descripcion = get_first(row, [
                         "descripcion", "descripción", "descripcion_del_bien",
                     ])
-                    cuenta_cod = get_first(row, [
+                    cuenta_cod = get_first_no(row, [
                         "cuenta código", "cuenta codigo", "cuenta_código", "cuenta_codigo",
                     ])
-                    nomencl = get_first(row, [
+                    nomencl = get_first_no(row, [
                         "nomenclatura", "nomenclatura de bienes",
                         "nomenclatura_de_bienes", "nomenclatura_bienes",
                     ])
-                    observ = get_first(row, ["observaciones", "obs"])
+                    observ = get_first_no(row, ["observaciones", "obs"])
                     origen_txt = get_first(row, ["origen"])
                     estado_txt = get_first(row, ["estado"])
                     precio_raw = get_first(row, ["precio", "valor", "importe"])
@@ -1418,17 +1433,17 @@ def carga_masiva_bienes(request):
                             expediente_obj.numero_compra = nro_compra
                             expediente_obj.save(update_fields=["numero_compra"])
 
-                    nombre = descripcion[:200] if descripcion else (nro_serie or "SIN NOMBRE")
+                    nombre = descripcion[:200] if descripcion else (nro_serie if nro_serie != "NO" else "SIN NOMBRE")
 
                     defaults = {
                         "nombre": nombre,
                         "descripcion": descripcion or "",
                         "cantidad": cantidad,
                         "servicios": servicios,
-                        "numero_serie": nro_serie if nro_serie else "NO",
-                        "cuenta_codigo": cuenta_cod if cuenta_cod else "NO",
-                        "nomenclatura_bienes": nomencl if nomencl else "NO",
-                        "observaciones": observ if observ else "NO",
+                        "numero_serie": nro_serie,
+                        "cuenta_codigo": cuenta_cod,
+                        "nomenclatura_bienes": nomencl,
+                        "observaciones": observ,
                         "valor_adquisicion": precio,
                         "fecha_adquisicion": fecha_alta,
                         "fecha_baja": fecha_baja,
