@@ -1,3 +1,84 @@
+/* Header celeste y botones blancos para dropdown notificaciones */
+.notif-header-celeste {
+    background: #00bcd4;
+    color: #fff;
+    border-radius: 8px 8px 0 0;
+    padding: 10px 12px 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #00bcd4;
+    margin-bottom: 0;
+}
+.notif-title {
+    font-weight: bold;
+    font-size: 18px;
+    color: #fff;
+}
+.notif-header-actions {
+    display: flex;
+    gap: 8px;
+}
+.notif-header-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 2px 8px;
+    border-radius: 4px;
+    transition: background 0.2s, color 0.2s;
+}
+.notif-header-btn:hover {
+    background: rgba(255,255,255,0.12);
+    color: #e0f7fa;
+}
+.notif-header-btn .material-symbols-outlined {
+    font-size: 18px;
+}
+
+/* Footer Ver más */
+.dropdown-footer {
+    padding: 6px 0 0 0;
+    text-align: center;
+}
+.btn-ver-mas {
+    background: #e0e0e0;
+    color: #333;
+    border: none;
+    border-radius: 0 0 8px 8px;
+    width: 100%;
+    padding: 6px 0;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: not-allowed;
+    margin-top: 2px;
+}
+
+/* Layout de notificación: fecha, texto, tacho */
+.dropdown-notif-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 6px;
+}
+.dropdown-notif-fecha {
+    min-width: 70px;
+    color: #333;
+    font-size: 13px;
+    font-weight: 600;
+    margin-right: 4px;
+}
+.dropdown-notif-text {
+    flex: 1 1 auto;
+    color: #222;
+    font-size: 14px;
+    line-height: 1.2;
+}
 /* Estilos para el sistema de notificaciones */
 .notificaciones-container {
     position: relative;
@@ -304,11 +385,47 @@
 }
 
 /* Hacer el tacho más sencillo (gris) */
+/* Tacho de basura negro */
 .btn-eliminar-notificacion {
-    color: #6b7280; /* gris neutro */
+    color: #111 !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s, color 0.2s;
 }
-.btn-eliminar-notificacion i {
-    font-size: 14px;
+.btn-eliminar-notificacion:hover {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+.btn-eliminar-notificacion .material-symbols-outlined {
+    font-size: 18px;
+}
+
+/* Botón marcar todas como leídas */
+.btn-marcar-todas {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: #4b5563;
+    font-size: 13px;
+    transition: background-color 0.2s, color 0.2s;
+}
+.btn-marcar-todas:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+}
+.btn-marcar-todas .material-symbols-outlined {
+    font-size: 18px;
 }
 
 /* Focus claro para accesibilidad */

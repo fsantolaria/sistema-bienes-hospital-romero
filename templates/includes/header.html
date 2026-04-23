@@ -23,20 +23,30 @@
                             <span class="notificaciones-badge" aria-hidden="false">{{ notificaciones_count }}</span>
                         {% endif %}
                         <div id="notificacionesDropdown" class="notificaciones-dropdown" style="display:none;">
-                            <div class="dropdown-header">
-                                <span>Notificaciones</span>
-                                <button type="button" class="btn-marcar-leido btn-marcar-todas" data-action="marcar-todas">Marcar todas como leídas</button>
+                            <div class="dropdown-header notif-header-celeste">
+                                <span class="notif-title">Notificaciones</span>
+                                <div class="notif-header-actions">
+                                    <button type="button" class="btn-marcar-leido btn-marcar-todas notif-header-btn" data-action="marcar-todas">
+                                        <span class="material-symbols-outlined" aria-hidden="true">done_all</span>
+                                        Leer todas
+                                    </button>
+                                    <button type="button" class="btn-borrar-leidas notif-header-btn" data-action="borrar-leidas">
+                                        <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                                        Borrar todas
+                                    </button>
+                                </div>
                             </div>
                             <ul class="dropdown-list">
                                 {% for n in notificaciones %}
                                     <li class="dropdown-notif-item {% if not n.leida %}notificacion-no-leida{% endif %}" data-id="{{ n.id }}" data-leida="{% if n.leida %}1{% else %}0{% endif %}">
+                                        <span class="dropdown-notif-fecha">{{ n.fecha }}</span>
                                         <span class="dropdown-notif-text">{{ n.mensaje }}</span>
                                         <div class="dropdown-notif-actions">
                                             {% if not n.leida %}
                                                 <button type="button" class="btn-marcar-leido" data-id="{{ n.id }}">Marcar como leído</button>
                                             {% endif %}
                                             <button type="button" class="btn-eliminar-notificacion" title="Eliminar notificación" data-id="{{ n.id }}">
-                                                <i class="fa fa-trash" aria-hidden="true"></i>
+                                                <span class="material-symbols-outlined" aria-hidden="true">delete</span>
                                                 <span class="sr-only">Eliminar notificación</span>
                                             </button>
                                         </div>
@@ -45,6 +55,9 @@
                                     <li>No tienes notificaciones nuevas</li>
                                 {% endfor %}
                             </ul>
+                            <div class="dropdown-footer">
+                                <button type="button" class="btn-ver-mas" disabled>Ver más</button>
+                            </div>
                         </div>
                     </span>
                     <!-- Dropdown behavior handled by static JS (notificaciones.js) -->
