@@ -26,14 +26,19 @@
 
                 <div id="notificacionesDropdown" class="notificaciones-dropdown" style="display:none;">
                     <div class="dropdown-header">
-                        <span>Notificaciones</span>
-                        <button id="btn-marcar-todas" class="btn-marcar-todas" type="button" title="Marcar todas como leídas"
-                                style="background:none; border:none; cursor:pointer; font-size:12px;
-                                       color:#fff; opacity:0.85; padding:0; margin-left:auto;
-                                       display:flex; align-items:center; gap:4px;">
-                            <i class="fa fa-check-double"></i>
-                            Marcar todas
-                        </button>
+                        <div class="dropdown-title">
+                            <span>Notificaciones</span>
+                        </div>
+                        <div class="dropdown-actions">
+                            <button id="btn-marcar-todas" class="btn-marcar-todas" type="button" title="Marcar todas como leídas">
+                                <i class="fa fa-check-double"></i>
+                                Marcar todas
+                            </button>
+                            <button id="btn-borrar-todas" class="btn-borrar-todas" type="button" title="Borrar todas las notificaciones">
+                                <i class="fa fa-trash" style="color: black;"></i>
+                                Borrar todas
+                            </button>
+                        </div>
                     </div>
 
                     <ul class="dropdown-list">

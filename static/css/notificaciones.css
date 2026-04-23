@@ -50,9 +50,38 @@
     background: #0087a3;
     z-index: 1;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
     gap: 8px;
+}
+
+.dropdown-title {
+    display: flex;
+    align-items: center;
+}
+
+.dropdown-actions {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.btn-marcar-todas, .btn-borrar-todas {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    color: #fff;
+    opacity: 0.85;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: opacity 0.2s;
+}
+
+.btn-marcar-todas:hover, .btn-borrar-todas:hover {
+    opacity: 1;
 }
 
 /* ── Lista ─────────────────────────────────────────────── */

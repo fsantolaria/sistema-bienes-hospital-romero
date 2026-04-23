@@ -22,8 +22,9 @@
       <tr>
         <th>USUARIO</th>
         <th>NOMBRE Y APELLIDO</th>
+        <th>EMAIL</th>
         <th class="text-center">EDITAR</th>
-  <th class="text-center">DAR DE BAJA</th>
+        <th class="text-center">DAR DE BAJA</th>
         <th class="text-center">ROL</th>
       </tr>
     </thead>
@@ -32,6 +33,7 @@
       <tr>
         <td>{{ op.username }}</td>
         <td>{{ op.first_name }} {{ op.last_name }}</td>
+        <td>{{ op.email }}</td>
         <td class="text-center">
           <div style="display:flex; justify-content:center; margin-top:6px;">
             <a class="btn btn-sm btn-info" href="{% url 'editar_operador' op.pk %}" title="Editar">
@@ -55,7 +57,7 @@
       </tr>
       {% empty %}
       <tr>
-        <td colspan="5" class="text-center text-muted py-3">No hay usuarios cargados.</td>
+        <td colspan="6" class="text-center text-muted py-3">No hay usuarios cargados.</td>
       </tr>
       {% endfor %}
     </tbody>

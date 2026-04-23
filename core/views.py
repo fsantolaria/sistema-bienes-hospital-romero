@@ -1747,6 +1747,18 @@ def marcar_notificaciones_leidas(request):
 
 @login_required
 @require_POST
+def borrar_todas_notificaciones(request):
+    if request.method == "POST":
+        Notificacion.objects.filter(
+            usuario=request.user,
+            eliminada=False
+        ).update(eliminada=True)
+        return JsonResponse({"ok": True})
+    return JsonResponse({"ok": False}, status=400)
+
+
+@login_required
+@require_POST
 def eliminar_notificacion(request, pk):
     notif = get_object_or_404(Notificacion, pk=pk)
 
