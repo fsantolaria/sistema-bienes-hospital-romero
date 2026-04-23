@@ -12,6 +12,7 @@
 
         <!-- Íconos de acciones -->
         <div class="icon-section">
+<<<<<<< HEAD
                 <a href="{% url 'login' %}" class="header-icon" title="Volver al inicio">
                     <span class="material-symbols-outlined">home</span>
                 </a>
@@ -61,10 +62,85 @@
                         </div>
                     </span>
                     <!-- Dropdown behavior handled by static JS (notificaciones.js) -->
+=======
+            <a href="{% url 'inicio' %}" class="header-icon" title="Volver al inicio">
+                <span class="material-symbols-outlined">home</span>
+            </a>
+
+            {% if es_admin %}
+            <span class="notificaciones-wrapper" title="Notificaciones" id="notificacionesBell">
+                <span class="material-symbols-outlined header-icon" aria-hidden="true">notifications</span>
+
+                {% if notificaciones_count and notificaciones_count > 0 %}
+                    <span class="notificaciones-badge">{{ notificaciones_count }}</span>
+>>>>>>> d84c9c5bb40831943430c9d012c9157a02e5763b
                 {% endif %}
-                <a href="{% url 'logout' %}" class="header-icon logout-link" title="Cerrar sesión">
-                    <span class="material-symbols-outlined">logout</span>
-                </a>
+
+                <div id="notificacionesDropdown" class="notificaciones-dropdown" style="display:none;">
+                    <div class="dropdown-header">
+                        <div class="dropdown-title">
+                            <span>Notificaciones</span>
+                        </div>
+                        <div class="dropdown-actions">
+                            <button id="btn-marcar-todas" class="btn-marcar-todas" type="button" title="Marcar todas como leídas">
+                                <i class="fa fa-check-double"></i>
+                                Marcar todas
+                            </button>
+                            <button id="btn-borrar-todas" class="btn-borrar-todas" type="button" title="Borrar todas las notificaciones">
+                                <i class="fa fa-trash" style="color: black;"></i>
+                                Borrar todas
+                            </button>
+                        </div>
+                    </div>
+
+                    <ul class="dropdown-list">
+                        {% for n in notificaciones %}
+                            <li class="dropdown-notif-item {% if not n.leida %}notificacion-no-leida{% endif %}"
+                                data-id="{{ n.id }}"
+                                data-leida="{% if n.leida %}1{% else %}0{% endif %}">
+
+                                <div class="notif-content">
+                                    <span class="dropdown-notif-text">{{ n.mensaje }}</span>
+
+                                    <!-- Fecha y hora minimalista -->
+                                    <span style="font-size:10px; color:#999; display:block; margin-top:2px;">
+                                        {{ n.fecha|date:"d/m/Y" }} · {{ n.fecha|time:"H:i" }}
+                                    </span>
+
+                                    <button class="btn-marcar-leido btn-link-leida" data-id="{{ n.id }}"
+                                        style="{% if n.leida %}display:none{% else %}display:block{% endif %};
+                                               color:blue; font-size:12px; background:none;
+                                               border:none; cursor:pointer; padding:0; text-align:left;">
+                                        Marcar como leída
+                                    </button>
+                                </div>
+
+                                <button class="btn-eliminar-notificacion"
+                                        title="Eliminar notificación"
+                                        data-id="{{ n.id }}">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+
+                            </li>
+                        {% empty %}
+                            <li style="text-align:center; padding:20px; color:#999; list-style:none;">
+                                <i class="fa-solid fa-bell-slash"
+                                   style="font-size:24px; display:block; margin-bottom:8px;"></i>
+                                <p style="margin:0; font-size:13px;">Sin notificaciones</p>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </span>
+            {% endif %}
+
+            <a href="{% url 'logout' %}" class="header-icon logout-link" title="Cerrar sesión">
+                <span class="material-symbols-outlined">logout</span>
+            </a>
         </div>
     </div>
 </header>
+
+<script>
+    window.NOTIF_COUNT = {% if notificaciones_count %}{{ notificaciones_count }}{% else %}0{% endif %};
+</script>

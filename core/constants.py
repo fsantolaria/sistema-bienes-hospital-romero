@@ -30,4 +30,4 @@ ESTADO_CHOICES = (
 )
 
 # Máximo de notificaciones por usuario (se conservan las N más recientes)
-MAX_NOTIFICACIONES = 5
+MAX_NOTIFICACIONES = 10

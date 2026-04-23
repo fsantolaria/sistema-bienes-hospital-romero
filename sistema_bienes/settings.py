@@ -30,6 +30,7 @@ INSTALLED_APPS = [
 # ==========================
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -41,8 +42,8 @@ MIDDLEWARE = [
 # ==========================
 # URLS / WSGI
 # ==========================
-ROOT_URLCONF = 'sistema_bienes.urls'   # ← ajustá al nombre real de tu proyecto (carpeta con urls.py)
-WSGI_APPLICATION = 'sistema_bienes.wsgi.application'  # ← idem
+ROOT_URLCONF = 'sistema_bienes.urls'
+WSGI_APPLICATION = 'sistema_bienes.wsgi.application'
 
 # ==========================
 # TEMPLATES
@@ -64,12 +65,11 @@ TEMPLATES = [
 ]
 
 # ==========================
-# BASE DE DATOS (SQLite)
+# BASE DE DATOS (SQLite local)
 # ==========================
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        # Podés cambiar a BASE_DIR / 'db/produccion.sqlite3' si preferís esa ruta
         'NAME': BASE_DIR / 'db_development.sqlite3',
     }
 }
@@ -79,9 +79,9 @@ DATABASES = {
 # ==========================
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
-    BASE_DIR / "static",   # donde tenés css/js/fotos fuente
+    BASE_DIR / "static",
 ]
-STATIC_ROOT = BASE_DIR / "staticfiles"  # destino de collectstatic
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -89,10 +89,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # ==========================
 # AUTENTICACIÓN / LOGIN
 # ==========================
-AUTH_USER_MODEL = 'core.Usuario'  # asegurate que el modelo exista
+AUTH_USER_MODEL = 'core.Usuario'
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/inicio/'
-LOGOUT_REDIRECT_URL = '/login/'   # ← sin punto al final
+LOGOUT_REDIRECT_URL = '/login/'
 
 # ==========================
 # REGIONAL

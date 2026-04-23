@@ -1,0 +1,281 @@
+/* === Estilos específicos para administrador === */
+
+/* -------- Main Container con sidebar -------- */
+.main-container {
+    display: flex;
+    flex: 1;
+    background-color: #fff;
+}
+
+/* -------- Sidebar lateral -------- */
+.sidebar {
+    width: 260px;
+    background-color: #fff;
+    border-right: 2px solid #000; /* línea más marcada */
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Avatar circular grande */
+.admin-avatar {
+    width: 120px;
+    height: 120px;
+    border: 2px solid #00a4c6;
+    border-radius: 50%;
+    background-color: #eaeaea;
+    margin-bottom: 15px;
+}
+
+/* Texto administrador */
+.datos-admin {
+    text-align: center;
+}
+
+.admin-title {
+    font-size: 16px;
+    margin-bottom: 5px;
+    color: #000;
+}
+
+.admin-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: #000;
+}
+
+/* -------- Área central del administrador -------- */
+.admin-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    background-color: #fff;
+    padding: 20px;
+    width: 100%;
+}
+
+/* === Contenedor formulario administrador === */
+.form-admin {
+    background-color: #fff;
+    border: 2px solid #0097c2;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+    max-width: 800px;
+    width: 100%;
+    margin: 15px auto 30px auto;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Sección dentro del formulario */
+.form-section {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    position: relative;
+}
+
+/* Título de sección */
+.section-title {
+    background-color: #00a4c6;
+    color: #000;
+    font-weight: 600;
+    font-size: 16px;
+    padding: 8px 12px;
+    border-radius: 6px 6px 0 0;
+    margin: -20px -20px 15px -20px;
+    text-align: left;
+}
+
+/* === Inputs y labels === */
+.form-group-item {
+    display: flex;
+    align-items: center;
+    background-color: #f8f8f8;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 5px 10px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.form-group-item label,
+.horizontal-item label {
+    width: 180px;
+    margin-right: 15px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #000;
+    white-space: nowrap;
+}
+
+.form-group-item input,
+.form-group-item select,
+.horizontal-item input,
+.horizontal-item select {
+    flex-grow: 1;
+    padding: 8px 10px;
+    border: 1px solid #bbb;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: #fff;
+    color: #000;
+}
+
+input:focus,
+select:focus {
+    border-color: #00a4c6;
+    outline: none;
+}
+
+/* === Grupos en fila === */
+.flex-group-complex {
+    display: flex;
+    gap: 20px;
+    flex-direction: row;
+}
+
+.horizontal-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background-color: #f8f8f8;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 5px 10px;
+}
+
+.dni-item {
+    flex: 1;
+    min-width: 0;
+}
+
+/* === Botones específicos del administrador === */
+.form-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.btn-cancelar {
+    background-color: #f44336;
+    color: #fff;
+    padding: 12px 25px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 15px;
+    min-width: 120px;
+    transition: background-color 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.btn-cancelar:hover {
+    background-color: #da190b;
+}
+
+.btn-modificar {
+    background-color: #ff9800;
+    color: #fff;
+    padding: 12px 25px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 15px;
+    min-width: 120px;
+    transition: background-color 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.btn-modificar:hover {
+    background-color: #e68900;
+}
+
+.btn-guardar {
+    background-color: #4CAF50;
+    color: #fff;
+    padding: 12px 25px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 15px;
+    min-width: 120px;
+    transition: background-color 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.btn-guardar:hover {
+    background-color: #45a049;
+}
+
+/* Botón deshabilitado */
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* === Responsivo === */
+@media (max-width: 768px) {
+    .main-container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .form-group-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .form-group-item label {
+        width: auto;
+        margin-bottom: 5px;
+    }
+
+    .flex-group-complex {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .horizontal-item {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .horizontal-item label {
+        width: auto;
+        margin-bottom: 5px;
+    }
+
+    .form-buttons {
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .btn-cancelar,
+    .btn-modificar,
+    .btn-guardar {
+        width: 80%;
+        min-width: auto;
+    }
+}

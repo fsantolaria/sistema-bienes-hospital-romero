@@ -1,0 +1,200 @@
+/* ── Badge ─────────────────────────────────────────────── */
+.notificaciones-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background-color: #ff2136;
+    color: #ffffff;
+    border-radius: 50%;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 7px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+    border: 3px solid #ffffff;
+    z-index: 5;
+    pointer-events: none;
+    transform-origin: center;
+    transition: transform 160ms cubic-bezier(.2,.8,.2,1), opacity 160ms ease;
+    opacity: 1;
+}
+
+/* ── Dropdown contenedor ───────────────────────────────── */
+.notificaciones-dropdown {
+    min-width: 300px;
+    max-width: 340px;
+    padding: 0;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(13, 38, 59, 0.15);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    transition: transform 120ms ease, opacity 120ms ease;
+    transform-origin: top right;
+    max-height: 480px;
+    overflow-y: auto;
+}
+
+/* ── Header del dropdown ───────────────────────────────── */
+.notificaciones-dropdown .dropdown-header {
+    font-weight: 700;
+    color: #ffffff;
+    padding: 12px 14px;
+    font-size: 15px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.15);
+    position: sticky;
+    top: 0;
+    background: #0087a3;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+/* ── Lista ─────────────────────────────────────────────── */
+.dropdown-list {
+    list-style: none;
+    margin: 0;
+    padding: 4px 0;
+}
+
+.dropdown-list .dropdown-notif-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    gap: 10px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    background: transparent;
+    transition: background-color 150ms ease;
+}
+
+.dropdown-list .dropdown-notif-item:last-child {
+    border-bottom: none;
+}
+
+.dropdown-list .dropdown-notif-item:hover {
+    background: rgba(2,6,23,0.03);
+}
+
+/* ── Notificación no leída ─────────────────────────────── */
+.notificacion-no-leida {
+    background-color: #edf5ff !important;
+    border-left: 3px solid #2196F3;
+}
+
+/* ── Contenido ─────────────────────────────────────────── */
+.notif-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 2px;
+}
+
+.dropdown-notif-text {
+    color: #0b1220;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+/* ── Botón marcar como leída ───────────────────────────── */
+.btn-link-leida {
+    background: none;
+    border: none;
+    color: #2196F3;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+    display: block;
+    margin-top: 3px;
+    text-align: left;
+}
+
+.btn-link-leida:hover {
+    color: #0b7dda;
+}
+
+/* ── Botón eliminar ────────────────────────────────────── */
+.btn-eliminar-notificacion {
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 150ms ease, color 150ms ease;
+}
+
+.btn-eliminar-notificacion i {
+    font-size: 13px;
+}
+
+.btn-eliminar-notificacion:hover {
+    background: rgba(0,0,0,0.05);
+    color: #ef4444;
+}
+
+/* ── Sin notificaciones ────────────────────────────────── */
+.sin-notif-placeholder {
+    text-align: center;
+    padding: 24px 20px;
+    color: #9ca3af;
+    list-style: none;
+}
+
+.sin-notif-placeholder i {
+    font-size: 26px;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.sin-notif-placeholder p {
+    margin: 0;
+    font-size: 13px;
+}
+
+/* ── Modal (legacy, por si se usa en otro lado) ────────── */
+.notificaciones-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.notificaciones-contenido {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* ── Accesibilidad ─────────────────────────────────────── */
+.sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
