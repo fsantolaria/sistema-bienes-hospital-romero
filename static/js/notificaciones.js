@@ -69,49 +69,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
 
-<<<<<<< HEAD
-                const btnBorrarLeidas = ev.target.closest('.btn-borrar-leidas');
-                if (btnBorrarLeidas) {
-                    ev.stopPropagation();
-                    borrarTodasLeidas();
-                    return;
-                }
-    // Borra todas las notificaciones (leídas y no leídas)
-    function borrarTodasLeidas() {
-        const dropdown = document.getElementById('notificacionesDropdown') || wrapperNotificaciones.querySelector('.notificaciones-dropdown');
-        if (!dropdown) return;
-        const todas = dropdown.querySelectorAll('.dropdown-notif-item');
-        if (todas.length === 0) {
-            mostrarMensaje('No hay notificaciones para borrar', 'info');
-            return;
-        }
-        todas.forEach(li => {
-            const id = li.getAttribute('data-id');
-            fetch(`/notificaciones/${id}/eliminar/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken') || ''
-                },
-                body: '{}'
-            }).then(resp => {
-                if (resp.ok) {
-                    if (li && li.parentNode) li.parentNode.removeChild(li);
-                }
-            });
-        });
-        mostrarMensaje('Todas las notificaciones eliminadas', 'success eliminar');
-        actualizarBadge();
-    }
-=======
-                const btnBorrarTodas = ev.target.closest('.btn-borrar-todas');
-                if (btnBorrarTodas) {
-                    ev.stopPropagation();
-                    borrarTodasNotificaciones();
-                    return;
-                }
->>>>>>> d84c9c5bb40831943430c9d012c9157a02e5763b
-
                 const btnMarcar = ev.target.closest('.btn-marcar-leido');
                 if (btnMarcar) {
                     ev.stopPropagation();
