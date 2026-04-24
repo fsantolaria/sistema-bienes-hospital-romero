@@ -42,7 +42,7 @@
 .notificaciones-dropdown .dropdown-header {
     font-weight: 700;
     color: #ffffff;
-    padding: 12px 14px;
+    padding: 6px 14px;
     font-size: 15px;
     border-bottom: 1px solid rgba(15, 23, 42, 0.15);
     position: sticky;
@@ -50,7 +50,9 @@
     background: #0087a3;
     z-index: 1;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
     gap: 8px;
 }
 

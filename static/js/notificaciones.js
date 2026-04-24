@@ -69,6 +69,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
 
+                const btnBorrarTodas = ev.target.closest('.btn-borrar-todas');
+                if (btnBorrarTodas) {
+                    ev.stopPropagation();
+                    borrarTodasNotificaciones();
+                    return;
+                }
+
                 const btnMarcar = ev.target.closest('.btn-marcar-leido');
                 if (btnMarcar) {
                     ev.stopPropagation();
