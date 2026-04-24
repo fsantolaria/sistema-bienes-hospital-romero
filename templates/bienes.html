@@ -167,10 +167,12 @@
         </div>
 
         <div class="d-flex gap-2 mt-4 align-items-center">
-          <button type="submit" class="btn btn-success">
-            <i class="fas fa-save me-1"></i> Guardar bien
-          </button>
-          <div id="inline-message" class="inline-message ms-3" style="display: none;"></div>
+          <div class="position-relative">
+            <button type="submit" class="btn btn-success">
+              <i class="fas fa-save me-1"></i> Guardar bien
+            </button>
+            <div id="inline-message" style="display: none; position: absolute; left: calc(100% + 6px); top: 50%; transform: translateY(-50%); z-index: 10; white-space: nowrap;" class="py-1 px-3 mb-0 shadow-sm"></div>
+          </div>
           <a href="{% if es_admin %}{% url 'lista_bienes' %}{% else %}{% url 'lista_bienes_operador' %}{% endif %}" class="btn btn-secondary">
             Ir a lista
           </a>
@@ -230,4 +232,42 @@
     estado?.addEventListener('change', toggleFechaBaja);
   })();
 </script>
+
+{% if messages %}
+<script>
+(function() {
+    var tc = document.getElementById('toast-container');
+    if (tc) tc.style.display = 'none';
+    var inline = document.getElementById('inline-message');
+    if (!inline) return;
+    {% for message in messages %}
+    {% if 'success' in message.tags %}
+    inline.textContent = "{{ message|escapejs }}";
+    inline.className = "py-1 px-3 mb-0 shadow-sm";
+    inline.style.backgroundColor = "#0092b3";
+    inline.style.color = "#000";
+    inline.style.border = "1px solid #007c94";
+    inline.style.display = "block";
+    setTimeout(function() { inline.style.display = "none"; }, 4000);
+    {% elif 'error' in message.tags %}
+    inline.textContent = "{{ message|escapejs }}";
+    inline.className = "py-1 px-3 mb-0 shadow-sm";
+    inline.style.backgroundColor = "#ffcdd2";
+    inline.style.color = "#000";
+    inline.style.border = "1px solid #ef9a9a";
+    inline.style.display = "block";
+    setTimeout(function() { inline.style.display = "none"; }, 4000);
+    {% else %}
+    inline.textContent = "{{ message|escapejs }}";
+    inline.className = "py-1 px-3 mb-0 shadow-sm";
+    inline.style.backgroundColor = "#e3f2fd";
+    inline.style.color = "#000";
+    inline.style.border = "1px solid #bbdefb";
+    inline.style.display = "block";
+    setTimeout(function() { inline.style.display = "none"; }, 4000);
+    {% endif %}
+    {% endfor %}
+})();
+</script>
+{% endif %}
 {% endblock %}

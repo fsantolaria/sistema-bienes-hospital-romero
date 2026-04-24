@@ -207,12 +207,10 @@ def bienes(request):
                 f"Se registró el bien '{nombre_bien}' (Clave: {bien.clave_unica}) correctamente."
             )
             messages.success(request, f"Bien '{nombre_bien}' registrado correctamente.")
-            if perms.get("es_admin", False):
-                return redirect("lista_bienes")
-            return redirect("lista_bienes_operador")
-        # Mensaje de error
+            # Volver a mostrar el mismo formulario vacío en lugar de redirigir
+            form = BienPatrimonialForm()
         else:
-            messages.error(request, "Error al ejecutar la carga")
+            messages.error(request, "No se pudo guardar")
     else:
         form = BienPatrimonialForm()
  
