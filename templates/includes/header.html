@@ -11,7 +11,6 @@
                         </div>
                     </span>
                     <!-- Dropdown behavior handled by static JS (notificaciones.js) -->
-=======
             <a href="{% url 'inicio' %}" class="header-icon" title="Volver al inicio">
                 <span class="material-symbols-outlined">home</span>
             </a>
@@ -22,7 +21,6 @@
 
                 {% if notificaciones_count and notificaciones_count > 0 %}
                     <span class="notificaciones-badge">{{ notificaciones_count }}</span>
->>>>>>> d84c9c5bb40831943430c9d012c9157a02e5763b
                 {% endif %}
 
                 <div id="notificacionesDropdown" class="notificaciones-dropdown" style="display:none;">
