@@ -37,16 +37,9 @@ def _role_route_name(user) -> str:
     if hasattr(user, "tipo_usuario"):
         if user.tipo_usuario == "admin":
             return "home_admin"
-<<<<<<< HEAD
         if user.tipo_usuario == "supervisor":
             return "home_supervisor"
         return "home_operador"
-=======
-        elif user.tipo_usuario == "supervisor":
-            return "home_supervisor"
-        else:
-            return "home_operador"
->>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
     return "home_operador"
 
 
@@ -60,20 +53,10 @@ def permisos_context(user):
             "notificaciones": [],
             "notificaciones_count": 0,
         }
-<<<<<<< HEAD
     tipo = getattr(user, "tipo_usuario", None)
     es_admin = tipo == "admin" or user.is_superuser
     es_supervisor = tipo == "supervisor"
-=======
- 
-    if hasattr(user, "tipo_usuario"):
-        es_admin = user.tipo_usuario == "admin" or user.is_superuser
-        es_supervisor = user.tipo_usuario == "supervisor"
-    else:
-        es_admin = user.is_superuser
-        es_supervisor = False
 
->>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
     notificaciones = list(
         Notificacion.objects
         .filter(usuario=user, eliminada=False)
@@ -83,10 +66,6 @@ def permisos_context(user):
     notificaciones_count = Notificacion.objects.filter(
         usuario=user, leida=False, eliminada=False
     ).count()
-<<<<<<< HEAD
-=======
-
->>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
     return {
         "es_admin": es_admin,
         "es_supervisor": es_supervisor,
@@ -119,7 +98,6 @@ def login_view(request):
         usuario = request.POST.get("usuario", "").strip()
         contrasena = request.POST.get("contrasena", "")
         tipo_usuario = (request.POST.get("tipo_usuario") or tipo_default or "").strip()
-
         user = authenticate(request, username=usuario, password=contrasena)
 
         def _rerender_error(msg):
@@ -140,11 +118,7 @@ def login_view(request):
         if not tipo_usuario:
             if getattr(user, "is_superuser", False):
                 tipo_usuario = "admin"
-<<<<<<< HEAD
-            elif hasattr(user, "tipo_usuario") and user.tipo_usuario in ("admin", "empleado", "supervisor"):
-=======
             elif hasattr(user, "tipo_usuario") and user.tipo_usuario in ("admin", "operador", "supervisor"):
->>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
                 tipo_usuario = user.tipo_usuario
             else:
                 return _rerender_error("No se pudo determinar el tipo de usuario. Volvé a intentar.")
@@ -161,11 +135,7 @@ def login_view(request):
                 login(request, user)
             else:
                 return _rerender_error("El tipo de usuario seleccionado no coincide con el usuario ingresado.")
-<<<<<<< HEAD
-        elif tipo_usuario == "empleado":
-=======
         elif tipo_usuario == "operador":
->>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
             if user.is_superuser:
                 return _rerender_error("Un administrador no puede ingresar como operador.")
             if hasattr(user, "tipo_usuario") and user.tipo_usuario == "operador":
@@ -175,15 +145,11 @@ def login_view(request):
         else:
             return _rerender_error("Tipo de usuario no válido.")
 
-<<<<<<< HEAD
-=======
-        # Notificar a admins del inicio de sesión
         tipo_label = {"admin": "Administrador", "supervisor": "Supervisor", "operador": "Operador"}.get(tipo_usuario, tipo_usuario.capitalize())
         crear_notificacion_admins(
             f"{tipo_label} '{user.username}' inició sesión"
         )
 
->>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
         if next_url and url_has_allowed_host_and_scheme(
             next_url,
             allowed_hosts={request.get_host()},
@@ -192,10 +158,6 @@ def login_view(request):
             return redirect(next_url)
         return redirect(_role_route_name(user))
 
-<<<<<<< HEAD
-=======
- 
->>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
     return render(
         request,
         "login.html",
@@ -240,7 +202,6 @@ def bienes(request):
             if perms.get("es_admin", False):
                 return redirect("lista_bienes")
             return redirect("lista_bienes_operador")
-        # Mensaje de error
         else:
             messages.error(request, "Error al ejecutar la carga")
     else:
@@ -254,15 +215,9 @@ def bienes(request):
 def logout_view(request):
     logout(request)
     messages.success(request, "Sesión cerrada exitosamente")
-<<<<<<< HEAD
     return redirect("inicio")
 
 
-=======
-    return redirect("login")
- 
- 
->>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
 # ============================
 # ÁREA PRIVADA
 # ============================
@@ -273,39 +228,30 @@ def home_admin(request):
     if not perms["es_admin"]:
         messages.error(request, "No tienes permisos para acceder a esta página")
         return redirect("home_operador")
-<<<<<<< HEAD
-=======
     perms['logout_on_back'] = True
->>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
     return render(request, "home_admin.html", perms)
 
 
 @login_required
 def home_supervisor(request):
-<<<<<<< HEAD
     tipo = getattr(request.user, "tipo_usuario", None)
     if not (request.user.is_superuser or tipo in ("admin", "supervisor")):
         messages.error(request, "No tenés permisos para acceder a esta página.")
         return redirect("home_operador")
+
     total_bienes = BienPatrimonial.objects.count()
     bienes_activos = BienPatrimonial.objects.filter(estado="ACTIVO").count()
     bienes_baja = BienPatrimonial.objects.filter(estado="BAJA").count()
+
     context = permisos_context(request.user)
     context.update({
         "total_bienes": total_bienes,
         "bienes_activos": bienes_activos,
         "bienes_baja": bienes_baja,
         "es_supervisor": True,
+        "logout_on_back": True,
     })
     return render(request, "home_supervisor.html", context)
-=======
-    perms = permisos_context(request.user)
-    if not perms["es_supervisor"]:
-        messages.error(request, "No tienes permisos para acceder a esta página")
-        return redirect("home_operador")
-    return render(request, "home_supervisor.html", perms)
-
->>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
 
 
 # ============================
@@ -353,11 +299,11 @@ def alta_operadores(request):
     if not perms["es_admin"]:
         messages.error(request, "No tienes permisos para acceder a esta página")
         return redirect("home_operador")
+
     if request.method == "POST":
         nombre = " ".join((request.POST.get("nombre") or "").strip().split())
         apellido = " ".join((request.POST.get("apellido") or "").strip().split())
         pais = (request.POST.get("pais") or "").strip()
-        dni = (request.POST.get("dni") or "").strip()
         email = (request.POST.get("email") or "").strip()
         estado = (request.POST.get("estado") or "habilitado").strip()
         password = (request.POST.get("password") or "").strip()
@@ -380,14 +326,6 @@ def alta_operadores(request):
 
         numero_doc = form.cleaned_data["dni"]
 
-        nombre     = (request.POST.get("nombre") or "").strip()
-        apellido   = (request.POST.get("apellido") or "").strip()
-        pais       = (request.POST.get("pais") or "").strip()
-        numero_doc = (request.POST.get("numero_doc") or "").strip()
-        email      = (request.POST.get("email") or "").strip()
-        estado     = (request.POST.get("estado") or "habilitado").strip()
-        password   = (request.POST.get("password") or "").strip()
-
         if numero_doc and Usuario.objects.filter(numero_doc=numero_doc).exists():
             messages.error(request, f"Ya existe un operador con el DNI {numero_doc}.")
             return redirect("alta_operadores")
@@ -408,7 +346,6 @@ def alta_operadores(request):
             username = f"{base_username}{i}"
 
         is_active = estado == "habilitado"
-
         operador = Operador(
             username=username,
             email=email or None,
@@ -418,12 +355,7 @@ def alta_operadores(request):
             is_superuser=False,
             is_active=is_active,
         )
-<<<<<<< HEAD
-        operador.tipo_usuario = "empleado"
-=======
         operador.tipo_usuario = form.cleaned_data["tipo_usuario"]
-
->>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
 
         if password:
             operador.set_password(password)
@@ -465,7 +397,6 @@ def alta_operadores(request):
             mensaje=f"Se creó el operador '{operador.username}'.",
             leida=False,
         )
-
         messages.success(request, f"Operador {nombre} {apellido} creado. Usuario: {operador.username}")
         return redirect("operadores")
 
@@ -479,16 +410,11 @@ def alta_operadores(request):
         'estado': 'habilitado',
         'password': '',
     })
-<<<<<<< HEAD
-    return render(request, "alta_operadores.html", {"usar_operador_model": False, "form": form})
-
-
-=======
     ctx = permisos_context(request.user)
     ctx.update({"usar_operador_model": False, "form": form})
     return render(request, "alta_operadores.html", ctx)
- 
->>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
+
+
 @login_required
 def editar_operador(request, pk):
     operador = get_object_or_404(Operador, pk=pk, is_staff=False)
@@ -499,8 +425,7 @@ def editar_operador(request, pk):
         email = (request.POST.get("email") or "").strip()
         estado = (request.POST.get("estado") or "habilitado").strip()
         pais = (request.POST.get("pais") or "").strip()
-        dni = (request.POST.get("dni") or "").strip()
-        tipo_usuario = (request.POST.get("tipo_usuario") or "empleado").strip()
+        tipo_usuario = (request.POST.get("tipo_usuario") or "operador").strip()
         password = (request.POST.get("password") or "").strip()
 
         form = OperadorForm(request.POST, operador_pk=operador.pk)
@@ -522,74 +447,47 @@ def editar_operador(request, pk):
         if operador.first_name != nombre:
             operador.first_name = nombre
             hubo_cambio = True
-        else:
-            operador.first_name = nombre
-
         if operador.last_name != apellido:
             operador.last_name = apellido
             hubo_cambio = True
-        else:
-            operador.last_name = apellido
 
         email_normalizado = email or None
         if operador.email != email_normalizado:
             operador.email = email_normalizado
             hubo_cambio = True
-        else:
-            operador.email = email_normalizado
 
         is_active_nuevo = estado == "habilitado"
         if operador.is_active != is_active_nuevo:
             operador.is_active = is_active_nuevo
             hubo_cambio = True
-        else:
-            operador.is_active = is_active_nuevo
 
-        if hasattr(operador, "estado"):
-            if operador.estado != estado:
-                operador.estado = estado
-                hubo_cambio = True
-            else:
-                operador.estado = estado
+        if hasattr(operador, "estado") and operador.estado != estado:
+            operador.estado = estado
+            hubo_cambio = True
 
-        if hasattr(operador, "pais"):
-            if operador.pais != pais:
-                operador.pais = pais
-                hubo_cambio = True
-            else:
-                operador.pais = pais
+        if hasattr(operador, "pais") and operador.pais != pais:
+            operador.pais = pais
+            hubo_cambio = True
 
-        if hasattr(operador, "numero_doc"):
-            if operador.numero_doc != numero_doc:
-                operador.numero_doc = numero_doc
-                hubo_cambio = True
-            else:
-                operador.numero_doc = numero_doc
+        if hasattr(operador, "numero_doc") and operador.numero_doc != numero_doc:
+            operador.numero_doc = numero_doc
+            hubo_cambio = True
 
-<<<<<<< HEAD
-=======
-        if hasattr(operador, "tipo_usuario"):
-            if operador.tipo_usuario != tipo_usuario:
-                operador.tipo_usuario = tipo_usuario
-                hubo_cambio = True
-            else:
-                operador.tipo_usuario = tipo_usuario
+        if hasattr(operador, "tipo_usuario") and operador.tipo_usuario != tipo_usuario:
+            operador.tipo_usuario = tipo_usuario
+            hubo_cambio = True
 
-
->>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
         if password:
             operador.set_password(password)
             hubo_cambio = True
 
         if hubo_cambio:
             operador.save()
-            # Mensaje de éxito
             messages.success(request, f"✅ Operador '{operador.username}' actualizado correctamente.", extra_tags='editar')
             try:
                 crear_notificacion(request.user, f"Se editó el operador '{operador.username}'.")
             except Exception:
                 pass
-            messages.success(request, f"Operador '{operador.username}' editado correctamente.")
 
         return redirect("operadores")
 
@@ -602,14 +500,9 @@ def editar_operador(request, pk):
         'tipo_usuario': getattr(operador, 'tipo_usuario', 'operador') or 'operador',
         'estado': 'habilitado' if operador.is_active else 'no-habilitado',
     }, operador_pk=operador.pk)
-<<<<<<< HEAD
 
-    ctx = {
-=======
- 
     ctx = permisos_context(request.user)
     ctx.update({
->>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
         "operador": operador,
         "usar_operador_model": False,
         "form": form,
@@ -626,13 +519,11 @@ def eliminar_operador(request, pk):
         return redirect("operadores")
 
     operador = get_object_or_404(Operador, pk=pk, is_staff=False)
-
     if operador == request.user:
         messages.error(request, "❌ No podés eliminar tu propio usuario.")
         return redirect("operadores")
 
     identificador = operador.username
-    nombre_completo = f"{operador.first_name} {operador.last_name}".strip()
     operador.delete()
 
     try:
@@ -657,19 +548,16 @@ def dar_baja_operador(request, pk):
         return redirect("operadores")
 
     operador = get_object_or_404(Operador, pk=pk, is_staff=False)
-
     if operador == request.user:
         messages.error(request, "No podés darte de baja a vos mismo.")
         return redirect("operadores")
 
     operador.is_active = False
-
     if hasattr(operador, "estado"):
         try:
             operador.estado = "no-habilitado"
         except Exception:
             pass
-
     operador.save()
 
     try:
@@ -725,7 +613,6 @@ def reportes_pdf(request):
 
     try:
         from weasyprint import HTML, CSS
-
         html_str = render_to_string("reportes_pdf.html", ctx, request=request)
         pdf_bytes = HTML(
             string=html_str,
@@ -748,7 +635,6 @@ def reportes_pdf(request):
         resp = HttpResponse(pdf_bytes, content_type="application/pdf")
         resp["Content-Disposition"] = f'inline; filename="reporte_{scope}.pdf"'
         return resp
-
     except Exception:
         def money(v):
             if not v:
@@ -758,7 +644,6 @@ def reportes_pdf(request):
         styles = getSampleStyleSheet()
         title_style = styles["Title"]
         meta_style = styles["Normal"]
-
         p_cell = ParagraphStyle(
             "p_cell",
             parent=styles["Normal"],
@@ -790,7 +675,6 @@ def reportes_pdf(request):
             bottomMargin=1.5 * cm,
         )
         elems = []
-
         title = f"Reporte de Bienes Patrimoniales – {rango_desc}"
         meta = f"Generado: {timezone.localtime(now).strftime('%d/%m/%Y %H:%M')} · Usuario: {request.user.username}"
         elems.append(Paragraph(title, title_style))
@@ -801,7 +685,6 @@ def reportes_pdf(request):
             P("ID", True), P("Clave", True), P("Descripción", True), P("Servicios", True),
             P("Estado", True), P("Alta", True), P("Baja", True), P("Valor", True),
         ]]
-
         for b in bienes:
             estado = b.get_estado_display() if hasattr(b, "get_estado_display") else (b.estado or "—")
             alta = b.fecha_adquisicion.strftime("%d/%m/%Y") if b.fecha_adquisicion else "—"
@@ -839,11 +722,9 @@ def reportes_pdf(request):
             ("ALIGN", (0, 1), (0, -1), "CENTER"),
             ("ALIGN", (-1, 1), (-1, -1), "RIGHT"),
         ])
-
         for i in range(1, len(data)):
             if i % 2 == 0:
                 ts.add("BACKGROUND", (0, i), (-1, i), colors.whitesmoke)
-
         table.setStyle(ts)
         elems.append(table)
 
@@ -872,7 +753,6 @@ def reportes_pdf(request):
         doc.build(elems)
         pdf_bytes = bio.getvalue()
         bio.close()
-
         resp = HttpResponse(pdf_bytes, content_type="application/pdf")
         resp["Content-Disposition"] = f'inline; filename="reporte_{scope}_fallback.pdf"'
         return resp
@@ -909,12 +789,10 @@ def reportes_view(request):
 
     paginator = Paginator(bienes, per_page)
     page_raw = request.GET.get("page") or "1"
-
     try:
         page_number = int(page_raw)
     except ValueError:
         page_number = 1
-
     if page_number < 1:
         page_number = 1
 
@@ -927,7 +805,6 @@ def reportes_view(request):
         prev_page = page_obj.previous_page_number()
     except Exception:
         prev_page = None
-
     try:
         next_page = page_obj.next_page_number()
     except Exception:
@@ -937,7 +814,6 @@ def reportes_view(request):
     total = paginator.num_pages
     window = 2
     page_range = []
-
     for num in range(1, total + 1):
         if num == 1 or num == total or (current - window) <= num <= (current + window):
             page_range.append(num)
@@ -1017,63 +893,10 @@ def _build_ordering_baja(orden_param: str):
 # BIENES - LISTA GENERAL
 # ============================
 
-@login_required
-def lista_bienes(request):
-    user = request.user
-    perms = permisos_context(user)
-    if not perms["es_admin"] and not perms["es_supervisor"]:
-        return redirect("lista_bienes_operador")
-
-    q = (request.GET.get("q") or "").strip()
-    f_origen = request.GET.get("f_origen") or ""
-    f_estado = request.GET.get("f_estado") or ""
-    f_desde = request.GET.get("f_desde") or ""
-    f_hasta = request.GET.get("f_hasta") or ""
-    orden = request.GET.get("orden") or "-fecha"
-
-    bienes_queryset = BienPatrimonial.objects.select_related("expediente")
-
-    if q:
-        bienes_queryset = bienes_queryset.filter(
-            Q(clave_unica__icontains=q)
-            | Q(descripcion__icontains=q)
-            | Q(observaciones__icontains=q)
-            | Q(numero_identificacion__icontains=q)
-            | Q(servicios__icontains=q)
-            | Q(cuenta_codigo__icontains=q)
-            | Q(nomenclatura_bienes__icontains=q)
-            | Q(numero_serie__icontains=q)
-            | Q(origen__icontains=q)
-            | Q(estado__icontains=q)
-            | Q(expediente__numero_expediente__icontains=q)
-            | Q(expediente__numero_compra__icontains=q)
-        )
-
-    if f_origen == "__NULL__":
-        bienes_queryset = bienes_queryset.filter(origen__isnull=True)
-    elif f_origen:
-        bienes_queryset = bienes_queryset.filter(origen=f_origen)
-
-    if f_estado == "__NULL__":
-        bienes_queryset = bienes_queryset.filter(estado__isnull=True)
-    elif f_estado:
-        bienes_queryset = bienes_queryset.filter(estado=f_estado)
-
-    if f_desde:
-        d = parse_date(f_desde)
-        if d:
-            bienes_queryset = bienes_queryset.filter(fecha_adquisicion__gte=d)
-
-    if f_hasta:
-        h = parse_date(f_hasta)
-        if h:
-            bienes_queryset = bienes_queryset.filter(fecha_adquisicion__lte=h)
-
-    bienes_queryset = bienes_queryset.order_by(*_build_ordering(orden))
-
+def _paginar_bienes(request, bienes_queryset, template, extra_context=None):
+    """Helper reutilizable para paginar y renderizar listas de bienes."""
     per_page = 30
     paginator = Paginator(bienes_queryset, per_page)
-
     page_raw = request.GET.get("page", "1")
     try:
         page_number = int(page_raw)
@@ -1091,7 +914,6 @@ def lista_bienes(request):
         prev_page = page_obj.previous_page_number()
     except Exception:
         prev_page = None
-
     try:
         next_page = page_obj.next_page_number()
     except Exception:
@@ -1103,7 +925,6 @@ def lista_bienes(request):
     nums = set([1, last] + list(range(max(1, current - window), min(last, current + window) + 1)))
     page_range = []
     last_added = 0
-
     for i in range(1, last + 1):
         if i in nums:
             page_range.append(i)
@@ -1119,7 +940,6 @@ def lista_bienes(request):
 
     context = permisos_context(request.user)
     context.update({
-        "q": q,
         "bienes": page_obj.object_list,
         "paginator": paginator,
         "page_obj": page_obj,
@@ -1129,117 +949,72 @@ def lista_bienes(request):
         "next_page": next_page,
         "querystring": querystring,
     })
-    return render(request, "bienes/lista_bienes.html", context)
+    if extra_context:
+        context.update(extra_context)
+    return render(request, template, context)
+
+
+def _filtrar_bienes(request, base_qs):
+    """Aplica filtros comunes de búsqueda a un queryset de bienes."""
+    q = (request.GET.get("q") or "").strip()
+    f_origen = request.GET.get("f_origen") or ""
+    f_estado = request.GET.get("f_estado") or ""
+    f_desde = request.GET.get("f_desde") or ""
+    f_hasta = request.GET.get("f_hasta") or ""
+    orden = request.GET.get("orden") or "-fecha"
+
+    if q:
+        base_qs = base_qs.filter(
+            Q(clave_unica__icontains=q)
+            | Q(descripcion__icontains=q)
+            | Q(observaciones__icontains=q)
+            | Q(numero_identificacion__icontains=q)
+            | Q(servicios__icontains=q)
+            | Q(cuenta_codigo__icontains=q)
+            | Q(nomenclatura_bienes__icontains=q)
+            | Q(numero_serie__icontains=q)
+            | Q(origen__icontains=q)
+            | Q(estado__icontains=q)
+            | Q(expediente__numero_expediente__icontains=q)
+            | Q(expediente__numero_compra__icontains=q)
+        )
+    if f_origen == "__NULL__":
+        base_qs = base_qs.filter(origen__isnull=True)
+    elif f_origen:
+        base_qs = base_qs.filter(origen=f_origen)
+    if f_estado == "__NULL__":
+        base_qs = base_qs.filter(estado__isnull=True)
+    elif f_estado:
+        base_qs = base_qs.filter(estado=f_estado)
+    if f_desde:
+        d = parse_date(f_desde)
+        if d:
+            base_qs = base_qs.filter(fecha_adquisicion__gte=d)
+    if f_hasta:
+        h = parse_date(f_hasta)
+        if h:
+            base_qs = base_qs.filter(fecha_adquisicion__lte=h)
+
+    base_qs = base_qs.order_by(*_build_ordering(orden))
+    return base_qs, q
+
+
+@login_required
+def lista_bienes(request):
+    perms = permisos_context(request.user)
+    if not perms["es_admin"] and not perms["es_supervisor"]:
+        return redirect("lista_bienes_operador")
+
+    qs = BienPatrimonial.objects.select_related("expediente")
+    qs, q = _filtrar_bienes(request, qs)
+    return _paginar_bienes(request, qs, "bienes/lista_bienes.html", {"q": q})
 
 
 @login_required
 def lista_bienes_operador(request):
-    q = (request.GET.get("q") or "").strip()
-    f_origen = request.GET.get("f_origen") or ""
-    f_estado = request.GET.get("f_estado") or ""
-    f_desde = request.GET.get("f_desde") or ""
-    f_hasta = request.GET.get("f_hasta") or ""
-    orden = request.GET.get("orden") or "-fecha"
-
-    bienes_queryset = BienPatrimonial.objects.select_related("expediente")
-
-    if q:
-        bienes_queryset = bienes_queryset.filter(
-            Q(clave_unica__icontains=q)
-            | Q(descripcion__icontains=q)
-            | Q(observaciones__icontains=q)
-            | Q(numero_identificacion__icontains=q)
-            | Q(servicios__icontains=q)
-            | Q(cuenta_codigo__icontains=q)
-            | Q(nomenclatura_bienes__icontains=q)
-            | Q(numero_serie__icontains=q)
-            | Q(origen__icontains=q)
-            | Q(estado__icontains=q)
-            | Q(expediente__numero_expediente__icontains=q)
-            | Q(expediente__numero_compra__icontains=q)
-        )
-
-    if f_origen == "__NULL__":
-        bienes_queryset = bienes_queryset.filter(origen__isnull=True)
-    elif f_origen:
-        bienes_queryset = bienes_queryset.filter(origen=f_origen)
-
-    if f_estado == "__NULL__":
-        bienes_queryset = bienes_queryset.filter(estado__isnull=True)
-    elif f_estado:
-        bienes_queryset = bienes_queryset.filter(estado=f_estado)
-
-    if f_desde:
-        d = parse_date(f_desde)
-        if d:
-            bienes_queryset = bienes_queryset.filter(fecha_adquisicion__gte=d)
-
-    if f_hasta:
-        h = parse_date(f_hasta)
-        if h:
-            bienes_queryset = bienes_queryset.filter(fecha_adquisicion__lte=h)
-
-    bienes_queryset = bienes_queryset.order_by(*_build_ordering(orden))
-
-    per_page = 30
-    paginator = Paginator(bienes_queryset, per_page)
-    page_raw = request.GET.get("page", "1")
-
-    try:
-        page_number = int(page_raw)
-        if page_number < 1:
-            page_number = 1
-    except ValueError:
-        page_number = 1
-
-    try:
-        page_obj = paginator.page(page_number)
-    except (EmptyPage, PageNotAnInteger):
-        page_obj = paginator.page(1)
-
-    try:
-        prev_page = page_obj.previous_page_number()
-    except Exception:
-        prev_page = None
-
-    try:
-        next_page = page_obj.next_page_number()
-    except Exception:
-        next_page = None
-
-    current = page_obj.number
-    last = paginator.num_pages
-    window = 2
-    nums = set([1, last] + list(range(max(1, current - window), min(last, current + window) + 1)))
-    page_range = []
-    last_added = 0
-
-    for i in range(1, last + 1):
-        if i in nums:
-            page_range.append(i)
-            last_added = i
-        else:
-            if last_added != "…":
-                page_range.append("…")
-                last_added = "…"
-
-    qs = request.GET.copy()
-    qs.pop("page", None)
-    querystring = qs.urlencode()
-
-    context = permisos_context(request.user)
-    context.update({
-        "q": q,
-        "bienes": page_obj.object_list,
-        "paginator": paginator,
-        "page_obj": page_obj,
-        "is_paginated": paginator.num_pages > 1,
-        "page_range": page_range,
-        "prev_page": prev_page,
-        "next_page": next_page,
-        "querystring": querystring,
-    })
-    return render(request, "bienes/lista_bienes_operador.html", context)
+    qs = BienPatrimonial.objects.select_related("expediente")
+    qs, q = _filtrar_bienes(request, qs)
+    return _paginar_bienes(request, qs, "bienes/lista_bienes_operador.html", {"q": q})
 
 
 @login_required
@@ -1249,112 +1024,13 @@ def lista_bienes_supervisor(request):
         messages.error(request, "No tenés permisos para acceder a esta sección.")
         return redirect("home_operador")
 
-    q = (request.GET.get("q") or "").strip()
-    f_origen = request.GET.get("f_origen") or ""
-    f_estado = request.GET.get("f_estado") or ""
-    f_desde = request.GET.get("f_desde") or ""
-    f_hasta = request.GET.get("f_hasta") or ""
-    orden = request.GET.get("orden") or "-fecha"
-
-    bienes_queryset = BienPatrimonial.objects.select_related("expediente")
-
-    if q:
-        bienes_queryset = bienes_queryset.filter(
-            Q(clave_unica__icontains=q)
-            | Q(descripcion__icontains=q)
-            | Q(observaciones__icontains=q)
-            | Q(numero_identificacion__icontains=q)
-            | Q(servicios__icontains=q)
-            | Q(cuenta_codigo__icontains=q)
-            | Q(nomenclatura_bienes__icontains=q)
-            | Q(numero_serie__icontains=q)
-            | Q(origen__icontains=q)
-            | Q(estado__icontains=q)
-            | Q(expediente__numero_expediente__icontains=q)
-            | Q(expediente__numero_compra__icontains=q)
-        )
-
-    if f_origen == "__NULL__":
-        bienes_queryset = bienes_queryset.filter(origen__isnull=True)
-    elif f_origen:
-        bienes_queryset = bienes_queryset.filter(origen=f_origen)
-
-    if f_estado == "__NULL__":
-        bienes_queryset = bienes_queryset.filter(estado__isnull=True)
-    elif f_estado:
-        bienes_queryset = bienes_queryset.filter(estado=f_estado)
-
-    if f_desde:
-        d = parse_date(f_desde)
-        if d:
-            bienes_queryset = bienes_queryset.filter(fecha_adquisicion__gte=d)
-
-    if f_hasta:
-        h = parse_date(f_hasta)
-        if h:
-            bienes_queryset = bienes_queryset.filter(fecha_adquisicion__lte=h)
-
-    bienes_queryset = bienes_queryset.order_by(*_build_ordering(orden))
-
-    per_page = 30
-    paginator = Paginator(bienes_queryset, per_page)
-    page_raw = request.GET.get("page", "1")
-
-    try:
-        page_number = int(page_raw)
-        if page_number < 1:
-            page_number = 1
-    except ValueError:
-        page_number = 1
-
-    try:
-        page_obj = paginator.page(page_number)
-    except (EmptyPage, PageNotAnInteger):
-        page_obj = paginator.page(1)
-
-    try:
-        prev_page = page_obj.previous_page_number()
-    except Exception:
-        prev_page = None
-    try:
-        next_page = page_obj.next_page_number()
-    except Exception:
-        next_page = None
-
-    current = page_obj.number
-    last = paginator.num_pages
-    window = 2
-    nums = set([1, last] + list(range(max(1, current - window), min(last, current + window) + 1)))
-    page_range = []
-    last_added = 0
-    for i in range(1, last + 1):
-        if i in nums:
-            page_range.append(i)
-            last_added = i
-        else:
-            if last_added != "…":
-                page_range.append("…")
-                last_added = "…"
-
-    qs = request.GET.copy()
-    qs.pop("page", None)
-    querystring = qs.urlencode()
-
-    context = permisos_context(request.user)
-    context.update({
+    qs = BienPatrimonial.objects.select_related("expediente")
+    qs, q = _filtrar_bienes(request, qs)
+    return _paginar_bienes(request, qs, "bienes/lista_bienes_supervisor.html", {
         "q": q,
-        "bienes": page_obj.object_list,
-        "paginator": paginator,
-        "page_obj": page_obj,
-        "is_paginated": paginator.num_pages > 1,
-        "page_range": page_range,
-        "prev_page": prev_page,
-        "next_page": next_page,
-        "querystring": querystring,
         "solo_lectura": True,
         "es_supervisor": True,
     })
-    return render(request, "bienes/lista_bienes_supervisor.html", context)
 
 
 # ============================
@@ -1364,42 +1040,32 @@ def lista_bienes_supervisor(request):
 @login_required
 def editar_bien(request, pk):
     bien = get_object_or_404(BienPatrimonial, pk=pk)
-
     if request.method == "POST":
         form = BienPatrimonialForm(request.POST, instance=bien)
-
         if form.is_valid():
             obj = form.save(commit=False)
-
             fecha_alta_nueva = form.cleaned_data.get("fecha_adquisicion")
             if not fecha_alta_nueva:
                 obj.fecha_adquisicion = bien.fecha_adquisicion
-
             estado_nuevo = form.cleaned_data.get("estado") or obj.estado
             if (estado_nuevo or "").upper() == "BAJA":
                 if not form.cleaned_data.get("fecha_baja") and not obj.fecha_baja:
                     obj.fecha_baja = date.today()
-
             origen_nuevo = form.cleaned_data.get("origen") or obj.origen
             if (origen_nuevo or "").upper() != "COMPRA":
                 obj.valor_adquisicion = None
-
             if not getattr(obj, "nombre", None):
                 obj.nombre = (obj.descripcion or obj.numero_serie or "SIN NOMBRE")[:200]
-
             obj.save()
-
             nombre_bien = getattr(obj, "nombre", None) or getattr(obj, "descripcion", "Sin nombre")
             crear_notificacion_admins(
                 f"Se editó el bien '{nombre_bien}' (Clave: {obj.clave_unica})."
             )
             messages.success(request, f"Bien '{nombre_bien}' editado correctamente.")
-
             perms = permisos_context(request.user)
             if perms.get("es_admin", False):
                 return redirect("lista_bienes")
             return redirect("lista_bienes_operador")
-
         messages.error(request, "Revisá los datos del formulario.")
     else:
         form = BienPatrimonialForm(instance=bien)
@@ -1421,9 +1087,7 @@ def eliminar_bien(request, pk):
     crear_notificacion_admins(
         f"Se dio de baja el bien '{nombre_bien}' (Clave: {bien.clave_unica})."
     )
-    messages.success(request, f"Bien '{bien.nombre}' eliminado correctamente.")
     bien.delete()
-    # Mensaje de éxito
     messages.success(request, f"✅ Bien '{nombre_bien}' eliminado correctamente.", extra_tags='eliminar')
     return redirect("lista_bienes")
 
@@ -1443,94 +1107,29 @@ def carga_masiva_bienes(request):
     if not form.is_valid():
         context = permisos_context(request.user)
         context.update({"form": form})
-        return render(request, "carga_masiva.html", {"form": form})
+        return render(request, "carga_masiva.html", context)
 
     try:
-<<<<<<< HEAD
-        archivo = request.FILES["archivo_excel"]
-        sector_form = (form.cleaned_data.get("sector") or "").strip()
-
-        df = pd.read_excel(archivo, dtype=str)
-        df.columns = [str(c).strip().lower() for c in df.columns]
-=======
-        archivos = request.FILES.getlist("archivo_excel")
-        sector_form = (form.cleaned_data.get("servicio") or "").strip()
- 
-        creados, actualizados, errores = 0, 0, []
         from core.models import Expediente
         import unicodedata
         import os
 
+        archivos = request.FILES.getlist("archivo_excel")
+        sector_form = (form.cleaned_data.get("servicio") or "").strip()
+
         def normalizar(texto: str) -> str:
-            """Normaliza un nombre de columna: minúsculas, sin acentos, sin caracteres especiales."""
-            texto = texto.replace('\u00b0', '').replace('\u00ba', '')  # °, º
+            texto = texto.replace('\u00b0', '').replace('\u00ba', '')
             texto = unicodedata.normalize('NFKD', texto)
             texto = ''.join(c for c in texto if not unicodedata.combining(c))
             texto = ''.join(c if c.isalnum() or c == ' ' else ' ' for c in texto)
             return ' '.join(texto.lower().split())
->>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
 
         def s(v: object) -> str:
-            """Limpia el valor; devuelve '' si es vacío/nan."""
             if v is None:
                 return ""
             txt = str(v).strip()
-<<<<<<< HEAD
-            return "" if txt.lower() == "nan" else txt
-=======
-            # Ya no reemplazamos el "-" por vacío, así toma los guiones como válidos
             return "" if txt.lower() in ("nan", "none") else txt
 
-        def sno(v: object) -> str:
-            """Como s() pero devuelve 'NO' si esta vacio — para campos de texto opcionales."""
-            val = s(v)
-            return val if val else "NO"
-
-        for archivo in archivos:
-            nombre_archivo = getattr(archivo, 'name', '').lower()
-            if nombre_archivo.endswith('.xls'):
-                engine = 'xlrd'
-            elif nombre_archivo.endswith('.xlsb'):
-                engine = 'pyxlsb'
-            elif nombre_archivo.endswith(('.ods', '.odf', '.odt')):
-                engine = 'odf'
-            else:
-                engine = 'openpyxl'
-
-            df = pd.read_excel(archivo, dtype=str, engine=engine)
-            df.columns = [normalizar(str(c)) for c in df.columns]
-
-            # Inferir servicio desde el nombre si no se puso en el form
-            servicio_archivo = sector_form
-            if not servicio_archivo:
-                # Usamos el nombre original sin extension, en mayúsculas
-                servicio_archivo = os.path.splitext(getattr(archivo, 'name', ''))[0].upper()
-
-            def get_first(row, names) -> str:
-                """Busca el primer match normalizando los nombres de columna."""
-                for n in names:
-                    key = normalizar(n)
-                    if key in df.columns:
-                        return s(row.get(key))
-                return ""
->>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
-
-        def get_first(row, names) -> str:
-            """Busca el primer match normalizando los nombres de columna."""
-            for n in names:
-                key = normalizar(n)
-                if key in df.columns:
-                    return s(row.get(key))
-            return ""
-
-<<<<<<< HEAD
-=======
-        def get_first_no(row, names) -> str:
-            """get_first pero devuelve 'NO' si el valor esta vacio."""
-            val = get_first(row, names)
-            return val if val else "NO"
-
->>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
         def to_int1(v) -> int:
             txt = s(v)
             if not txt:
@@ -1596,160 +1195,143 @@ def carga_masiva_bienes(request):
             return None
 
         creados, actualizados, errores = 0, 0, []
-        from core.models import Expediente
 
-        for i, row in df.iterrows():
-            try:
-                with transaction.atomic():
-<<<<<<< HEAD
-                    numero_id = get_first(row, ["n de id", "n_de_id", "numero_identificacion", "id_patrimonial", "nº de id", "no de id"])
-                    nro_exp = get_first(row, ["n de expediente", "n_de_expediente", "numero_expediente", "nº de expediente", "no de expediente", "expediente"])
-                    nro_compra = get_first(row, ["n de compra", "n_de_compra", "numero_compra", "nº de compra", "no de compra"])
-                    nro_serie = get_first(row, ["n de serie", "n_de_serie", "numero_serie", "nº de serie", "no de serie"])
-                    descripcion = get_first(row, ["descripcion", "descripción", "descripcion_del_bien"])
+        for archivo in archivos:
+            nombre_archivo = getattr(archivo, 'name', '').lower()
+            if nombre_archivo.endswith('.xls'):
+                engine = 'xlrd'
+            elif nombre_archivo.endswith('.xlsb'):
+                engine = 'pyxlsb'
+            elif nombre_archivo.endswith(('.ods', '.odf', '.odt')):
+                engine = 'odf'
+            else:
+                engine = 'openpyxl'
 
-                    cantidad = to_int1(get_first(row, ["cantidad"]))
-                    servicios = s(get_first(row, ["servicios", "sector"]) or sector_form) or "Sin especificar"
-                    cuenta_cod = get_first(row, ["cuenta codigo", "cuenta_código", "cuenta_codigo"])
-                    nomencl = get_first(row, ["nomenclatura de bienes", "nomenclatura_de_bienes", "nomenclatura_bienes"])
-                    observ = get_first(row, ["observaciones", "obs"])
+            df = pd.read_excel(archivo, dtype=str, engine=engine)
+            df.columns = [normalizar(str(c)) for c in df.columns]
 
-=======
-                    numero_id = get_first(row, [
-                        "n° id", "nº id", "n° de id", "nº de id",
-                        "n de id", "n_de_id", "numero_identificacion",
-                        "id_patrimonial", "no de id", "n id",
-                    ])
-                    nro_exp = get_first(row, [
-                        "n° expediente", "nº expediente", "n° de expediente",
-                        "n de expediente", "n_de_expediente", "numero_expediente",
-                        "nº de expediente", "no de expediente", "expediente",
-                    ])
-                    nro_compra = get_first(row, [
-                        "n° compra", "nº compra", "n° de compra",
-                        "n de compra", "n_de_compra", "numero_compra",
-                        "nº de compra", "no de compra",
-                    ])
-                    nro_serie = get_first_no(row, [
-                        "n° serie", "nº serie", "n° de serie",
-                        "n de serie", "n_de_serie", "numero_serie",
-                        "nº de serie", "no de serie",
-                    ])
-                    descripcion = get_first(row, [
-                        "descripcion", "descripción", "descripcion_del_bien",
-                    ])
-                    cuenta_cod = get_first_no(row, [
-                        "cuenta código", "cuenta codigo", "cuenta_código", "cuenta_codigo",
-                    ])
-                    nomencl = get_first_no(row, [
-                        "nomenclatura", "nomenclatura de bienes",
-                        "nomenclatura_de_bienes", "nomenclatura_bienes",
-                    ])
-                    observ = get_first_no(row, ["observaciones", "obs"])
->>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
-                    origen_txt = get_first(row, ["origen"])
-                    estado_txt = get_first(row, ["estado"])
-                    precio_raw = get_first(row, ["precio", "valor", "importe"])
+            servicio_archivo = sector_form
+            if not servicio_archivo:
+                servicio_archivo = os.path.splitext(getattr(archivo, 'name', ''))[0].upper()
 
-<<<<<<< HEAD
-                    fecha_alta = parse_date_any(get_first(row, ["fecha de alta", "fecha_de_alta", "fecha_alta"]))
-                    fecha_baja = parse_date_any(get_first(row, ["fecha de baja", "fecha_de_baja", "fecha_baja"]))
-=======
-                    cantidad = to_int1(get_first(row, ["cantidad"]))
-                    servicios_raw = s(get_first(row, ["servicios", "servicio", "sector"]) or servicio_archivo)
-                    servicios = servicios_raw if servicios_raw else "NO"
+            def get_first(row, names) -> str:
+                for n in names:
+                    key = normalizar(n)
+                    if key in df.columns:
+                        return s(row.get(key))
+                return ""
 
-                    fecha_alta = parse_date_any(get_first(row, [
-                        "fecha alta", "fecha de alta", "fecha_de_alta", "fecha_alta",
-                    ]))
-                    fecha_baja = parse_date_any(get_first(row, [
-                        "fecha de baja", "fecha_de_baja", "fecha_baja",
-                    ]))
->>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
+            def get_first_no(row, names) -> str:
+                val = get_first(row, names)
+                return val if val else "NO"
 
-                    origen_val = map_origen(origen_txt)
-                    estado_val = map_estado(estado_txt)
+            for i, row in df.iterrows():
+                try:
+                    with transaction.atomic():
+                        numero_id = get_first(row, [
+                            "n° id", "nº id", "n° de id", "nº de id",
+                            "n de id", "n_de_id", "numero_identificacion",
+                            "id_patrimonial", "no de id", "n id",
+                        ])
+                        nro_exp = get_first(row, [
+                            "n° expediente", "nº expediente", "n° de expediente",
+                            "n de expediente", "n_de_expediente", "numero_expediente",
+                            "nº de expediente", "no de expediente", "expediente",
+                        ])
+                        nro_compra = get_first(row, [
+                            "n° compra", "nº compra", "n° de compra",
+                            "n de compra", "n_de_compra", "numero_compra",
+                            "nº de compra", "no de compra",
+                        ])
+                        nro_serie = get_first_no(row, [
+                            "n° serie", "nº serie", "n° de serie",
+                            "n de serie", "n_de_serie", "numero_serie",
+                            "nº de serie", "no de serie",
+                        ])
+                        descripcion = get_first(row, [
+                            "descripcion", "descripción", "descripcion_del_bien",
+                        ])
+                        cuenta_cod = get_first_no(row, [
+                            "cuenta código", "cuenta codigo", "cuenta_código", "cuenta_codigo",
+                        ])
+                        nomencl = get_first_no(row, [
+                            "nomenclatura", "nomenclatura de bienes",
+                            "nomenclatura_de_bienes", "nomenclatura_bienes",
+                        ])
+                        observ = get_first_no(row, ["observaciones", "obs"])
+                        origen_txt = get_first(row, ["origen"])
+                        estado_txt = get_first(row, ["estado"])
+                        precio_raw = get_first(row, ["precio", "valor", "importe"])
+                        cantidad = to_int1(get_first(row, ["cantidad"]))
+                        servicios_raw = s(get_first(row, ["servicios", "servicio", "sector"]) or servicio_archivo)
+                        servicios = servicios_raw if servicios_raw else "NO"
+                        fecha_alta = parse_date_any(get_first(row, [
+                            "fecha alta", "fecha de alta", "fecha_de_alta", "fecha_alta",
+                        ]))
+                        fecha_baja = parse_date_any(get_first(row, [
+                            "fecha de baja", "fecha_de_baja", "fecha_baja",
+                        ]))
+                        origen_val = map_origen(origen_txt)
+                        estado_val = map_estado(estado_txt)
+                        precio = parse_money(precio_raw)
+                        if origen_val != "COMPRA":
+                            precio = None
+                        if not fecha_alta:
+                            fecha_alta = date.today()
 
-                    precio = parse_money(precio_raw)
-                    if origen_val != "COMPRA":
-                        precio = None
+                        expediente_obj = None
+                        if nro_exp and nro_exp.upper() != "NO":
+                            expediente_obj, _ = Expediente.objects.get_or_create(
+                                numero_expediente=nro_exp
+                            )
+                            if nro_compra and nro_compra.upper() != "NO":
+                                expediente_obj.numero_compra = nro_compra
+                                expediente_obj.save(update_fields=["numero_compra"])
 
-                    if not fecha_alta:
-                        fecha_alta = date.today()
+                        nombre = descripcion[:200] if descripcion else (nro_serie if nro_serie != "NO" else "SIN NOMBRE")
 
-                    expediente_obj = None
-                    # N° Expediente y N° Compra son columnas independientes
-                    # Solo se crea Expediente si el N° Expediente tiene un valor real
-                    if nro_exp and nro_exp.upper() != "NO":
-                        expediente_obj, _ = Expediente.objects.get_or_create(
-                            numero_expediente=nro_exp
-                        )
-                        # N° Compra se guarda solo dentro del Expediente correspondiente
-                        if nro_compra and nro_compra.upper() != "NO":
-                            expediente_obj.numero_compra = nro_compra
-                            expediente_obj.save(update_fields=["numero_compra"])
+                        defaults = {
+                            "nombre": nombre,
+                            "descripcion": descripcion or "",
+                            "cantidad": cantidad,
+                            "servicios": servicios,
+                            "numero_serie": nro_serie,
+                            "cuenta_codigo": cuenta_cod,
+                            "nomenclatura_bienes": nomencl,
+                            "observaciones": observ,
+                            "valor_adquisicion": precio,
+                            "fecha_adquisicion": fecha_alta,
+                            "fecha_baja": fecha_baja,
+                            "expediente": expediente_obj,
+                        }
+                        if origen_val is not None:
+                            defaults["origen"] = origen_val
+                        if estado_val is not None:
+                            defaults["estado"] = estado_val
 
-<<<<<<< HEAD
-                    nombre = descripcion[:200] if descripcion else (nro_serie or "SIN NOMBRE")
-=======
-                    nombre = descripcion[:200] if descripcion else (nro_serie if nro_serie != "NO" else "SIN NOMBRE")
->>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
+                        numero_id_val = (numero_id or "").strip() or None
+                        if numero_id_val is not None:
+                            _, created = BienPatrimonial.objects.update_or_create(
+                                numero_identificacion=numero_id_val,
+                                defaults=defaults,
+                            )
+                        elif nro_serie and nro_serie != "NO" and descripcion:
+                            _, created = BienPatrimonial.objects.update_or_create(
+                                numero_serie=nro_serie,
+                                descripcion=descripcion or "",
+                                defaults=defaults,
+                            )
+                        else:
+                            BienPatrimonial.objects.create(**defaults)
+                            created = True
 
-                    defaults = {
-                        "nombre": nombre,
-                        "descripcion": descripcion or "",
-                        "cantidad": cantidad,
-                        "servicios": servicios,
-                        "numero_serie": nro_serie,
-                        "cuenta_codigo": cuenta_cod,
-                        "nomenclatura_bienes": nomencl,
-                        "observaciones": observ,
-                        "valor_adquisicion": precio,
-                        "fecha_adquisicion": fecha_alta,
-                        "fecha_baja": fecha_baja,
-                        "expediente": expediente_obj,
-                    }
+                        if created:
+                            creados += 1
+                        else:
+                            actualizados += 1
 
-                    if origen_val is not None:
-                        defaults["origen"] = origen_val
-                    if estado_val is not None:
-                        defaults["estado"] = estado_val
-
-                    numero_id = (numero_id or "").strip()
-                    numero_id_val = numero_id or None
-
-                    if numero_id_val is not None:
-                        _, created = BienPatrimonial.objects.update_or_create(
-                            numero_identificacion=numero_id_val,
-                            defaults=defaults,
-                        )
-                    elif nro_serie and descripcion:
-                        _, created = BienPatrimonial.objects.update_or_create(
-                            numero_serie=nro_serie,
-                            descripcion=descripcion or "",
-                            defaults=defaults,
-                        )
-                    else:
-                        BienPatrimonial.objects.create(**defaults)
-                        created = True
-<<<<<<< HEAD
-
-                    creados += int(created)
-                    actualizados += int(not created)
-
-            except (ValueError, ValidationError, IntegrityError) as e:
-                errores.append(f"Fila {i + 2}: {e}")
-=======
- 
-                    if created:
-                        creados += 1
-                    else:
-                        actualizados += 1
-            except Exception as e:
-                errores.append(f"Fila {i+1} en '{getattr(archivo, 'name', 'Excel')}': {str(e)}")
- 
-        mensaje = f"✅ Carga masiva exitosa. Se procesaron {len(archivos)} archivo(s). Bienes creados: {creados}. Actualizados: {actualizados}."
->>>>>>> 7d121c8210747ea5fcef65a0ca90808fcd41e412
+                except Exception as e:
+                    errores.append(f"Fila {i + 1} en '{getattr(archivo, 'name', 'Excel')}': {str(e)}")
 
         if creados or actualizados:
             messages.success(
@@ -1767,7 +1349,6 @@ def carga_masiva_bienes(request):
             mensaje=f"Se realizó una carga masiva: {creados} bienes registrados. Errores: {len(errores)}.",
             leida=False,
         )
-
         return redirect("lista_bienes")
 
     except (FileNotFoundError, pd.errors.EmptyDataError, KeyError) as e:
@@ -1805,7 +1386,6 @@ def eliminar_bienes_seleccionados(request):
 def lista_baja_bienes(request):
     q = (request.GET.get("q") or "").strip()
     orden = request.GET.get("orden") or "-fecha_baja"
-
     bienes_baja = BienPatrimonial.objects.select_related("expediente").filter(estado="BAJA")
 
     if q:
@@ -1831,13 +1411,11 @@ def lista_baja_bienes(request):
         per_page = 30
 
     paginator = Paginator(bienes_baja, per_page)
-
     page_str = request.GET.get("page") or "1"
     try:
         page_number = int(page_str)
     except ValueError:
         page_number = 1
-
     if page_number < 1:
         page_number = 1
 
@@ -1854,7 +1432,6 @@ def lista_baja_bienes(request):
     total = paginator.num_pages
     window = 2
     page_range = []
-
     for num in range(1, total + 1):
         if num == 1 or num == total or (current - window) <= num <= (current + window):
             page_range.append(num)
@@ -1882,14 +1459,12 @@ def lista_baja_bienes(request):
 @require_POST
 def dar_baja_bien(request, pk):
     bien = get_object_or_404(BienPatrimonial, pk=pk)
-
     fecha_baja = parse_date(request.POST.get("fecha_baja") or "") or date.today()
     expediente_baja = (request.POST.get("expediente_baja") or "").strip()
     descripcion_baja = (request.POST.get("descripcion_baja") or "").strip()
 
     bien.estado = "BAJA"
     update_fields = ["estado"]
-
     if hasattr(bien, "fecha_baja"):
         bien.fecha_baja = fecha_baja
         update_fields.append("fecha_baja")
@@ -1899,13 +1474,13 @@ def dar_baja_bien(request, pk):
     if hasattr(bien, "descripcion_baja"):
         bien.descripcion_baja = descripcion_baja
         update_fields.append("descripcion_baja")
-
     bien.save(update_fields=update_fields)
+
     nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
     crear_notificacion_admins(
         f"Se dio de baja el bien '{nombre_bien}' (Clave: {bien.clave_unica})."
     )
-    messages.success(request, f"Bien '{bien.nombre}' dado de baja correctamente.")
+    messages.success(request, f"Bien '{nombre_bien}' dado de baja correctamente.")
     return redirect("lista_bienes")
 
 
@@ -1919,29 +1494,24 @@ def restablecer_bien(request, pk):
         return redirect("lista_baja_bienes")
 
     bien = get_object_or_404(BienPatrimonial, pk=pk)
-
     bien.estado = "ACTIVO"
-    if hasattr(bien, "fecha_baja"):
-        bien.fecha_baja = None
-    if hasattr(bien, "expediente_baja"):
-        bien.expediente_baja = None
-    if hasattr(bien, "descripcion_baja"):
-        bien.descripcion_baja = ""
-
     update_fields = ["estado"]
     if hasattr(bien, "fecha_baja"):
+        bien.fecha_baja = None
         update_fields.append("fecha_baja")
     if hasattr(bien, "expediente_baja"):
+        bien.expediente_baja = None
         update_fields.append("expediente_baja")
     if hasattr(bien, "descripcion_baja"):
+        bien.descripcion_baja = ""
         update_fields.append("descripcion_baja")
-
     bien.save(update_fields=update_fields)
+
     nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
     crear_notificacion_admins(
         f"Se restableció el bien '{nombre_bien}' (Clave: {bien.clave_unica}) a ACTIVO."
     )
-    messages.success(request, f"Bien '{bien.nombre}' restablecido a ACTIVO.")
+    messages.success(request, f"Bien '{nombre_bien}' restablecido a ACTIVO.")
     return redirect("lista_bienes")
 
 

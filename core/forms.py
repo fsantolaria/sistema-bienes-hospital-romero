@@ -9,33 +9,18 @@ from datetime import date
 
 
 
-class MultipleFileInput(forms.ClearableFileInput):
-    allow_multiple_selected = True
-
-class MultipleFileField(forms.FileField):
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault("widget", MultipleFileInput(attrs={'class': 'form-control', 'accept': '.xlsx,.xls,.xlsm,.xlsb,.ods'}))
-        super().__init__(*args, **kwargs)
-
-    def clean(self, data, initial=None):
-        single_file_clean = super().clean
-        if isinstance(data, (list, tuple)):
-            result = [single_file_clean(d, initial) for d in data]
-        else:
-            result = single_file_clean(data, initial)
-        return result
-
 # ========== FORMULARIO DE CARGA MASIVA ==========
 class CargaMasivaForm(forms.Form):
-    archivo_excel = MultipleFileField(
-        label='Seleccionar archivo(s) Excel',
-        help_text='Formatos soportados: .xlsx, .xls, .xlsm, .xlsb, .ods'
+    archivo_excel = forms.FileField(
+        label='Seleccionar archivo Excel',
+        help_text='Formatos soportados: .xlsx, .xls',
+        widget=forms.ClearableFileInput(attrs={'class': 'form-control'})
     )
-    servicio = forms.CharField(
+    sector = forms.CharField(
         max_length=100,
         required=False,
-        label='Servicio por defecto (opcional)',
-        help_text='Si se deja vacío, se tomará el servicio de cada fila del archivo. Si el archivo se llama "RELEVAMIENTO...", se asignará automáticamente.',
+        label='Sector por defecto (opcional)',
+        help_text='Si se deja vacío, se tomará el sector de cada fila del archivo.',
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
 
@@ -153,15 +138,15 @@ class OperadorForm(forms.Form):
         ]
     )
     email = forms.EmailField(required=False, label='Email')
-    tipo_usuario = forms.ChoiceField(
-        choices=[('operador', 'Operador'), ('supervisor', 'Supervisor')],
-        initial='operador',
-        label='Tipo de Usuario'
-    )
     estado = forms.ChoiceField(
         choices=[('habilitado', 'Habilitado'), ('no-habilitado', 'No Habilitado')],
         initial='habilitado',
         label='Estado'
+    )
+    tipo_usuario = forms.ChoiceField(
+        choices=[('empleado', 'Operador'), ('supervisor', 'Supervisor')],
+        initial='empleado',
+        label='Tipo de usuario'
     )
     password = forms.CharField(required=False, widget=forms.PasswordInput, label='Contraseña')
 
