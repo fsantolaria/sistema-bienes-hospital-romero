@@ -50,8 +50,10 @@
     background: #0087a3;
     z-index: 1;
     display: flex;
-    flex-direction: column;
-    gap: 6px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
 }
 
 .dropdown-title {
