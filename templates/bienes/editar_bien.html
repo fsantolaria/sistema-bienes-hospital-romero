@@ -33,11 +33,16 @@
         {% for e in form.cantidad.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
       </div>
 
-      <!-- Expediente -->
-      <div class="col-md-4">
-        <label class="form-label" for="{{ form.expediente.id_for_label }}">N° de Expediente</label>
-        {{ form.expediente }}
-        {% for e in form.expediente.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+      <!-- Datos de Expediente y Compra -->
+      <div class="col-md-3">
+        <label class="form-label" for="{{ form.numero_expediente.id_for_label }}">N° de Expediente</label>
+        {{ form.numero_expediente }}
+        {% for e in form.numero_expediente.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="{{ form.numero_compra.id_for_label }}">N° de Compra</label>
+        {{ form.numero_compra }}
+        {% for e in form.numero_compra.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
       </div>
 
       <!-- Cuenta código / Nomenclatura -->
