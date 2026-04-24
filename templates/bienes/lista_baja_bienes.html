@@ -124,7 +124,7 @@
           <td class="text-nowrap">{{ b.expediente.numero_expediente|default:"—" }}</td>
           <td class="text-nowrap">{{ b.expediente_baja|default:"—" }}</td>
 
-          <td class="text-nowrap">{{ b.expediente.numero_compra|default:"—" }}</td>
+          <td class="text-nowrap">{{ b.numero_compra|default:b.expediente.numero_compra|default:"—" }}</td>
           <td class="text-nowrap">{{ b.cuenta_codigo|default:"—" }}</td>
           <td class="text-nowrap">{{ b.nomenclatura_bienes|default:"—" }}</td>
           <td class="text-nowrap">{{ b.numero_serie|default:"—" }}</td>

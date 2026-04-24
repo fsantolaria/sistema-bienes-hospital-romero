@@ -1,4 +1,4 @@
-from django.contrib.auth import authenticate, login, logout, get_user_model
+﻿from django.contrib.auth import authenticate, login, logout, get_user_model
 import pandas as pd
 from datetime import date, timedelta
 from django.shortcuts import render, redirect, get_object_or_404
@@ -31,7 +31,7 @@ from xml.sax.saxutils import escape
 from core.models import Usuario
  
 def _role_route_name(user) -> str:
-    """Devuelve el nombre de la ruta según el rol del usuario."""
+    """Devuelve el nombre de la ruta seg├║n el rol del usuario."""
     if user.is_superuser:
         return "home_admin"
     if hasattr(user, "tipo_usuario"):
@@ -45,7 +45,7 @@ def _role_route_name(user) -> str:
  
  
 def permisos_context(user):
-    """Booleans útiles para templates y lógica."""
+    """Booleans ├║tiles para templates y l├│gica."""
     if not getattr(user, "is_authenticated", False):
         return {
             "es_admin": False,
@@ -82,7 +82,7 @@ def permisos_context(user):
         "notificaciones_count": notificaciones_count,
     }
 # ============================
-# AUTENTICACIÓN / INICIO
+# AUTENTICACI├ôN / INICIO
 # ============================
 
 def inicio(request):
@@ -119,7 +119,7 @@ def login_view(request):
             return render(request, "login.html", ctx, status=401)
  
         if user is None:
-            return _rerender_error("Usuario o contraseña incorrectos")
+            return _rerender_error("Usuario o contrase├▒a incorrectos")
  
         if not tipo_usuario:
             if getattr(user, "is_superuser", False):
@@ -127,7 +127,7 @@ def login_view(request):
             elif hasattr(user, "tipo_usuario") and user.tipo_usuario in ("admin", "operador", "supervisor"):
                 tipo_usuario = user.tipo_usuario
             else:
-                return _rerender_error("No se pudo determinar el tipo de usuario. Volvé a intentar.")
+                return _rerender_error("No se pudo determinar el tipo de usuario. Volv├® a intentar.")
  
         if tipo_usuario == "admin":
             if user.is_superuser or (hasattr(user, "tipo_usuario") and user.tipo_usuario == "admin"):
@@ -149,12 +149,12 @@ def login_view(request):
             else:
                 return _rerender_error("El tipo de usuario seleccionado no coincide con el usuario ingresado.")
         else:
-            return _rerender_error("Tipo de usuario no válido.")
+            return _rerender_error("Tipo de usuario no v├ílido.")
 
-        # Notificar a admins del inicio de sesión
+        # Notificar a admins del inicio de sesi├│n
         tipo_label = {"admin": "Administrador", "supervisor": "Supervisor", "operador": "Operador"}.get(tipo_usuario, tipo_usuario.capitalize())
         crear_notificacion_admins(
-            f"{tipo_label} '{user.username}' inició sesión"
+            f"{tipo_label} '{user.username}' inici├│ sesi├│n"
         )
 
         if next_url and url_has_allowed_host_and_scheme(
@@ -204,7 +204,7 @@ def bienes(request):
             bien = form.save()
             nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
             crear_notificacion_admins(
-                f"Se registró el bien '{nombre_bien}' (Clave: {bien.clave_unica}) correctamente."
+                f"Se registr├│ el bien '{nombre_bien}' (Clave: {bien.clave_unica}) correctamente."
             )
             messages.success(request, f"Bien '{nombre_bien}' registrado correctamente.")
             if perms.get("es_admin", False):
@@ -223,19 +223,19 @@ def bienes(request):
  
 def logout_view(request):
     logout(request)
-    messages.success(request, "Sesión cerrada exitosamente")
+    messages.success(request, "Sesi├│n cerrada exitosamente")
     return redirect("login")
  
  
 # ============================
-# ÁREA PRIVADA
+# ├üREA PRIVADA
 # ============================
  
 @login_required
 def home_admin(request):
     perms = permisos_context(request.user)
     if not perms["es_admin"]:
-        messages.error(request, "No tienes permisos para acceder a esta página")
+        messages.error(request, "No tienes permisos para acceder a esta p├ígina")
         return redirect("home_operador")
     perms['logout_on_back'] = True
     return render(request, "home_admin.html", perms)
@@ -245,7 +245,7 @@ def home_admin(request):
 def home_supervisor(request):
     perms = permisos_context(request.user)
     if not perms["es_supervisor"]:
-        messages.error(request, "No tienes permisos para acceder a esta página")
+        messages.error(request, "No tienes permisos para acceder a esta p├ígina")
         return redirect("home_operador")
     return render(request, "home_supervisor.html", perms)
 
@@ -275,7 +275,7 @@ def recuperar_password(request):
     if request.method == "POST":
         identificador = (request.POST.get("usuario_o_email") or "").strip()
         if not identificador:
-            messages.error(request, "Ingresá tu usuario o email para enviar la solicitud.")
+            messages.error(request, "Ingres├í tu usuario o email para enviar la solicitud.")
             return render(
                 request,
                 "recuperar_password.html",
@@ -284,7 +284,7 @@ def recuperar_password(request):
             )
  
         crear_notificacion_admins(
-            f"El operador '{identificador}' solicitó recuperación de contraseña."
+            f"El operador '{identificador}' solicit├│ recuperaci├│n de contrase├▒a."
         )
         messages.success(request, "Solicitud enviada correctamente.")
         return redirect("recuperar_password")
@@ -295,7 +295,7 @@ def recuperar_password(request):
 def alta_operadores(request):
     perms = permisos_context(request.user)
     if not perms["es_admin"]:
-        messages.error(request, "No tienes permisos para acceder a esta página")
+        messages.error(request, "No tienes permisos para acceder a esta p├ígina")
         return redirect("home_operador")
     if request.method == "POST":
         nombre = " ".join((request.POST.get("nombre") or "").strip().split())
@@ -315,7 +315,7 @@ def alta_operadores(request):
             )
  
         if not nombre or not apellido:
-            messages.error(request, "Debés completar nombre y apellido.")
+            messages.error(request, "Deb├®s completar nombre y apellido.")
             return render(
                 request,
                 "alta_operadores.html",
@@ -332,14 +332,14 @@ def alta_operadores(request):
         estado     = (request.POST.get("estado") or "habilitado").strip()
         password   = (request.POST.get("password") or "").strip()
  
-        # Validación DNI duplicado
+        # Validaci├│n DNI duplicado
         if numero_doc and Usuario.objects.filter(numero_doc=numero_doc).exists():
             messages.error(request, f"Ya existe un operador con el DNI {numero_doc}.")
             return redirect("alta_operadores")
  
         base_username = slugify(f"{nombre}.{apellido}") or (email.split("@")[0] if email else "")
         if not base_username:
-            messages.error(request, "No se pudo generar un usuario. Completá Nombre/Apellido o Email.")
+            messages.error(request, "No se pudo generar un usuario. Complet├í Nombre/Apellido o Email.")
             return render(
                 request,
                 "alta_operadores.html",
@@ -393,7 +393,7 @@ def alta_operadores(request):
         if not saved:
             messages.error(
                 request,
-                "No se pudo crear el usuario debido a un conflicto de nombre. Intentá de nuevo más tarde o con otro nombre.",
+                "No se pudo crear el usuario debido a un conflicto de nombre. Intent├í de nuevo m├ís tarde o con otro nombre.",
             )
             return render(
                 request,
@@ -403,7 +403,7 @@ def alta_operadores(request):
  
         Notificacion.objects.create(
             usuario=request.user,
-            mensaje=f"Se creó el operador '{operador.username}'.",
+            mensaje=f"Se cre├│ el operador '{operador.username}'.",
             leida=False,
         )
  
@@ -447,7 +447,7 @@ def editar_operador(request, pk):
         numero_doc = form.cleaned_data["dni"]
  
         if not nombre or not apellido:
-            messages.error(request, "Debés completar nombre y apellido.")
+            messages.error(request, "Deb├®s completar nombre y apellido.")
             ctx = permisos_context(request.user)
             ctx.update({"operador": operador, "usar_operador_model": False, "form": form})
             return render(request, "editar_operadores.html", ctx)
@@ -515,10 +515,10 @@ def editar_operador(request, pk):
  
         if hubo_cambio:
             operador.save()
-            # Mensaje de éxito
-            messages.success(request, f"✅ Operador '{operador.username}' actualizado correctamente.", extra_tags='editar')
+            # Mensaje de ├®xito
+            messages.success(request, f"Ô£à Operador '{operador.username}' actualizado correctamente.", extra_tags='editar')
             try:
-                crear_notificacion(request.user, f"Se editó el operador '{operador.username}'.")
+                crear_notificacion(request.user, f"Se edit├│ el operador '{operador.username}'.")
             except Exception:
                 pass
             messages.success(request, f"Operador '{operador.username}' editado correctamente.")
@@ -549,13 +549,13 @@ def editar_operador(request, pk):
 def eliminar_operador(request, pk):
     perms = permisos_context(request.user)
     if not perms.get("puede_gestionar_operadores", False):
-        messages.error(request, "❌ No tienes permisos para eliminar operadores.")
+        messages.error(request, "ÔØî No tienes permisos para eliminar operadores.")
         return redirect("operadores")
  
     operador = get_object_or_404(Operador, pk=pk, is_staff=False)
  
     if operador == request.user:
-        messages.error(request, "❌ No podés eliminar tu propio usuario.")
+        messages.error(request, "ÔØî No pod├®s eliminar tu propio usuario.")
         return redirect("operadores")
  
     identificador = operador.username
@@ -565,7 +565,7 @@ def eliminar_operador(request, pk):
     try:
         Notificacion.objects.create(
             usuario=request.user,
-            mensaje=f"Se eliminó el operador '{identificador}'.",
+            mensaje=f"Se elimin├│ el operador '{identificador}'.",
             leida=False,
         )
     except Exception:
@@ -586,7 +586,7 @@ def dar_baja_operador(request, pk):
     operador = get_object_or_404(Operador, pk=pk, is_staff=False)
  
     if operador == request.user:
-        messages.error(request, "No podés darte de baja a vos mismo.")
+        messages.error(request, "No pod├®s darte de baja a vos mismo.")
         return redirect("operadores")
  
     operador.is_active = False
@@ -631,7 +631,7 @@ def reportes_pdf(request):
             .order_by("-fecha_baja", "-fecha_adquisicion", "pk")
         )
         notifs = Notificacion.objects.filter(fecha__gte=since_dt).order_by("-fecha")
-        rango_desc = "Últimas 24 horas"
+        rango_desc = "├Ültimas 24 horas"
     else:
         bienes = (
             BienPatrimonial.objects
@@ -679,7 +679,7 @@ def reportes_pdf(request):
     except Exception:
         def money(v):
             if not v:
-                return "—"
+                return "ÔÇö"
             return f"${int(round(float(v))):,}".replace(",", ".")
  
         styles = getSampleStyleSheet()
@@ -703,7 +703,7 @@ def reportes_pdf(request):
  
         def P(texto, head: bool = False):
             if texto is None or texto == "":
-                texto = "—"
+                texto = "ÔÇö"
             txt = escape(str(texto)).replace("\n", "<br/>")
             return Paragraph(txt, p_head if head else p_cell)
  
@@ -718,26 +718,26 @@ def reportes_pdf(request):
         )
         elems = []
  
-        title = f"Reporte de Bienes Patrimoniales – {rango_desc}"
-        meta = f"Generado: {timezone.localtime(now).strftime('%d/%m/%Y %H:%M')} · Usuario: {request.user.username}"
+        title = f"Reporte de Bienes Patrimoniales ÔÇô {rango_desc}"
+        meta = f"Generado: {timezone.localtime(now).strftime('%d/%m/%Y %H:%M')} ┬À Usuario: {request.user.username}"
         elems.append(Paragraph(title, title_style))
         elems.append(Paragraph(meta, meta_style))
         elems.append(Spacer(1, 8))
  
         data = [[
-            P("ID", True), P("Clave", True), P("Descripción", True), P("Servicios", True),
+            P("ID", True), P("Clave", True), P("Descripci├│n", True), P("Servicios", True),
             P("Estado", True), P("Alta", True), P("Baja", True), P("Valor", True),
         ]]
  
         for b in bienes:
-            estado = b.get_estado_display() if hasattr(b, "get_estado_display") else (b.estado or "—")
-            alta = b.fecha_adquisicion.strftime("%d/%m/%Y") if b.fecha_adquisicion else "—"
-            baja = b.fecha_baja.strftime("%d/%m/%Y") if b.fecha_baja else "—"
+            estado = b.get_estado_display() if hasattr(b, "get_estado_display") else (b.estado or "ÔÇö")
+            alta = b.fecha_adquisicion.strftime("%d/%m/%Y") if b.fecha_adquisicion else "ÔÇö"
+            baja = b.fecha_baja.strftime("%d/%m/%Y") if b.fecha_baja else "ÔÇö"
             data.append([
                 P(b.pk or ""),
-                P(b.clave_unica or "—"),
-                P(b.descripcion or "—"),
-                P(b.servicios or "—"),
+                P(b.clave_unica or "ÔÇö"),
+                P(b.descripcion or "ÔÇö"),
+                P(b.servicios or "ÔÇö"),
                 P(estado),
                 P(alta),
                 P(baja),
@@ -868,8 +868,8 @@ def reportes_view(request):
     for num in range(1, total + 1):
         if num == 1 or num == total or (current - window) <= num <= (current + window):
             page_range.append(num)
-        elif page_range and page_range[-1] != "…":
-            page_range.append("…")
+        elif page_range and page_range[-1] != "ÔÇª":
+            page_range.append("ÔÇª")
  
     qd = request.GET.copy()
     qd.pop("page", None)
@@ -974,7 +974,6 @@ def lista_bienes(request):
             | Q(estado__icontains=q)
             | Q(expediente__numero_expediente__icontains=q)
             | Q(expediente__numero_compra__icontains=q)
-            | Q(numero_compra__icontains=q)
         )
  
     if f_origen == "__NULL__":
@@ -1037,9 +1036,9 @@ def lista_bienes(request):
             page_range.append(i)
             last_added = i
         else:
-            if last_added != "…":
-                page_range.append("…")
-                last_added = "…"
+            if last_added != "ÔÇª":
+                page_range.append("ÔÇª")
+                last_added = "ÔÇª"
  
     qs = request.GET.copy()
     qs.pop("page", None)
@@ -1085,7 +1084,6 @@ def lista_bienes_operador(request):
             | Q(estado__icontains=q)
             | Q(expediente__numero_expediente__icontains=q)
             | Q(expediente__numero_compra__icontains=q)
-            | Q(numero_compra__icontains=q)
         )
  
     if f_origen == "__NULL__":
@@ -1148,9 +1146,9 @@ def lista_bienes_operador(request):
             page_range.append(i)
             last_added = i
         else:
-            if last_added != "…":
-                page_range.append("…")
-                last_added = "…"
+            if last_added != "ÔÇª":
+                page_range.append("ÔÇª")
+                last_added = "ÔÇª"
  
     qs = request.GET.copy()
     qs.pop("page", None)
@@ -1205,7 +1203,7 @@ def editar_bien(request, pk):
  
             nombre_bien = getattr(obj, "nombre", None) or getattr(obj, "descripcion", "Sin nombre")
             crear_notificacion_admins(
-                f"Se editó el bien '{nombre_bien}' (Clave: {obj.clave_unica})."
+                f"Se edit├│ el bien '{nombre_bien}' (Clave: {obj.clave_unica})."
             )
             messages.success(request, f"Bien '{nombre_bien}' editado correctamente.")
  
@@ -1214,7 +1212,7 @@ def editar_bien(request, pk):
                 return redirect("lista_bienes")
             return redirect("lista_bienes_operador")
  
-        messages.error(request, "Revisá los datos del formulario.")
+        messages.error(request, "Revis├í los datos del formulario.")
     else:
         form = BienPatrimonialForm(instance=bien)
  
@@ -1237,8 +1235,8 @@ def eliminar_bien(request, pk):
     )
     messages.success(request, f"Bien '{bien.nombre}' eliminado correctamente.")
     bien.delete()
-    # Mensaje de éxito
-    messages.success(request, f"✅ Bien '{nombre_bien}' eliminado correctamente.", extra_tags='eliminar')
+    # Mensaje de ├®xito
+    messages.success(request, f"Ô£à Bien '{nombre_bien}' eliminado correctamente.", extra_tags='eliminar')
     return redirect("lista_bienes")
  
  
@@ -1269,23 +1267,23 @@ def carga_masiva_bienes(request):
         import os
 
         def normalizar(texto: str) -> str:
-            """Normaliza un nombre de columna: minúsculas, sin acentos, sin caracteres especiales."""
-            texto = texto.replace('\u00b0', '').replace('\u00ba', '')  # °, º
+            """Normaliza un nombre de columna: min├║sculas, sin acentos, sin caracteres especiales."""
+            texto = texto.replace('\u00b0', '').replace('\u00ba', '')  # ┬░, ┬║
             texto = unicodedata.normalize('NFKD', texto)
             texto = ''.join(c for c in texto if not unicodedata.combining(c))
             texto = ''.join(c if c.isalnum() or c == ' ' else ' ' for c in texto)
             return ' '.join(texto.lower().split())
 
         def s(v: object) -> str:
-            """Limpia el valor; devuelve '' si es vacío/nan."""
+            """Limpia el valor; devuelve '' si es vac├¡o/nan."""
             if v is None:
                 return ""
             txt = str(v).strip()
-            # Ya no reemplazamos el "-" por vacío, así toma los guiones como válidos
+            # Ya no reemplazamos el "-" por vac├¡o, as├¡ toma los guiones como v├ílidos
             return "" if txt.lower() in ("nan", "none") else txt
 
         def sno(v: object) -> str:
-            """Como s() pero devuelve 'NO' si esta vacio — para campos de texto opcionales."""
+            """Como s() pero devuelve 'NO' si esta vacio ÔÇö para campos de texto opcionales."""
             val = s(v)
             return val if val else "NO"
 
@@ -1306,7 +1304,7 @@ def carga_masiva_bienes(request):
             # Inferir servicio desde el nombre si no se puso en el form
             servicio_archivo = sector_form
             if not servicio_archivo:
-                # Usamos el nombre original sin extension, en mayúsculas
+                # Usamos el nombre original sin extension, en may├║sculas
                 servicio_archivo = os.path.splitext(getattr(archivo, 'name', ''))[0].upper()
 
             def get_first(row, names) -> str:
@@ -1401,30 +1399,30 @@ def carga_masiva_bienes(request):
             try:
                 with transaction.atomic():
                     numero_id = get_first(row, [
-                        "n° id", "nº id", "n° de id", "nº de id",
+                        "n┬░ id", "n┬║ id", "n┬░ de id", "n┬║ de id",
                         "n de id", "n_de_id", "numero_identificacion",
                         "id_patrimonial", "no de id", "n id",
                     ])
                     nro_exp = get_first(row, [
-                        "n° expediente", "nº expediente", "n° de expediente",
+                        "n┬░ expediente", "n┬║ expediente", "n┬░ de expediente",
                         "n de expediente", "n_de_expediente", "numero_expediente",
-                        "nº de expediente", "no de expediente", "expediente",
+                        "n┬║ de expediente", "no de expediente", "expediente",
                     ])
                     nro_compra = get_first(row, [
-                        "n° compra", "nº compra", "n° de compra",
+                        "n┬░ compra", "n┬║ compra", "n┬░ de compra",
                         "n de compra", "n_de_compra", "numero_compra",
-                        "nº de compra", "no de compra",
+                        "n┬║ de compra", "no de compra",
                     ])
                     nro_serie = get_first_no(row, [
-                        "n° serie", "nº serie", "n° de serie",
+                        "n┬░ serie", "n┬║ serie", "n┬░ de serie",
                         "n de serie", "n_de_serie", "numero_serie",
-                        "nº de serie", "no de serie",
+                        "n┬║ de serie", "no de serie",
                     ])
                     descripcion = get_first(row, [
-                        "descripcion", "descripción", "descripcion_del_bien",
+                        "descripcion", "descripci├│n", "descripcion_del_bien",
                     ])
                     cuenta_cod = get_first_no(row, [
-                        "cuenta código", "cuenta codigo", "cuenta_código", "cuenta_codigo",
+                        "cuenta c├│digo", "cuenta codigo", "cuenta_c├│digo", "cuenta_codigo",
                     ])
                     nomencl = get_first_no(row, [
                         "nomenclatura", "nomenclatura de bienes",
@@ -1457,13 +1455,13 @@ def carga_masiva_bienes(request):
                         fecha_alta = date.today()
 
                     expediente_obj = None
-                    # N° Expediente y N° Compra son columnas independientes
-                    # Solo se crea Expediente si el N° Expediente tiene un valor real
+                    # N┬░ Expediente y N┬░ Compra son columnas independientes
+                    # Solo se crea Expediente si el N┬░ Expediente tiene un valor real
                     if nro_exp and nro_exp.upper() != "NO":
                         expediente_obj, _ = Expediente.objects.get_or_create(
                             numero_expediente=nro_exp
                         )
-                        # N° Compra se guarda solo dentro del Expediente correspondiente
+                        # N┬░ Compra se guarda solo dentro del Expediente correspondiente
                         if nro_compra and nro_compra.upper() != "NO":
                             expediente_obj.numero_compra = nro_compra
                             expediente_obj.save(update_fields=["numero_compra"])
@@ -1483,7 +1481,6 @@ def carga_masiva_bienes(request):
                         "fecha_adquisicion": fecha_alta,
                         "fecha_baja": fecha_baja,
                         "expediente": expediente_obj,
-                        "numero_compra": nro_compra if nro_compra and nro_compra.upper() != "NO" else "",
                     }
  
                     if origen_val is not None:
@@ -1516,12 +1513,12 @@ def carga_masiva_bienes(request):
             except Exception as e:
                 errores.append(f"Fila {i+1} en '{getattr(archivo, 'name', 'Excel')}': {str(e)}")
  
-        mensaje = f"✅ Carga masiva exitosa. Se procesaron {len(archivos)} archivo(s). Bienes creados: {creados}. Actualizados: {actualizados}."
+        mensaje = f"Ô£à Carga masiva exitosa. Se procesaron {len(archivos)} archivo(s). Bienes creados: {creados}. Actualizados: {actualizados}."
 
         if creados or actualizados:
             messages.success(
                 request,
-                f"✅ Creados: {creados}, Actualizados: {actualizados}. Errores: {len(errores)}",
+                f"Ô£à Creados: {creados}, Actualizados: {actualizados}. Errores: {len(errores)}",
             )
         else:
             messages.warning(request, "No se crearon ni actualizaron bienes.")
@@ -1531,7 +1528,7 @@ def carga_masiva_bienes(request):
  
         Notificacion.objects.create(
             usuario=request.user,
-            mensaje=f"Se realizó una carga masiva: {creados} bienes registrados. Errores: {len(errores)}.",
+            mensaje=f"Se realiz├│ una carga masiva: {creados} bienes registrados. Errores: {len(errores)}.",
             leida=False,
         )
  
@@ -1560,7 +1557,7 @@ def eliminar_bienes_seleccionados(request):
         return redirect("lista_bienes")
  
     eliminados = BienPatrimonial.objects.filter(pk__in=ids).delete()[0]
-    messages.success(request, f"✅ Eliminados: {eliminados} bienes correctamente.")
+    messages.success(request, f"Ô£à Eliminados: {eliminados} bienes correctamente.")
     return redirect("lista_bienes")
  
  
@@ -1587,8 +1584,6 @@ def lista_baja_bienes(request):
             | Q(nomenclatura_bienes__icontains=q)
             | Q(numero_serie__icontains=q)
             | Q(expediente__numero_expediente__icontains=q)
-            | Q(expediente__numero_compra__icontains=q)
-            | Q(numero_compra__icontains=q)
             | Q(expediente_baja__icontains=q)
         )
  
@@ -1627,8 +1622,8 @@ def lista_baja_bienes(request):
     for num in range(1, total + 1):
         if num == 1 or num == total or (current - window) <= num <= (current + window):
             page_range.append(num)
-        elif page_range and page_range[-1] != "…":
-            page_range.append("…")
+        elif page_range and page_range[-1] != "ÔÇª":
+            page_range.append("ÔÇª")
  
     prev_page = current - 1 if page_obj.has_previous() else None
     next_page = current + 1 if page_obj.has_next() else None
@@ -1708,7 +1703,7 @@ def restablecer_bien(request, pk):
     bien.save(update_fields=update_fields)
     nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
     crear_notificacion_admins(
-        f"Se restableció el bien '{nombre_bien}' (Clave: {bien.clave_unica}) a ACTIVO."
+        f"Se restableci├│ el bien '{nombre_bien}' (Clave: {bien.clave_unica}) a ACTIVO."
     )
     messages.success(request, f"Bien '{bien.nombre}' restablecido a ACTIVO.")
     return redirect("lista_bienes")
@@ -1728,7 +1723,7 @@ def eliminar_bien_definitivo(request, pk):
     nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
     bien.delete()
     crear_notificacion_admins(
-        f"Se eliminó definitivamente el bien '{nombre_bien}' (Clave: {identificador})."
+        f"Se elimin├│ definitivamente el bien '{nombre_bien}' (Clave: {identificador})."
     )
     messages.success(request, f"Bien '{nombre_bien}' eliminado definitivamente.")
     return redirect("lista_baja_bienes")
@@ -1752,13 +1747,25 @@ def marcar_notificaciones_leidas(request):
 
 @login_required
 @require_POST
+def borrar_todas_notificaciones(request):
+    if request.method == "POST":
+        Notificacion.objects.filter(
+            usuario=request.user,
+            eliminada=False
+        ).update(eliminada=True)
+        return JsonResponse({"ok": True})
+    return JsonResponse({"ok": False}, status=400)
+
+
+@login_required
+@require_POST
 def eliminar_notificacion(request, pk):
     notif = get_object_or_404(Notificacion, pk=pk)
 
     if notif.usuario != request.user and not request.user.is_superuser:
         return JsonResponse({"ok": False, "error": "forbidden"}, status=403)
 
-    # 🔥 NO se elimina → se oculta
+    # ­ƒöÑ NO se elimina ÔåÆ se oculta
     notif.eliminada = True
     notif.save(update_fields=["eliminada"])
 
