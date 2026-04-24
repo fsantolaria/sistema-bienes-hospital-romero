@@ -1300,8 +1300,34 @@ def carga_masiva_bienes(request):
             else:
                 engine = 'openpyxl'
 
-            df = pd.read_excel(archivo, dtype=str, engine=engine)
+            # Robust reading: find the header row if the first one is just titles/logos
+            try:
+                df = pd.read_excel(archivo, dtype=str, engine=engine)
+            except Exception:
+                df = pd.read_excel(archivo, dtype=str)
+
+            # Normalizamos las columnas actuales para ver si son válidas
             df.columns = [normalizar(str(c)) for c in df.columns]
+            
+            # Palabras clave que indican una fila de cabecera
+            keywords = ["descripcion", "cantidad", "expediente", "compra", "clave", "id", "serie", "nomenclatura"]
+            cols_combined = " ".join(df.columns)
+            
+            # Si no encontramos al menos 2 palabras clave en la cabecera actual, buscamos en las filas
+            if sum(1 for k in keywords if k in cols_combined) < 2:
+                for idx, row in df.head(15).iterrows():
+                    row_values = [normalizar(str(v)) for v in row.values if v and str(v).lower() != 'nan']
+                    row_combined = " ".join(row_values)
+                    if sum(1 for k in keywords if k in row_combined) >= 2:
+                        # Encontramos la cabecera en la fila idx!
+                        # Reasignamos las columnas y removemos las filas anteriores
+                        new_cols = []
+                        for i, val in enumerate(row.values):
+                            val_str = normalizar(str(val)) if val and str(val).lower() != 'nan' else f"columna_{i}"
+                            new_cols.append(val_str)
+                        df.columns = new_cols
+                        df = df.iloc[idx+1:].reset_index(drop=True)
+                        break
 
             # Inferir servicio desde el nombre si no se puso en el form
             servicio_archivo = sector_form
@@ -1319,10 +1345,18 @@ def carga_masiva_bienes(request):
 
         def get_first(row, names) -> str:
             """Busca el primer match normalizando los nombres de columna."""
+            # 1. Intento por match exacto (normalizado)
             for n in names:
                 key = normalizar(n)
                 if key in df.columns:
                     return s(row.get(key))
+            # 2. Intento por subcadena (si alguna de las palabras clave está en el nombre de la columna)
+            for n in names:
+                key = normalizar(n)
+                if len(key) < 3: continue # Evitar matches muy cortos
+                for col in df.columns:
+                    if key in col:
+                        return s(row.get(col))
             return ""
 
         def get_first_no(row, names) -> str:
@@ -1403,37 +1437,37 @@ def carga_masiva_bienes(request):
                     numero_id = get_first(row, [
                         "n° id", "nº id", "n° de id", "nº de id",
                         "n de id", "n_de_id", "numero_identificacion",
-                        "id_patrimonial", "no de id", "n id",
+                        "id_patrimonial", "no de id", "n id", "id", "identificacion"
                     ])
                     nro_exp = get_first(row, [
                         "n° expediente", "nº expediente", "n° de expediente",
                         "n de expediente", "n_de_expediente", "numero_expediente",
-                        "nº de expediente", "no de expediente", "expediente",
+                        "nº de expediente", "no de expediente", "expediente", "exp", "nro exp"
                     ])
                     nro_compra = get_first(row, [
                         "n° compra", "nº compra", "n° de compra",
                         "n de compra", "n_de_compra", "numero_compra",
-                        "nº de compra", "no de compra",
+                        "nº de compra", "no de compra", "compra", "nro compra", "orden de compra", "oc"
                     ])
                     nro_serie = get_first_no(row, [
                         "n° serie", "nº serie", "n° de serie",
                         "n de serie", "n_de_serie", "numero_serie",
-                        "nº de serie", "no de serie",
+                        "nº de serie", "no de serie", "serie", "nro serie"
                     ])
                     descripcion = get_first(row, [
-                        "descripcion", "descripción", "descripcion_del_bien",
+                        "descripcion", "descripción", "descripcion_del_bien", "detalle", "nombre", "bien"
                     ])
                     cuenta_cod = get_first_no(row, [
-                        "cuenta código", "cuenta codigo", "cuenta_código", "cuenta_codigo",
+                        "cuenta código", "cuenta codigo", "cuenta_código", "cuenta_codigo", "cuenta", "cod cuenta"
                     ])
                     nomencl = get_first_no(row, [
                         "nomenclatura", "nomenclatura de bienes",
-                        "nomenclatura_de_bienes", "nomenclatura_bienes",
+                        "nomenclatura_de_bienes", "nomenclatura_bienes", "cod nomenclatura"
                     ])
-                    observ = get_first_no(row, ["observaciones", "obs"])
+                    observ = get_first_no(row, ["observaciones", "obs", "comentarios"])
                     origen_txt = get_first(row, ["origen"])
                     estado_txt = get_first(row, ["estado"])
-                    precio_raw = get_first(row, ["precio", "valor", "importe"])
+                    precio_raw = get_first(row, ["precio", "valor", "importe", "costo", "valor_adquisicion"])
 
                     cantidad = to_int1(get_first(row, ["cantidad"]))
                     servicios_raw = s(get_first(row, ["servicios", "servicio", "sector"]) or servicio_archivo)
