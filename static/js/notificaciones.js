@@ -60,7 +60,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const dropdown = document.getElementById('notificacionesDropdown') || wrapperNotificaciones.querySelector('.notificaciones-dropdown');
         if (dropdown) {
             // delegación para acciones dentro del dropdown
-            dropdown.addEventListener('click', function(ev) {
+                const btnBorrarTodas = ev.target.closest('.btn-borrar-todas');
+                if (btnBorrarTodas) {
+                    ev.stopPropagation();
+                    borrarTodasNotificaciones();
+                    return;
+                }
+
                 const btnMarcarTodas = ev.target.closest('.btn-marcar-todas');
                 if (btnMarcarTodas) {
                     ev.stopPropagation();
@@ -328,6 +334,41 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }).catch(err => {
             console.error(err);
+        });
+    }
+
+    function borrarTodasNotificaciones() {
+        if (!confirm('¿Estás seguro de que quieres borrar todas las notificaciones? Esta acción no se puede deshacer.')) {
+            return;
+        }
+        fetch('/notificaciones/borrar-todas/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken') || ''
+            },
+            body: '{}'
+        }).then(resp => {
+            if (resp.ok) {
+                const dropdown = document.getElementById('notificacionesDropdown') || wrapperNotificaciones.querySelector('.notificaciones-dropdown');
+                if (dropdown) {
+                    const list = dropdown.querySelector('.dropdown-list');
+                    if (list) {
+                        list.innerHTML = `
+                            <li style="text-align:center; padding:20px; color:#999; list-style:none;">
+                                <i class="fa-solid fa-bell-slash" style="font-size:24px; display:block; margin-bottom:8px;"></i>
+                                <p style="margin:0; font-size:13px;">Sin notificaciones</p>
+                            </li>
+                        `;
+                    }
+                }
+                actualizarBadge();
+            } else {
+                alert('No se pudieron borrar las notificaciones.');
+            }
+        }).catch(err => {
+            console.error(err);
+            alert('Error al conectar con el servidor.');
         });
     }
 
