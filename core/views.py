@@ -810,6 +810,8 @@ def reportes_view(request):
     scope = (request.GET.get("scope") or "24h").lower()
     now = timezone.now()
  
+    servicios_seleccionados = request.GET.getlist("servicio")
+
     if scope == "24h":
         since_dt = now - timedelta(hours=24)
         since_date = since_dt.date()
@@ -828,6 +830,8 @@ def reportes_view(request):
             .select_related("expediente")
             .order_by("-fecha_adquisicion", "pk")
         )
+    if servicios_seleccionados:
+        bienes = bienes.filter(servicios__in=servicios_seleccionados)
  
     try:
         per_page = int(request.GET.get("per_page") or 30)
@@ -877,16 +881,17 @@ def reportes_view(request):
  
     ctx = permisos_context(request.user)
     ctx.update({
-        "bienes": page_obj.object_list,
-        "scope": scope,
-        "paginator": paginator,
-        "page_obj": page_obj,
-        "is_paginated": paginator.num_pages > 1,
-        "page_range": page_range,
-        "prev_page": prev_page,
-        "next_page": next_page,
-        "querystring": querystring,
-    })
+    "bienes": page_obj.object_list,
+    "scope": scope,
+    "servicios_seleccionados": servicios_seleccionados,
+    "paginator": paginator,
+    "page_obj": page_obj,
+    "is_paginated": paginator.num_pages > 1,
+    "page_range": page_range,
+    "prev_page": prev_page,
+    "next_page": next_page,
+    "querystring": querystring,
+})
     return render(request, "reportes.html", ctx)
  
  
