@@ -1,11 +1,12 @@
 from django.contrib.auth import authenticate, login, logout, get_user_model
 import pandas as pd
+import hashlib
 from datetime import date, timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from core.forms import CargaMasivaForm, BienPatrimonialForm, OperadorForm
-from core.models import BienPatrimonial
+from core.models import BienPatrimonial, ArchivoCargaMasiva
 from django.db.models import Q, F
 from django.views.decorators.http import require_POST
 from django.db import transaction, IntegrityError
@@ -1256,8 +1257,10 @@ def carga_masiva_bienes(request):
     try:
         archivos = request.FILES.getlist("archivo_excel")
         sector_form = (form.cleaned_data.get("servicio") or "").strip()
+        hashes_esta_carga = set()
+        hashes_contenido_esta_carga = set()
 
-        creados, actualizados, errores = 0, 0, []
+        creados, actualizados, sin_cambios, duplicados_omitidos, errores = 0, 0, 0, 0, []
         from core.models import Expediente, BienPatrimonial, Notificacion
         import unicodedata
         import os
@@ -1320,9 +1323,63 @@ def carga_masiva_bienes(request):
             if "activ" in t: return "ACTIVO"
             return None
 
+        def hash_archivo_subido(archivo) -> str:
+            hasher = hashlib.sha256()
+            for chunk in archivo.chunks():
+                hasher.update(chunk)
+            archivo.seek(0)
+            return hasher.hexdigest()
+
+        def hash_contenido_dataframe(df: pd.DataFrame) -> str:
+            df_normalizado = df.copy()
+            df_normalizado.columns = [normalizar(str(c)) for c in df_normalizado.columns]
+
+            for columna in df_normalizado.columns:
+                df_normalizado[columna] = df_normalizado[columna].map(s)
+
+            # Quita filas completamente vacías para no depender de relleno accidental del Excel.
+            df_normalizado = df_normalizado.loc[
+                ~(df_normalizado.apply(lambda fila: all(not valor for valor in fila), axis=1))
+            ].reset_index(drop=True)
+
+            columnas_ordenadas = sorted(df_normalizado.columns)
+            registros = []
+            for _, row in df_normalizado[columnas_ordenadas].iterrows():
+                registros.append("||".join(row[col] for col in columnas_ordenadas))
+
+            contenido_canonico = "\n".join(
+                [f"cols:{'||'.join(columnas_ordenadas)}", *registros]
+            )
+            return hashlib.sha256(contenido_canonico.encode("utf-8")).hexdigest()
+
+        def clave_fila_canonica(numero_id_val, nro_serie, descripcion, cuenta_cod, nomencl, servicios):
+            if numero_id_val:
+                return f"id:{normalizar(numero_id_val)}"
+            if nro_serie != "NO" and descripcion:
+                return f"serie_desc:{normalizar(nro_serie)}|{normalizar(descripcion)}"
+            partes = [
+                normalizar(descripcion or ""),
+                normalizar(nro_serie if nro_serie != "NO" else ""),
+                normalizar(cuenta_cod if cuenta_cod != "NO" else ""),
+                normalizar(nomencl if nomencl != "NO" else ""),
+                normalizar(servicios if servicios != "NO" else ""),
+            ]
+            return f"fila:{'|'.join(partes)}"
+
+        def valores_distintos(valor_actual, valor_nuevo):
+            if hasattr(valor_actual, "pk") or hasattr(valor_nuevo, "pk"):
+                actual_pk = getattr(valor_actual, "pk", None) if valor_actual else None
+                nuevo_pk = getattr(valor_nuevo, "pk", None) if valor_nuevo else None
+                return actual_pk != nuevo_pk
+            return valor_actual != valor_nuevo
+
+        claves_filas_esta_carga = set()
+
         for archivo in archivos:
             nombre_archivo_completo = getattr(archivo, 'name', 'Archivo')
             try:
+                hash_archivo = hash_archivo_subido(archivo)
+
                 nombre_archivo_lower = nombre_archivo_completo.lower()
                 
                 # Nombre del servicio basado en el archivo
@@ -1367,6 +1424,16 @@ def carga_masiva_bienes(request):
                         errores.append(f"No se detectaron cabeceras válidas en '{nombre_archivo_completo}'")
                         continue
 
+                hash_contenido = hash_contenido_dataframe(df)
+                if (
+                    hash_archivo in hashes_esta_carga
+                    or hash_contenido in hashes_contenido_esta_carga
+                    or ArchivoCargaMasiva.objects.filter(hash_archivo=hash_archivo).exists()
+                    or ArchivoCargaMasiva.objects.filter(hash_contenido=hash_contenido).exists()
+                ):
+                    errores.append(f"Excel ya cargado: '{nombre_archivo_completo}'")
+                    continue
+
                 # Helpers de búsqueda de columnas (definidos por archivo porque dependen de df.columns)
                 def get_first(row_data, names):
                     # 1. Match exacto
@@ -1396,6 +1463,7 @@ def carga_masiva_bienes(request):
                         return 1
 
                 # Procesamiento de filas
+                errores_previos = len(errores)
                 for i, row in df.iterrows():
                     try:
                         with transaction.atomic():
@@ -1430,6 +1498,7 @@ def carga_masiva_bienes(request):
                                     expediente_obj.save(update_fields=["numero_compra"])
 
                             nombre_bien = descripcion[:200] if descripcion else (nro_serie if nro_serie != "NO" else "SIN NOMBRE")
+                            numero_id_val = (numero_id or "").strip() or None
 
                             defaults = {
                                 "nombre": nombre_bien,
@@ -1437,6 +1506,7 @@ def carga_masiva_bienes(request):
                                 "cantidad": cantidad,
                                 "servicios": servicios,
                                 "numero_serie": nro_serie,
+                                "numero_identificacion": numero_id_val,
                                 "cuenta_codigo": cuenta_cod,
                                 "nomenclatura_bienes": nomencl,
                                 "observaciones": observ,
@@ -1449,33 +1519,77 @@ def carga_masiva_bienes(request):
                             if origen_val: defaults["origen"] = origen_val
                             if estado_val: defaults["estado"] = estado_val
 
-                            numero_id_val = (numero_id or "").strip() or None
-                            if numero_id_val:
-                                _, created = BienPatrimonial.objects.update_or_create(numero_identificacion=numero_id_val, defaults=defaults)
-                            elif nro_serie != "NO" and descripcion:
-                                _, created = BienPatrimonial.objects.update_or_create(numero_serie=nro_serie, descripcion=descripcion, defaults=defaults)
-                            else:
-                                BienPatrimonial.objects.create(**defaults)
-                                created = True
+                            clave_fila = clave_fila_canonica(
+                                numero_id_val,
+                                nro_serie,
+                                descripcion,
+                                cuenta_cod,
+                                nomencl,
+                                servicios,
+                            )
+                            if clave_fila in claves_filas_esta_carga:
+                                duplicados_omitidos += 1
+                                continue
 
-                            if created: creados += 1
-                            else: actualizados += 1
+                            bien_existente = None
+                            if numero_id_val:
+                                bien_existente = BienPatrimonial.objects.filter(
+                                    numero_identificacion=numero_id_val
+                                ).first()
+                            elif nro_serie != "NO" and descripcion:
+                                bien_existente = BienPatrimonial.objects.filter(
+                                    numero_serie=nro_serie,
+                                    descripcion=descripcion,
+                                ).first()
+
+                            if bien_existente is None:
+                                BienPatrimonial.objects.create(**defaults)
+                                creados += 1
+                            else:
+                                campos_a_actualizar = []
+                                for campo, valor_nuevo in defaults.items():
+                                    if valores_distintos(getattr(bien_existente, campo), valor_nuevo):
+                                        setattr(bien_existente, campo, valor_nuevo)
+                                        campos_a_actualizar.append(campo)
+
+                                if campos_a_actualizar:
+                                    bien_existente.save(update_fields=campos_a_actualizar)
+                                    actualizados += 1
+                                else:
+                                    sin_cambios += 1
+
+                            claves_filas_esta_carga.add(clave_fila)
                     except Exception as e:
                         errores.append(f"Error en {nombre_archivo_completo} (fila {i+1}): {str(e)}")
+                if len(errores) == errores_previos:
+                    ArchivoCargaMasiva.objects.create(
+                        nombre_archivo=nombre_archivo_completo,
+                        hash_archivo=hash_archivo,
+                        hash_contenido=hash_contenido,
+                        usuario=request.user,
+                    )
+                    hashes_esta_carga.add(hash_archivo)
+                    hashes_contenido_esta_carga.add(hash_contenido)
             except Exception as e:
                 errores.append(f"Error crítico procesando '{nombre_archivo_completo}': {str(e)}")
 
         if creados or actualizados:
-            messages.success(request, f"✅ Creados: {creados}, Actualizados: {actualizados}. Archivos: {len(archivos)}. Errores: {len(errores)}")
+            messages.success(
+                request,
+                f"✅ Creados: {creados}, Actualizados: {actualizados}, Sin cambios: {sin_cambios}, Duplicados omitidos: {duplicados_omitidos}. Archivos: {len(archivos)}. Errores: {len(errores)}"
+            )
         else:
-            messages.warning(request, "No se procesaron registros nuevos.")
+            messages.warning(
+                request,
+                f"No se procesaron registros nuevos. Sin cambios: {sin_cambios}. Duplicados omitidos: {duplicados_omitidos}."
+            )
         
         if errores:
             messages.error(request, "Resumen de errores: " + " | ".join(errores[:5]))
 
         Notificacion.objects.create(
             usuario=request.user,
-            mensaje=f"Carga masiva finalizada: {creados} nuevos, {actualizados} actualizados. {len(errores)} errores.",
+            mensaje=f"Carga masiva finalizada: {creados} nuevos, {actualizados} actualizados, {sin_cambios} sin cambios, {duplicados_omitidos} duplicados omitidos. {len(errores)} errores.",
             leida=False
         )
         return redirect("lista_bienes")

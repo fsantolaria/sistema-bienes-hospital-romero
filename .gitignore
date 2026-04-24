@@ -80,6 +80,7 @@ htmlcov/
 # Migrations (excluye archivos .py pero mantiene el __init__.py)
 */migrations/*.py
 !*/migrations/__init__.py
+!core/migrations/0003_archivocargamasiva.py
 */migrations/*.pyc
 
 # Vercel
@@ -107,4 +108,4 @@ core/views_cleaned.py
 *.ods
 *.xlsm
 *.xlsb
-
+
