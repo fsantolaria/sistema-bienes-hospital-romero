@@ -60,6 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const dropdown = document.getElementById('notificacionesDropdown') || wrapperNotificaciones.querySelector('.notificaciones-dropdown');
         if (dropdown) {
             // delegación para acciones dentro del dropdown
+            dropdown.addEventListener('click', function(ev) {
                 const btnBorrarTodas = ev.target.closest('.btn-borrar-todas');
                 if (btnBorrarTodas) {
                     ev.stopPropagation();
