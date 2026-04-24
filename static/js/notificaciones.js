@@ -61,6 +61,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (dropdown) {
             // delegación para acciones dentro del dropdown
             dropdown.addEventListener('click', function(ev) {
+                const btnBorrarTodas = ev.target.closest('.btn-borrar-todas');
+                if (btnBorrarTodas) {
+                    ev.stopPropagation();
+                    borrarTodasNotificaciones();
+                    return;
+                }
 
                 const btnMarcarTodas = ev.target.closest('.btn-marcar-todas');
                 if (btnMarcarTodas) {

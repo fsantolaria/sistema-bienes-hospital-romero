@@ -78,6 +78,11 @@ class BienPatrimonial(models.Model):
         blank=True,
         verbose_name="Número de ID",
     )
+    numero_compra = models.CharField(
+        max_length=50,
+        blank=True,
+        verbose_name="N° de Compra",
+    )
 
     # Monto (solo si origen = COMPRA, lo validamos en clean)
     valor_adquisicion = models.DecimalField(

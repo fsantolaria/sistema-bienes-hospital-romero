@@ -8,6 +8,8 @@ Pillow
 pandas
 openpyxl
 reportlab==4.4.4
+humanize
+django-humanize
 
 # Soporte completo de formatos Excel
 xlrd>=2.0.1

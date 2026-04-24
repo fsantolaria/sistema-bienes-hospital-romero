@@ -1,251 +1,441 @@
-document.addEventListener('DOMContentLoaded', function () {
- 
-    // ─── Configuración ───────────────────────────────────────────────
-    const VISIBLE_MAX = 10;   // cuántas se muestran en el dropdown
-    const BUFFER_MAX  = 50;   // cuántas se traen de la BD (ya vienen en el HTML)
- 
-    const wrapper = document.getElementById('notificacionesBell') || document.querySelector('.notificaciones-wrapper');
-    let badge = null;
-    let contadorNoLeidas = window.NOTIF_COUNT || 0;
- 
-    // ─── Badge ────────────────────────────────────────────────────────
-    function renderBadge() {
-        if (!badge) return;
-        badge.textContent = contadorNoLeidas;
-        if (contadorNoLeidas > 0) {
-            badge.style.display    = 'flex';
-            badge.style.opacity    = '1';
-            badge.style.transform  = 'scale(1)';
-        } else {
-            badge.style.opacity   = '0';
-            badge.style.transform = 'scale(0.6)';
-            badge.style.display   = 'none';
+// notificaciones.js
+document.addEventListener('DOMContentLoaded', function() {
+    // Datos de ejemplo de notificaciones
+    const notificaciones = [
+        {
+            id: 1,
+            titulo: "Solicitud de Recuperación de Contraseña",
+            descripcion: "El Usuario Juan Pérez ha solicitado recuperar su contraseña en el Sistema",
+            fecha: "15/03/2024 14:30",
+            leida: false,
+            tipo: "recuperacion"
+        },
+        {
+            id: 2,
+            titulo: "Nueva Solicitud de Alta",
+            descripcion: "Se ha recibido una nueva solicitud de alta de usuario para el departamento de Sistemas",
+            fecha: "14/03/2024 10:15",
+            leida: false,
+            tipo: "alta"
+        },
+        {
+            id: 3,
+            titulo: "Actualización del Sistema",
+            descripcion: "El sistema se actualizará el próximo sábado de 20:00 a 22:00 horas",
+            fecha: "13/03/2024 09:00",
+            leida: true,
+            tipo: "sistema"
+        },
+        {
+            id: 4,
+            titulo: "Backup Completado",
+            descripcion: "El proceso de backup se ha completado exitosamente",
+            fecha: "12/03/2024 23:45",
+            leida: true,
+            tipo: "sistema"
         }
-    }
- 
-    function descontarBadge() {
-        if (contadorNoLeidas > 0) contadorNoLeidas--;
-        renderBadge();
-    }
- 
-    // ─── Helpers DOM ──────────────────────────────────────────────────
-    function todosLosItems() {
-        var dd = document.getElementById('notificacionesDropdown');
-        if (!dd) return [];
-        // Todos los ítems, incluyendo los ocultos en cola
-        return Array.from(dd.querySelectorAll('.dropdown-notif-item'));
-    }
- 
-    // ─── Cola / buffer ────────────────────────────────────────────────
-    // Al arrancar: los primeros VISIBLE_MAX se muestran; el resto queda
-    // en cola (display:none, data-en-cola="1"). Cuando se elimina uno
-    // visible, el primero de la cola hace slide-in y ocupa su lugar.
-    function actualizarCola() {
-        var items = todosLosItems();
- 
-        items.forEach(function (li, idx) {
-            if (idx < VISIBLE_MAX) {
-                // Debe ser visible
-                if (li.dataset.enCola === '1') {
-                    // Viene de la cola → animar entrada
-                    li.dataset.enCola = '0';
-                    li.style.display     = '';
-                    li.style.opacity     = '0';
-                    li.style.transform   = 'translateY(-8px)';
-                    li.style.transition  = 'opacity 300ms ease, transform 300ms ease';
-                    // Forzar reflow para que la transición arranque
-                    li.getBoundingClientRect();
-                    li.style.opacity   = li.dataset.leida === '1' ? '0.55' : '1';
-                    li.style.transform = 'translateY(0)';
-                } else {
-                    li.style.display = '';
-                }
-            } else {
-                // Debe estar en cola (oculto)
-                li.style.display   = 'none';
-                li.dataset.enCola  = '1';
-            }
-        });
- 
-        // Placeholder "sin notificaciones"
-        var dd    = document.getElementById('notificacionesDropdown');
-        if (!dd) return;
-        var lista       = dd.querySelector('.dropdown-list');
-        var placeholder = dd.querySelector('.sin-notif-placeholder');
- 
-        if (items.length === 0) {
-            if (!placeholder && lista) {
-                lista.innerHTML = '<li class="sin-notif-placeholder" style="text-align:center; padding:20px; color:#999; list-style:none;"><i class="fa-solid fa-bell-slash" style="font-size:24px; display:block; margin-bottom:8px;"></i><p style="margin:0; font-size:13px;">Sin notificaciones</p></li>';
-            }
-        } else {
-            if (placeholder) placeholder.remove();
-        }
-    }
- 
-    // ─── Marcar leída ─────────────────────────────────────────────────
-    function marcarComoLeido(id, li) {
-        fetch('/notificaciones/' + id + '/marcar-leida/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken') || ''
-            },
-            body: '{}'
-        })
-        .then(function (resp) {
-            if (resp.ok) {
-                li.setAttribute('data-leida', '1');
-                li.classList.remove('notificacion-no-leida');
-                li.style.opacity = '0.55';
-                var btnLeida = li.querySelector('.btn-marcar-leida');
-                if (btnLeida) btnLeida.remove();
-                descontarBadge();
-            }
-        })
-        .catch(function (err) { console.error(err); });
-    }
- 
-    // ─── Eliminar ─────────────────────────────────────────────────────
-    function eliminarNotificacion(id, li) {
-        var eraNoLeida = li.getAttribute('data-leida') === '0' ||
-                         li.classList.contains('notificacion-no-leida');
- 
-        fetch('/notificaciones/' + id + '/eliminar/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken') || ''
-            },
-            body: '{}'
-        })
-        .then(function (resp) {
-            if (!resp.ok) return;
- 
-            // Animación de salida
-            li.style.transition    = 'opacity 200ms ease, transform 200ms ease, max-height 250ms ease';
-            li.style.overflow      = 'hidden';
-            li.style.maxHeight     = li.offsetHeight + 'px';
-            li.getBoundingClientRect();
-            li.style.opacity       = '0';
-            li.style.transform     = 'translateX(20px)';
-            li.style.maxHeight     = '0';
-            li.style.padding       = '0';
-            li.style.marginBottom  = '0';
- 
-            setTimeout(function () {
-                if (li.parentNode) li.parentNode.removeChild(li);
-                if (eraNoLeida) descontarBadge();
-                // Después de sacar el ítem del DOM, reordenar la cola:
-                // el primero en cola (idx === VISIBLE_MAX ahora es idx === VISIBLE_MAX-1)
-                // pasará a ser visible gracias a actualizarCola().
-                actualizarCola();
-            }, 260);
-        })
-        .catch(function () {});
-    }
- 
-    // ─── Cookie helper ────────────────────────────────────────────────
-    function getCookie(name) {
-        var value = '; ' + document.cookie;
-        var parts = value.split('; ' + name + '=');
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return null;
-    }
- 
-    // ─── Toggle dropdown ──────────────────────────────────────────────
-    function mostrarNotificaciones(e) {
-        var dd = document.getElementById('notificacionesDropdown');
-        if (dd && dd.contains(e.target)) return;
-        e.stopPropagation();
-        if (dd) {
-            dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
-        }
-    }
- 
-    // ─── Init ─────────────────────────────────────────────────────────
-    function init() {
-        if (!wrapper) return;
- 
-        badge = document.querySelector('.notificaciones-badge');
-        if (!badge) {
-            badge = document.createElement('span');
-            badge.className = 'notificaciones-badge';
-            wrapper.appendChild(badge);
-        }
- 
-        renderBadge();
- 
-        // Marcar visualmente las ya leídas y poner en cola las que
-        // superan VISIBLE_MAX desde el arranque.
-        todosLosItems().forEach(function (li, idx) {
-            if (li.getAttribute('data-leida') === '1') {
-                li.style.opacity = '0.55';
-            }
-            if (idx >= VISIBLE_MAX) {
-                li.style.display  = 'none';
-                li.dataset.enCola = '1';
-            }
-        });
- 
-        wrapper.addEventListener('click', mostrarNotificaciones);
- 
-        document.addEventListener('click', function (ev) {
-            var dd = document.getElementById('notificacionesDropdown');
-            if (!dd) return;
- 
-            // Botón eliminar
-            var btnEliminar = ev.target.closest('.btn-eliminar-notificacion');
-            if (btnEliminar) {
-                var id = btnEliminar.getAttribute('data-id');
-                var li = btnEliminar.closest('.dropdown-notif-item');
-                eliminarNotificacion(id, li);
-                return;
-            }
- 
-            // Botón marcar leída individual
-            var btnLeida = ev.target.closest('.btn-marcar-leida');
-            if (btnLeida) {
-                var id = btnLeida.getAttribute('data-id');
-                var li = btnLeida.closest('.dropdown-notif-item');
-                marcarComoLeido(id, li);
-                return;
-            }
+    ];
 
-            // Botón marcar TODAS como leídas
-            var btnTodas = ev.target.closest('#btn-marcar-todas');
-            if (btnTodas) {
+    // Elementos del DOM: seleccionar el wrapper por id si existe (no modificar alineación)
+    const wrapperNotificaciones = document.getElementById('notificacionesBell') || document.querySelector('.notificaciones-wrapper');
+    let badgeNotificaciones = null;
+
+    // Inicializar sistema de notificaciones
+    function inicializarNotificaciones() {
+        if (!wrapperNotificaciones) return;
+
+        // Buscar si ya existe una badge (renderizada por servidor)
+        badgeNotificaciones = wrapperNotificaciones.querySelector('.notificaciones-badge');
+        if (!badgeNotificaciones) {
+            badgeNotificaciones = document.createElement('span');
+            badgeNotificaciones.className = 'notificaciones-badge';
+            // Insertar la badge después del icono para mantener el flujo
+            wrapperNotificaciones.appendChild(badgeNotificaciones);
+        }
+        actualizarBadge();
+        // Agregar event listener al wrapper (el click abre el panel/modal)
+        wrapperNotificaciones.addEventListener('click', mostrarNotificaciones);
+
+        // Si existe dropdown server-renderizado, agregar delegación para eliminar desde el dropdown
+        const dropdown = document.getElementById('notificacionesDropdown') || wrapperNotificaciones.querySelector('.notificaciones-dropdown');
+        if (dropdown) {
+            // delegación para acciones dentro del dropdown
+            dropdown.addEventListener('click', function(ev) {
+                const btnMarcarTodas = ev.target.closest('.btn-marcar-todas');
+                if (btnMarcarTodas) {
+                    ev.stopPropagation();
+                    marcarTodasComoLeidas();
+                    return;
+                }
+
+                const btnBorrarTodas = ev.target.closest('.btn-borrar-todas');
+                if (btnBorrarTodas) {
+                    ev.stopPropagation();
+                    borrarTodasNotificaciones();
+                    return;
+                }
+
+                const btnMarcar = ev.target.closest('.btn-marcar-leido');
+                if (btnMarcar) {
+                    ev.stopPropagation();
+                    const id = btnMarcar.getAttribute('data-id');
+                    if (id) marcarComoLeido(id);
+                    return;
+                }
+
+                const btnEliminar = ev.target.closest('.btn-eliminar-notificacion');
+                if (!btnEliminar) return;
                 ev.stopPropagation();
-                fetch('/notificaciones/leidas/', {
+                const id = btnEliminar.getAttribute('data-id');
+                const li = btnEliminar.closest('.dropdown-notif-item');
+                const badge = wrapperNotificaciones.querySelector('.notificaciones-badge');
+                fetch(`/notificaciones/${id}/eliminar/`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRFToken': getCookie('csrftoken') || ''
                     },
                     body: '{}'
-                })
-                .then(function (resp) {
+                }).then(function(resp) {
                     if (resp.ok) {
-                        todosLosItems().forEach(function (li) {
-                            li.setAttribute('data-leida', '1');
-                            li.classList.remove('notificacion-no-leida');
-                            li.style.opacity = '0.55';
-                            var btnL = li.querySelector('.btn-marcar-leida');
-                            if (btnL) btnL.remove();
-                        });
-                        contadorNoLeidas = 0;
-                        renderBadge();
+                        if (li && li.parentNode) li.parentNode.removeChild(li);
+                        if (badge) {
+                            try {
+                                var cur = parseInt(badge.textContent) || 0;
+                                cur = Math.max(0, cur - 1);
+                                if (cur <= 0) {
+                                    badge.style.display = 'none';
+                                } else {
+                                    badge.textContent = cur;
+                                }
+                            } catch (e) {
+                                // noop
+                            }
+                        }
+                    } else {
+                        alert('No se pudo eliminar la notificación.');
                     }
-                })
-                .catch(function (err) { console.error(err); });
-                return;
-            }
+                }).catch(function() {
+                    alert('No se pudo conectar con el servidor.');
+                });
+            });
+        }
 
-            // Click fuera → cerrar
-            if (!wrapper.contains(ev.target) && dd.style.display === 'block') {
+        // Cerrar dropdown al clickear fuera
+        document.addEventListener('click', function(ev) {
+            const dd = document.getElementById('notificacionesDropdown') || wrapperNotificaciones.querySelector('.notificaciones-dropdown');
+            if (!dd) return;
+            if (!wrapperNotificaciones.contains(ev.target)) {
                 dd.style.display = 'none';
             }
         });
     }
- 
-    init();
+
+    // Actualizar badge con número de notificaciones no leídas
+    function actualizarBadge() {
+    if (!badgeNotificaciones) return;
+    // Preferir calcular desde el DOM (dropdown server-rendered) si está presente
+    const dropdown = document.getElementById('notificacionesDropdown') || wrapperNotificaciones.querySelector('.notificaciones-dropdown');
+    let noLeidas = 0;
+    if (dropdown) {
+        // contar LI con data-leida="0" o con clase notificacion-no-leida
+        const items = dropdown.querySelectorAll('.dropdown-notif-item');
+        items.forEach(it => {
+            const dl = it.getAttribute('data-leida');
+            if (dl === null) {
+                if (it.classList.contains('notificacion-no-leida')) noLeidas++;
+            } else if (dl === '0') {
+                noLeidas++;
+            }
+        });
+    } else {
+        // Fallback: usar array cliente
+        noLeidas = notificaciones.filter(notif => !notif.leida).length;
+    }
+
+    badgeNotificaciones.textContent = noLeidas;
+    badgeNotificaciones.style.opacity = noLeidas > 0 ? '1' : '0';
+    badgeNotificaciones.style.transform = noLeidas > 0 ? 'scale(1)' : 'scale(0.6)';
+    badgeNotificaciones.style.display = noLeidas > 0 ? 'flex' : 'none';
+    }
+
+    // Mostrar notificaciones: si existe dropdown (server-rendered) lo toggleamos,
+    // sino creamos el modal (client-side).
+    function mostrarNotificaciones(e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        const dropdown = document.getElementById('notificacionesDropdown') || wrapperNotificaciones.querySelector('.notificaciones-dropdown');
+        if (dropdown) {
+            // Toggle dropdown visibility
+            const isVisible = dropdown.style.display === 'block';
+            dropdown.style.display = isVisible ? 'none' : 'block';
+            return;
+        }
+
+        const modal = document.createElement('div');
+        modal.className = 'notificaciones-modal';
+        modal.style.display = 'flex';
+
+        modal.innerHTML = `
+            <div class="notificaciones-contenido">
+                <div class="notificaciones-header">
+                    <h2>Notificaciones</h2>
+                    <button class="btn-cerrar-notificaciones">&times;</button>
+                </div>
+                <div class="notificaciones-body">
+                    ${generarListaNotificaciones()}
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Event listeners del modal
+        const btnCerrar = modal.querySelector('.btn-cerrar-notificaciones');
+        btnCerrar.addEventListener('click', function() {
+            cerrarModal(modal);
+        });
+
+        modal.addEventListener('click', function(ev) {
+            if (ev.target === modal) {
+                cerrarModal(modal);
+            }
+        });
+
+        // Agregar event listeners a los botones de acción
+        agregarEventListenersNotificaciones(modal);
+    }
+
+    // Generar HTML de la lista de notificaciones
+    function generarListaNotificaciones() {
+        if (notificaciones.length === 0) {
+            return `
+                <div class="sin-notificaciones">
+                    <i class="fa-solid fa-bell-slash"></i>
+                    <p>No hay notificaciones</p>
+                </div>
+            `;
+        }
+
+        return notificaciones.map(notificacion => `
+            <div class="notificacion-item ${notificacion.leida ? '' : 'notificacion-no-leida'}">
+                <div class="notificacion-titulo">${notificacion.titulo}</div>
+                <div class="notificacion-descripcion">${notificacion.descripcion}</div>
+                <div class="separador-notificacion"></div>
+                <div style="display: flex; justify-content: space-between; align-items: center; gap:10px;">
+                    <div class="notificacion-fecha">Fecha: ${notificacion.fecha}</div>
+                    <div class="notificacion-acciones">
+                        ${!notificacion.leida ? `
+                            <button class="btn-accion-notificacion btn-marcar-leido" data-id="${notificacion.id}">
+                                Marcar como leído
+                            </button>
+                        ` : ''}
+                        ${notificacion.tipo === 'recuperacion' ? `
+                            <button class="btn-accion-notificacion btn-aceptar" data-id="${notificacion.id}">
+                                Aceptar
+                            </button>
+                            <button class="btn-accion-notificacion btn-rechazar" data-id="${notificacion.id}">
+                                Rechazar
+                            </button>
+                        ` : ''}
+                        <!-- Botón eliminar (tachito) -->
+                        <button class="btn-eliminar-notificacion" data-id="${notificacion.id}" title="Eliminar">
+                            <i class="fa fa-trash" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // Agregar event listeners a los botones de las notificaciones
+    function agregarEventListenersNotificaciones(modal) {
+        // Botones marcar como leído
+        modal.querySelectorAll('.btn-marcar-leido').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                marcarComoLeido(id);
+                cerrarModal(modal);
+            });
+        });
+
+        // Botones eliminar notificación (tachito)
+        modal.querySelectorAll('.btn-eliminar-notificacion').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const id = this.getAttribute('data-id');
+                eliminarNotificacion(id, this.closest('.notificacion-item'));
+            });
+        });
+
+        // Botones aceptar
+        modal.querySelectorAll('.btn-aceptar').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                manejarAceptar(id);
+                cerrarModal(modal);
+            });
+        });
+
+        // Botones rechazar
+        modal.querySelectorAll('.btn-rechazar').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                manejarRechazar(id);
+                cerrarModal(modal);
+            });
+        });
+    }
+
+    // Eliminar notificación (frontend demo): remueve del array, del DOM y actualiza badge
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+
+    function eliminarNotificacion(id, element) {
+        fetch(`/notificaciones/${id}/eliminar/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken') || ''
+            },
+            body: '{}'
+        }).then(resp => {
+            if (resp.ok) {
+                const idx = notificaciones.findIndex(n => n.id == id);
+                if (idx !== -1) notificaciones.splice(idx, 1);
+                if (element && element.parentNode) element.parentNode.removeChild(element);
+                actualizarBadge();
+            }
+        }).catch(err => console.error(err));
+    }
+
+    function marcarTodasComoLeidas() {
+        fetch('/notificaciones/leidas/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken') || ''
+            },
+            body: '{}'
+        }).then(resp => {
+            if (resp.ok) {
+                const dropdown = document.getElementById('notificacionesDropdown') || wrapperNotificaciones.querySelector('.notificaciones-dropdown');
+                if (dropdown) {
+                    dropdown.querySelectorAll('.dropdown-notif-item[data-leida="0"]').forEach(li => {
+                        li.setAttribute('data-leida', '1');
+                        li.classList.remove('notificacion-no-leida');
+                        const actionBtn = li.querySelector('.btn-marcar-leido');
+                        if (actionBtn) actionBtn.remove();
+                    });
+                }
+                actualizarBadge();
+            }
+        }).catch(err => {
+            console.error(err);
+        });
+    }
+
+    function borrarTodasNotificaciones() {
+        if (!confirm('¿Estás seguro de que quieres borrar todas las notificaciones? Esta acción no se puede deshacer.')) {
+            return;
+        }
+        fetch('/notificaciones/borrar-todas/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken') || ''
+            },
+            body: '{}'
+        }).then(resp => {
+            if (resp.ok) {
+                const dropdown = document.getElementById('notificacionesDropdown') || wrapperNotificaciones.querySelector('.notificaciones-dropdown');
+                if (dropdown) {
+                    const list = dropdown.querySelector('.dropdown-list');
+                    if (list) {
+                        list.innerHTML = `
+                            <li style="text-align:center; padding:20px; color:#999; list-style:none;">
+                                <i class="fa-solid fa-bell-slash" style="font-size:24px; display:block; margin-bottom:8px;"></i>
+                                <p style="margin:0; font-size:13px;">Sin notificaciones</p>
+                            </li>
+                        `;
+                    }
+                }
+                actualizarBadge();
+            } else {
+                alert('No se pudieron borrar las notificaciones.');
+            }
+        }).catch(err => {
+            console.error(err);
+            alert('Error al conectar con el servidor.');
+        });
+    }
+
+    // Funciones de manejo de notificaciones
+    function marcarComoLeido(id) {
+        fetch(`/notificaciones/${id}/marcar-leida/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken') || ''
+            },
+            body: '{}'
+        }).then(resp => {
+            if (resp.ok) {
+                const notificacion = notificaciones.find(notif => notif.id == id);
+                if (notificacion) notificacion.leida = true;
+
+                const dropdown = document.getElementById('notificacionesDropdown') || wrapperNotificaciones.querySelector('.notificaciones-dropdown');
+                if (dropdown) {
+                    const li = dropdown.querySelector(`.dropdown-notif-item[data-id="${id}"]`);
+                    if (li) {
+                        li.setAttribute('data-leida', '1');
+                        li.classList.remove('notificacion-no-leida');
+                        const actionBtn = li.querySelector('.btn-marcar-leido');
+                        if (actionBtn) actionBtn.remove();
+                    }
+                }
+                actualizarBadge();
+            }
+        }).catch(err => console.error(err));
+    }
+
+    function manejarAceptar(id) {
+        const notificacion = notificaciones.find(notif => notif.id == id);
+        if (notificacion) marcarComoLeido(id);
+    }
+
+    function manejarRechazar(id) {
+        const notificacion = notificaciones.find(notif => notif.id == id);
+        if (notificacion) marcarComoLeido(id);
+    }
+
+    function cerrarModal(modal) {
+        modal.style.display = 'none';
+        setTimeout(() => {
+            if (modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
+        }, 300);
+    }
+
+    // Función desactivada intencionalmente — no mostrar mensajes de notificaciones
+    function mostrarMensaje(mensaje, tipo) { /* no-op */ }
+
+    window.mostrarMensaje = mostrarMensaje;
+    window.__processPopupMessages = function() {
+        if (!window.__pendingPopupMessages || !window.__pendingPopupMessages.length) return;
+        window.__pendingPopupMessages.forEach(function(item) {
+            if (item && item.text) {
+                mostrarMensaje(item.text, item.type || 'info');
+            }
+        });
+        window.__pendingPopupMessages.length = 0;
+    };
+    window.__processPopupMessages();
+
+    // Inicializar
+    inicializarNotificaciones();
 });
