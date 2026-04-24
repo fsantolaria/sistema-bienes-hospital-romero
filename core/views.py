@@ -207,9 +207,7 @@ def bienes(request):
                 f"Se registró el bien '{nombre_bien}' (Clave: {bien.clave_unica}) correctamente."
             )
             messages.success(request, f"Bien '{nombre_bien}' registrado correctamente.")
-            if perms.get("es_admin", False):
-                return redirect("lista_bienes")
-            return redirect("lista_bienes_operador")
+            return redirect("bienes")
         # Mensaje de error
         else:
             messages.error(request, "Error al ejecutar la carga")
@@ -1240,37 +1238,36 @@ def eliminar_bien(request, pk):
     # Mensaje de éxito
     messages.success(request, f"✅ Bien '{nombre_bien}' eliminado correctamente.", extra_tags='eliminar')
     return redirect("lista_bienes")
- 
- 
-# ============================
-# CARGA MASIVA
-# ============================
- 
+
+
 @login_required
 def carga_masiva_bienes(request):
     if request.method != "POST":
         context = permisos_context(request.user)
         context.update({"form": CargaMasivaForm()})
         return render(request, "carga_masiva.html", context)
- 
+
     form = CargaMasivaForm(request.POST, request.FILES)
     if not form.is_valid():
         context = permisos_context(request.user)
         context.update({"form": form})
         return render(request, "carga_masiva.html", {"form": form})
- 
+
     try:
         archivos = request.FILES.getlist("archivo_excel")
         sector_form = (form.cleaned_data.get("servicio") or "").strip()
- 
+
         creados, actualizados, errores = 0, 0, []
-        from core.models import Expediente
+        from core.models import Expediente, BienPatrimonial, Notificacion
         import unicodedata
         import os
+        from datetime import date
+        from decimal import Decimal, InvalidOperation
 
         def normalizar(texto: str) -> str:
             """Normaliza un nombre de columna: minúsculas, sin acentos, sin caracteres especiales."""
-            texto = texto.replace('\u00b0', '').replace('\u00ba', '')  # °, º
+            if not texto: return ""
+            texto = str(texto).replace('\u00b0', '').replace('\u00ba', '')  # °, º
             texto = unicodedata.normalize('NFKD', texto)
             texto = ''.join(c for c in texto if not unicodedata.combining(c))
             texto = ''.join(c if c.isalnum() or c == ' ' else ' ' for c in texto)
@@ -1278,106 +1275,13 @@ def carga_masiva_bienes(request):
 
         def s(v: object) -> str:
             """Limpia el valor; devuelve '' si es vacío/nan."""
-            if v is None:
-                return ""
+            if v is None: return ""
             txt = str(v).strip()
-            # Ya no reemplazamos el "-" por vacío, así toma los guiones como válidos
             return "" if txt.lower() in ("nan", "none") else txt
 
-        def sno(v: object) -> str:
-            """Como s() pero devuelve 'NO' si esta vacio — para campos de texto opcionales."""
-            val = s(v)
-            return val if val else "NO"
-
-        for archivo in archivos:
-            nombre_archivo = getattr(archivo, 'name', '').lower()
-            if nombre_archivo.endswith('.xls'):
-                engine = 'xlrd'
-            elif nombre_archivo.endswith('.xlsb'):
-                engine = 'pyxlsb'
-            elif nombre_archivo.endswith(('.ods', '.odf', '.odt')):
-                engine = 'odf'
-            else:
-                engine = 'openpyxl'
-
-            # Robust reading: find the header row if the first one is just titles/logos
-            try:
-                df = pd.read_excel(archivo, dtype=str, engine=engine)
-            except Exception:
-                df = pd.read_excel(archivo, dtype=str)
-
-            # Normalizamos las columnas actuales para ver si son válidas
-            df.columns = [normalizar(str(c)) for c in df.columns]
-            
-            # Palabras clave que indican una fila de cabecera
-            keywords = ["descripcion", "cantidad", "expediente", "compra", "clave", "id", "serie", "nomenclatura"]
-            cols_combined = " ".join(df.columns)
-            
-            # Si no encontramos al menos 2 palabras clave en la cabecera actual, buscamos en las filas
-            if sum(1 for k in keywords if k in cols_combined) < 2:
-                for idx, row in df.head(15).iterrows():
-                    row_values = [normalizar(str(v)) for v in row.values if v and str(v).lower() != 'nan']
-                    row_combined = " ".join(row_values)
-                    if sum(1 for k in keywords if k in row_combined) >= 2:
-                        # Encontramos la cabecera en la fila idx!
-                        # Reasignamos las columnas y removemos las filas anteriores
-                        new_cols = []
-                        for i, val in enumerate(row.values):
-                            val_str = normalizar(str(val)) if val and str(val).lower() != 'nan' else f"columna_{i}"
-                            new_cols.append(val_str)
-                        df.columns = new_cols
-                        df = df.iloc[idx+1:].reset_index(drop=True)
-                        break
-
-            # Inferir servicio desde el nombre si no se puso en el form
-            servicio_archivo = sector_form
-            if not servicio_archivo:
-                # Usamos el nombre original sin extension, en mayúsculas
-                servicio_archivo = os.path.splitext(getattr(archivo, 'name', ''))[0].upper()
-
-            def get_first(row, names) -> str:
-                """Busca el primer match normalizando los nombres de columna."""
-                for n in names:
-                    key = normalizar(n)
-                    if key in df.columns:
-                        return s(row.get(key))
-                return ""
-
-        def get_first(row, names) -> str:
-            """Busca el primer match normalizando los nombres de columna."""
-            # 1. Intento por match exacto (normalizado)
-            for n in names:
-                key = normalizar(n)
-                if key in df.columns:
-                    return s(row.get(key))
-            # 2. Intento por subcadena (si alguna de las palabras clave está en el nombre de la columna)
-            for n in names:
-                key = normalizar(n)
-                if len(key) < 3: continue # Evitar matches muy cortos
-                for col in df.columns:
-                    if key in col:
-                        return s(row.get(col))
-            return ""
-
-        def get_first_no(row, names) -> str:
-            """get_first pero devuelve 'NO' si el valor esta vacio."""
-            val = get_first(row, names)
-            return val if val else "NO"
-
-        def to_int1(v) -> int:
-            txt = s(v)
-            if not txt:
-                return 1
-            try:
-                val = int(float(txt))
-                return max(val, 1)
-            except (ValueError, TypeError):
-                return 1
- 
         def parse_money(v):
             txt = s(v)
-            if not txt:
-                return None
+            if not txt: return None
             txt = txt.replace("$", "").replace(" ", "")
             if "," in txt and txt.rfind(",") > txt.rfind("."):
                 txt = txt.replace(".", "").replace(",", ".")
@@ -1387,192 +1291,197 @@ def carga_masiva_bienes(request):
                 return Decimal(txt)
             except InvalidOperation:
                 return None
- 
+
         def parse_date_any(v):
             txt = s(v)
-            if not txt:
-                return None
+            if not txt: return None
             try:
                 dt = pd.to_datetime(txt, errors="coerce", dayfirst=True)
-                if pd.isna(dt):
-                    return None
+                if pd.isna(dt): return None
                 return dt.date()
             except (ValueError, TypeError):
                 return None
- 
+
         def map_origen(v):
             t = s(v).lower()
-            if not t:
-                return None
-            if "compra" in t or "minister" in t:
-                return "COMPRA"
-            if "donac" in t:
-                return "DONACION"
-            if "omisi" in t:
-                return "OMISION"
-            if "transfer" in t or "traslad" in t:
-                return "TRANSFERENCIA"
+            if not t: return None
+            if "compra" in t or "minister" in t: return "COMPRA"
+            if "donac" in t: return "DONACION"
+            if "omisi" in t: return "OMISION"
+            if "transfer" in t or "traslad" in t: return "TRANSFERENCIA"
             return None
- 
+
         def map_estado(v):
             t = s(v).lower()
-            if not t:
-                return None
-            if "manten" in t:
-                return "MANTENIMIENTO"
-            if "baja" in t:
-                return "BAJA"
-            if "inac" in t:
-                return "INACTIVO"
-            if "activ" in t:
-                return "ACTIVO"
+            if not t: return None
+            if "manten" in t: return "MANTENIMIENTO"
+            if "baja" in t: return "BAJA"
+            if "inac" in t: return "INACTIVO"
+            if "activ" in t: return "ACTIVO"
             return None
- 
-        creados, actualizados, errores = 0, 0, []
-        from core.models import Expediente
- 
-        for i, row in df.iterrows():
+
+        for archivo in archivos:
+            nombre_archivo_completo = getattr(archivo, 'name', 'Archivo')
             try:
-                with transaction.atomic():
-                    numero_id = get_first(row, [
-                        "n° id", "nº id", "n° de id", "nº de id",
-                        "n de id", "n_de_id", "numero_identificacion",
-                        "id_patrimonial", "no de id", "n id", "id", "identificacion"
-                    ])
-                    nro_exp = get_first(row, [
-                        "n° expediente", "nº expediente", "n° de expediente",
-                        "n de expediente", "n_de_expediente", "numero_expediente",
-                        "nº de expediente", "no de expediente", "expediente", "exp", "nro exp"
-                    ])
-                    nro_compra = get_first(row, [
-                        "n° compra", "nº compra", "n° de compra",
-                        "n de compra", "n_de_compra", "numero_compra",
-                        "nº de compra", "no de compra", "compra", "nro compra", "orden de compra", "oc"
-                    ])
-                    nro_serie = get_first_no(row, [
-                        "n° serie", "nº serie", "n° de serie",
-                        "n de serie", "n_de_serie", "numero_serie",
-                        "nº de serie", "no de serie", "serie", "nro serie"
-                    ])
-                    descripcion = get_first(row, [
-                        "descripcion", "descripción", "descripcion_del_bien", "detalle", "nombre", "bien"
-                    ])
-                    cuenta_cod = get_first_no(row, [
-                        "cuenta código", "cuenta codigo", "cuenta_código", "cuenta_codigo", "cuenta", "cod cuenta"
-                    ])
-                    nomencl = get_first_no(row, [
-                        "nomenclatura", "nomenclatura de bienes",
-                        "nomenclatura_de_bienes", "nomenclatura_bienes", "cod nomenclatura"
-                    ])
-                    observ = get_first_no(row, ["observaciones", "obs", "comentarios"])
-                    origen_txt = get_first(row, ["origen"])
-                    estado_txt = get_first(row, ["estado"])
-                    precio_raw = get_first(row, ["precio", "valor", "importe", "costo", "valor_adquisicion"])
+                nombre_archivo_lower = nombre_archivo_completo.lower()
+                
+                # Nombre del servicio basado en el archivo
+                servicio_archivo = os.path.splitext(nombre_archivo_completo)[0].upper()
+                if sector_form:
+                    servicio_archivo = f"{sector_form} - {servicio_archivo}"
 
-                    cantidad = to_int1(get_first(row, ["cantidad"]))
-                    servicios_raw = s(get_first(row, ["servicios", "servicio", "sector"]) or servicio_archivo)
-                    servicios = servicios_raw if servicios_raw else "NO"
+                if nombre_archivo_lower.endswith('.xls') or nombre_archivo_lower.endswith('.xlt'):
+                    engine = 'xlrd'
+                elif nombre_archivo_lower.endswith('.xlsb'):
+                    engine = 'pyxlsb'
+                elif nombre_archivo_lower.endswith(('.ods', '.odf', '.odt')):
+                    engine = 'odf'
+                else:
+                    engine = 'openpyxl'
 
-                    fecha_alta = parse_date_any(get_first(row, [
-                        "fecha alta", "fecha de alta", "fecha_de_alta", "fecha_alta",
-                    ]))
-                    fecha_baja = parse_date_any(get_first(row, [
-                        "fecha de baja", "fecha_de_baja", "fecha_baja",
-                    ]))
+                try:
+                    df = pd.read_excel(archivo, dtype=str, engine=engine)
+                except Exception:
+                    df = pd.read_excel(archivo, dtype=str)
 
-                    origen_val = map_origen(origen_txt)
-                    estado_val = map_estado(estado_txt)
+                # Detección de cabeceras
+                df.columns = [normalizar(str(c)) for c in df.columns]
+                keywords = ["descripcion", "cantidad", "expediente", "compra", "clave", "id", "serie", "nomenclatura"]
+                cols_combined = " ".join(df.columns)
+                
+                if sum(1 for k in keywords if k in cols_combined) < 2:
+                    header_found = False
+                    for idx, row in df.head(25).iterrows():
+                        row_values = [normalizar(str(v)) for v in row.values if v and str(v).lower() != 'nan']
+                        row_combined = " ".join(row_values)
+                        if sum(1 for k in keywords if k in row_combined) >= 2:
+                            new_cols = []
+                            for i, val in enumerate(row.values):
+                                val_str = normalizar(str(val)) if val and str(val).lower() != 'nan' else f"columna_{i}"
+                                new_cols.append(val_str)
+                            df.columns = new_cols
+                            df = df.iloc[idx+1:].reset_index(drop=True)
+                            header_found = True
+                            break
+                    if not header_found:
+                        errores.append(f"No se detectaron cabeceras válidas en '{nombre_archivo_completo}'")
+                        continue
 
-                    precio = parse_money(precio_raw)
-                    if origen_val != "COMPRA":
-                        precio = None
+                # Helpers de búsqueda de columnas (definidos por archivo porque dependen de df.columns)
+                def get_first(row_data, names):
+                    # 1. Match exacto
+                    for n in names:
+                        key = normalizar(n)
+                        if key in df.columns:
+                            return s(row_data.get(key))
+                    # 2. Match difuso
+                    for n in names:
+                        key = normalizar(n)
+                        if len(key) < 3: continue
+                        for col in df.columns:
+                            if key in col:
+                                return s(row_data.get(col))
+                    return ""
 
-                    if not fecha_alta:
-                        fecha_alta = date.today()
+                def get_first_no(row_data, names):
+                    val = get_first(row_data, names)
+                    return val if val else "NO"
 
-                    expediente_obj = None
-                    # N° Expediente y N° Compra son columnas independientes
-                    # Solo se crea Expediente si el N° Expediente tiene un valor real
-                    if nro_exp and nro_exp.upper() != "NO":
-                        expediente_obj, _ = Expediente.objects.get_or_create(
-                            numero_expediente=nro_exp
-                        )
-                        # N° Compra se guarda solo dentro del Expediente correspondiente
-                        if nro_compra and nro_compra.upper() != "NO":
-                            expediente_obj.numero_compra = nro_compra
-                            expediente_obj.save(update_fields=["numero_compra"])
+                def to_int1(v):
+                    txt = s(v)
+                    if not txt: return 1
+                    try:
+                        return max(int(float(txt)), 1)
+                    except (ValueError, TypeError):
+                        return 1
 
-                    nombre = descripcion[:200] if descripcion else (nro_serie if nro_serie != "NO" else "SIN NOMBRE")
+                # Procesamiento de filas
+                for i, row in df.iterrows():
+                    try:
+                        with transaction.atomic():
+                            numero_id = get_first(row, ["n id", "numero identificacion", "id patrimonial", "id", "identificacion"])
+                            nro_exp = get_first(row, ["n expediente", "numero expediente", "expediente", "exp", "nro exp"])
+                            nro_compra = get_first(row, ["n compra", "numero compra", "compra", "nro compra", "orden de compra", "oc"])
+                            nro_serie = get_first_no(row, ["n serie", "numero serie", "serie", "nro serie"])
+                            descripcion = get_first(row, ["descripcion", "descripción", "detalle", "nombre", "bien"])
+                            cuenta_cod = get_first_no(row, ["cuenta codigo", "cuenta", "cod cuenta"])
+                            nomencl = get_first_no(row, ["nomenclatura", "nomenclatura bienes", "cod nomenclatura"])
+                            observ = get_first_no(row, ["observaciones", "obs", "comentarios"])
+                            origen_txt = get_first(row, ["origen"])
+                            estado_txt = get_first(row, ["estado"])
+                            precio_raw = get_first(row, ["precio", "valor", "importe", "costo", "valor adquisicion"])
+                            cantidad = to_int1(get_first(row, ["cantidad"]))
+                            
+                            serv_raw = s(get_first(row, ["servicios", "servicio", "sector"]) or servicio_archivo)
+                            servicios = serv_raw if serv_raw else "NO"
 
-                    defaults = {
-                        "nombre": nombre,
-                        "descripcion": descripcion or "",
-                        "cantidad": cantidad,
-                        "servicios": servicios,
-                        "numero_serie": nro_serie,
-                        "cuenta_codigo": cuenta_cod,
-                        "nomenclatura_bienes": nomencl,
-                        "observaciones": observ,
-                        "valor_adquisicion": precio,
-                        "fecha_adquisicion": fecha_alta,
-                        "fecha_baja": fecha_baja,
-                        "expediente": expediente_obj,
-                        "numero_compra": nro_compra if nro_compra and nro_compra.upper() != "NO" else "",
-                    }
- 
-                    if origen_val is not None:
-                        defaults["origen"] = origen_val
-                    if estado_val is not None:
-                        defaults["estado"] = estado_val
- 
-                    numero_id = (numero_id or "").strip()
-                    numero_id_val = numero_id or None
- 
-                    if numero_id_val is not None:
-                        _, created = BienPatrimonial.objects.update_or_create(
-                            numero_identificacion=numero_id_val,
-                            defaults=defaults,
-                        )
-                    elif nro_serie and descripcion:
-                        _, created = BienPatrimonial.objects.update_or_create(
-                            numero_serie=nro_serie,
-                            descripcion=descripcion or "",
-                            defaults=defaults,
-                        )
-                    else:
-                        BienPatrimonial.objects.create(**defaults)
-                        created = True
- 
-                    if created:
-                        creados += 1
-                    else:
-                        actualizados += 1
+                            fecha_alta = parse_date_any(get_first(row, ["fecha alta", "fecha de alta"])) or date.today()
+                            fecha_baja = parse_date_any(get_first(row, ["fecha de baja"]))
+                            
+                            origen_val = map_origen(origen_txt)
+                            estado_val = map_estado(estado_txt)
+                            precio = parse_money(precio_raw) if origen_val == "COMPRA" else None
+
+                            expediente_obj = None
+                            if nro_exp and nro_exp.upper() != "NO":
+                                expediente_obj, _ = Expediente.objects.get_or_create(numero_expediente=nro_exp)
+                                if nro_compra and nro_compra.upper() != "NO":
+                                    expediente_obj.numero_compra = nro_compra
+                                    expediente_obj.save(update_fields=["numero_compra"])
+
+                            nombre_bien = descripcion[:200] if descripcion else (nro_serie if nro_serie != "NO" else "SIN NOMBRE")
+
+                            defaults = {
+                                "nombre": nombre_bien,
+                                "descripcion": descripcion or "NO",
+                                "cantidad": cantidad,
+                                "servicios": servicios,
+                                "numero_serie": nro_serie,
+                                "cuenta_codigo": cuenta_cod,
+                                "nomenclatura_bienes": nomencl,
+                                "observaciones": observ,
+                                "valor_adquisicion": precio,
+                                "fecha_adquisicion": fecha_alta,
+                                "fecha_baja": fecha_baja,
+                                "expediente": expediente_obj,
+                                "numero_compra": nro_compra if nro_compra and nro_compra.upper() != "NO" else "",
+                            }
+                            if origen_val: defaults["origen"] = origen_val
+                            if estado_val: defaults["estado"] = estado_val
+
+                            numero_id_val = (numero_id or "").strip() or None
+                            if numero_id_val:
+                                _, created = BienPatrimonial.objects.update_or_create(numero_identificacion=numero_id_val, defaults=defaults)
+                            elif nro_serie != "NO" and descripcion:
+                                _, created = BienPatrimonial.objects.update_or_create(numero_serie=nro_serie, descripcion=descripcion, defaults=defaults)
+                            else:
+                                BienPatrimonial.objects.create(**defaults)
+                                created = True
+
+                            if created: creados += 1
+                            else: actualizados += 1
+                    except Exception as e:
+                        errores.append(f"Error en {nombre_archivo_completo} (fila {i+1}): {str(e)}")
             except Exception as e:
-                errores.append(f"Fila {i+1} en '{getattr(archivo, 'name', 'Excel')}': {str(e)}")
- 
-        mensaje = f"✅ Carga masiva exitosa. Se procesaron {len(archivos)} archivo(s). Bienes creados: {creados}. Actualizados: {actualizados}."
+                errores.append(f"Error crítico procesando '{nombre_archivo_completo}': {str(e)}")
 
         if creados or actualizados:
-            messages.success(
-                request,
-                f"✅ Creados: {creados}, Actualizados: {actualizados}. Errores: {len(errores)}",
-            )
+            messages.success(request, f"✅ Creados: {creados}, Actualizados: {actualizados}. Archivos: {len(archivos)}. Errores: {len(errores)}")
         else:
-            messages.warning(request, "No se crearon ni actualizaron bienes.")
- 
+            messages.warning(request, "No se procesaron registros nuevos.")
+        
         if errores:
-            messages.error(request, "Algunas filas fallaron: " + " | ".join(errores[:8]))
- 
+            messages.error(request, "Resumen de errores: " + " | ".join(errores[:5]))
+
         Notificacion.objects.create(
             usuario=request.user,
-            mensaje=f"Se realizó una carga masiva: {creados} bienes registrados. Errores: {len(errores)}.",
-            leida=False,
+            mensaje=f"Carga masiva finalizada: {creados} nuevos, {actualizados} actualizados. {len(errores)} errores.",
+            leida=False
         )
- 
         return redirect("lista_bienes")
- 
-    except (FileNotFoundError, pd.errors.EmptyDataError, KeyError) as e:
-        messages.error(request, f"Error al procesar el archivo: {e}")
+
+    except Exception as e:
+        messages.error(request, f"Error general en la carga: {str(e)}")
         return redirect("lista_bienes")
  
  
