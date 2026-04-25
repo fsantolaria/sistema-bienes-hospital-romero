@@ -13,22 +13,16 @@
 <main class="main-container">
     <!-- Panel lateral izquierdo -->
     <aside class="left-panel">
-        <img src="{% static 'img/diseño-izquierda.png' %}" alt="Gobierno de Buenos Aires" class="panel-image">
+        <img src="{% static 'img/diseno-izquierda.png' %}" alt="Gobierno de Buenos Aires" class="panel-image">
     </aside>
 
     <!-- Área central -->
     <section class="home-content">
         <div class="menu-buttons">
-                <!-- Botón Bienes Patrimoniales -->
+                <!-- Botón Bienes -->
                 <a href="{% url 'lista_bienes' %}" class="menu-button">
                     <i class="fas fa-table-cells-large card-icon"></i>
-                    Bienes Patrimoniales
-                </a>
-
-                <!-- Botón Bajas de Bienes -->
-                <a href="{% url 'lista_baja_bienes' %}" class="menu-button">
-                    <i class="fas fa-archive card-icon"></i>
-                    Bajas de Bienes
+                    Bienes
                 </a>
         </div>
     </section>

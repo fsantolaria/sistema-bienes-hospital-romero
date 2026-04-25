@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Alta de Operadores - Sistema de Gestión de Bienes Patrimoniales{% endblock %}
+{% block title %}Alta de Usuarios - Sistema de Gestión de Bienes Patrimoniales{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/alta_operadores.css' %}">
@@ -11,7 +11,7 @@
 {% block content %}
 <div id="alta-operador-view" class="view active">
   <div class="alta-header">
-    <h2>ALTA DEL OPERADOR</h2>
+    <h2>ALTA DE USUARIO</h2>
   </div>
 
   <form id="form-alta-operador"
@@ -21,16 +21,16 @@
     {% csrf_token %}
 
     <div class="form-section">
-      <h3 class="section-title">Datos del operador</h3>
+      <h3 class="section-title">Datos del usuario</h3>
 
       <div class="form-group-item">
-        <label for="nombre">Nombre del operador:</label>
+        <label for="nombre">Nombre:</label>
         <input type="text" id="nombre" name="nombre" required
                value="{{ form.nombre.value|default:'' }}">
       </div>
 
       <div class="form-group-item">
-        <label for="apellido">Apellido del operador:</label>
+        <label for="apellido">Apellido:</label>
         <input type="text" id="apellido" name="apellido" required
                value="{{ form.apellido.value|default:'' }}">
       </div>
@@ -94,7 +94,7 @@
         <i class="fas fa-times me-1"></i> Cancelar
       </a>
       <a href="{% url 'operadores' %}" class="btn btn-primary btn-lg">
-        <i class="fas fa-users me-1"></i> Ver operadores
+        <i class="fas fa-users me-1"></i> Ver usuarios
       </a>
     </div>
   </form>

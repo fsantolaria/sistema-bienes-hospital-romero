@@ -1,8 +1,7 @@
 import os
 from django.core.wsgi import get_wsgi_application
-from decouple import config
 
-environment = config('DJANGO_ENV', default='development')
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', f'sistema_bienes.settings.{environment}')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'sistema_bienes.settings.development')
 
-application = get_wsgi_application()
+
+application = get_wsgi_application()

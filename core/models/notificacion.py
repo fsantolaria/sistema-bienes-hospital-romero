@@ -7,6 +7,7 @@ class Notificacion(models.Model):
     mensaje = models.CharField(max_length=255)
     leida = models.BooleanField(default=False)
     fecha = models.DateTimeField(auto_now_add=True)
-
+    eliminada = models.BooleanField(default=False)
     def __str__(self):
         return self.mensaje
+

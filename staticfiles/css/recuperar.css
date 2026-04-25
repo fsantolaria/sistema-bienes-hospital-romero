@@ -1,0 +1,207 @@
+/* ======== FUENTE ======== */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+
+/* ======== RESETEO GENERAL ======== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    font-family: 'Poppins', sans-serif;
+    background-color: #fff;
+}
+
+/* ======== HEADER Y FOOTER ======== */
+.header-bar,
+.footer-bar {
+    width: 100%;
+    height: 35px;
+    background-color: #00bcd4;
+    position: fixed;
+    left: 0;
+    z-index: 10;
+}
+
+.header-bar { top: 0; }
+.footer-bar { bottom: 0; }
+
+/* ======== DISTRIBUCIÓN PRINCIPAL ======== */
+.recuperar-page {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    /* Ajustamos para usar el header/footer estándar (70px cada uno) */
+    height: calc(100vh - 140px);
+    margin-top: 70px;
+    margin-bottom: 70px;
+    padding: 0 60px;
+}
+
+/* ===== PANEL IZQUIERDO ===== */
+.left-panel {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px; /* 🔹 desplaza ligeramente hacia abajo */
+}
+
+
+.left-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.logo-prov-bsas {
+    width: 600px;
+    height: auto;
+    max-width: 100%;
+}
+
+
+/* ===== PANEL DERECHO ===== */
+.right-panel {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.recuperar-card {
+    background-color: #fff;
+    border: 1.5px solid #00bcd4;
+    border-radius: 14px;
+    padding: 40px 50px;
+    text-align: center;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+.logo-hospital {
+    width: 100px;
+    margin-bottom: 10px;
+}
+
+/* ===== TÍTULO Y MENSAJE ===== */
+.title {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.message {
+    margin-bottom: 20px;
+}
+
+.alert {
+    background-color: #e0f7fa;
+    border: 1px solid #00bcd4;
+    color: #007c91;
+    padding: 10px;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+/* Ocultar el contenedor global de mensajes que renderiza en el <main>
+   (evita que el mensaje aparezca arriba del header en esta página)
+   La plantilla incluye su propio mensaje dentro de la tarjeta, así que
+   ocultamos solo el .messages-container que es hijo directo de main. */
+main.main-content > .messages-container {
+    display: none;
+}
+
+.recuperar-card form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.input-recuperar {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid #b8dce3;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.input-recuperar:focus {
+    outline: none;
+    border-color: #00a4c6;
+    box-shadow: 0 0 0 3px rgba(0, 164, 198, 0.15);
+}
+
+/* ===== BOTÓN ===== */
+.btn-send {
+    background-color: #00a4c6;
+    border: none;
+    padding: 12px 30px;
+    color: #fff;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-send:hover {
+    background-color: #008aa8;
+}
+
+/* ===== LINK VOLVER ===== */
+.back-link {
+    display: block;
+    margin-top: 15px;
+    color: #00a4c6;
+    text-decoration: none;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 950px) {
+    .recuperar-page {
+        flex-direction: column;
+        justify-content: center;
+        padding: 20px;
+        height: auto;
+        margin-top: 35px;
+        margin-bottom: 35px;
+    }
+
+    .left-panel {
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    .left-content {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .logo-prov {
+        width: 150px;
+    }
+
+    .gob-provincia {
+        width: 220px;
+    }
+
+    .recuperar-card {
+        width: 90%;
+        max-width: 400px;
+        padding: 30px;
+    }
+}
+
+
+
+

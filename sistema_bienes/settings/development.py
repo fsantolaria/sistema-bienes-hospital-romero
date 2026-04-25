@@ -1,6 +1,5 @@
 from .base import *
 
-
 DEBUG = True
 
 DATABASES = {
@@ -21,5 +20,6 @@ HOSPITAL_NAME = "Gestión de Bienes Patrimoniales - Hospital Melchor Romero (Des
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
+
 
 

@@ -124,7 +124,15 @@
           <td class="text-nowrap">{{ b.expediente.numero_expediente|default:"—" }}</td>
           <td class="text-nowrap">{{ b.expediente_baja|default:"—" }}</td>
 
-          <td class="text-nowrap">{{ b.expediente.numero_compra|default:"—" }}</td>
+          <td class="text-nowrap">
+            {% if b.numero_compra %}
+              {{ b.numero_compra }}
+            {% elif b.expediente.numero_compra %}
+              {{ b.expediente.numero_compra }}
+            {% else %}
+              —
+            {% endif %}
+          </td>
           <td class="text-nowrap">{{ b.cuenta_codigo|default:"—" }}</td>
           <td class="text-nowrap">{{ b.nomenclatura_bienes|default:"—" }}</td>
           <td class="text-nowrap">{{ b.numero_serie|default:"—" }}</td>
@@ -190,10 +198,6 @@
               <i class="fas fa-undo"></i>
             </button>
 
-<<<<<<< HEAD
-            
-=======
->>>>>>> 1c22fc8 (a)
           </td>
         </tr>
         {% empty %}

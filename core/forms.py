@@ -9,18 +9,33 @@ from datetime import date
 
 
 
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+class MultipleFileField(forms.FileField):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("widget", MultipleFileInput(attrs={'class': 'form-control', 'accept': '.xlsx,.xls,.xlsm,.xlsb,.ods'}))
+        super().__init__(*args, **kwargs)
+
+    def clean(self, data, initial=None):
+        single_file_clean = super().clean
+        if isinstance(data, (list, tuple)):
+            result = [single_file_clean(d, initial) for d in data]
+        else:
+            result = single_file_clean(data, initial)
+        return result
+
 # ========== FORMULARIO DE CARGA MASIVA ==========
 class CargaMasivaForm(forms.Form):
-    archivo_excel = forms.FileField(
-        label='Seleccionar archivo Excel',
-        help_text='Formatos soportados: .xlsx, .xls',
-        widget=forms.ClearableFileInput(attrs={'class': 'form-control'})
+    archivo_excel = MultipleFileField(
+        label='Seleccionar archivo(s) Excel',
+        help_text='Formatos soportados: .xlsx, .xls, .xlsm, .xlsb, .ods'
     )
-    sector = forms.CharField(
+    servicio = forms.CharField(
         max_length=100,
         required=False,
-        label='Sector por defecto (opcional)',
-        help_text='Si se deja vacío, se tomará el sector de cada fila del archivo.',
+        label='Servicio por defecto (opcional)',
+        help_text='Si se deja vacío, se tomará el servicio de cada fila del archivo. Si el archivo se llama "RELEVAMIENTO...", se asignará automáticamente.',
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
 
@@ -35,7 +50,7 @@ class BienPatrimonialForm(forms.ModelForm):
         model = BienPatrimonial
         fields = [
             'descripcion', 'cantidad', 'expediente', 'cuenta_codigo', 'nomenclatura_bienes',
-            'numero_serie', 'numero_identificacion', 'origen', 'estado', 'servicios',
+            'numero_serie', 'numero_identificacion', 'numero_compra', 'origen', 'estado', 'servicios',
             'observaciones', 'valor_adquisicion', 'fecha_adquisicion', 'fecha_baja',
         ]
         widgets = {
@@ -46,6 +61,7 @@ class BienPatrimonialForm(forms.ModelForm):
             'nomenclatura_bienes': forms.TextInput(attrs={'class': 'form-control'}),
             'numero_serie': forms.TextInput(attrs={'class': 'form-control'}),
             'numero_identificacion': forms.TextInput(attrs={'class': 'form-control'}),
+            'numero_compra': forms.TextInput(attrs={'class': 'form-control'}),
             'origen': forms.Select(attrs={'class': 'form-select'}),
             'estado': forms.Select(attrs={'class': 'form-select'}),
             'servicios': forms.TextInput(attrs={'class': 'form-control'}),
@@ -68,17 +84,15 @@ class BienPatrimonialForm(forms.ModelForm):
         exp = getattr(self.instance, "expediente", None)
         if exp:
             self.fields["numero_expediente"].initial = exp.numero_expediente
-            self.fields["numero_compra"].initial = exp.numero_compra
+            # Si el bien no tiene numero_compra propio, podemos usar el del expediente como inicial
+            if not self.instance.numero_compra:
+                self.fields["numero_compra"].initial = exp.numero_compra
 
     def clean(self):
         cleaned = super().clean()
 
         n_exp = (cleaned.get("numero_expediente") or "").strip()
         n_cmp = (cleaned.get("numero_compra") or "").strip()
-
-        # Si informan N° de compra, exigir N° de expediente
-        if n_cmp and not n_exp:
-            self.add_error("numero_expediente", "Si informás N° de compra, debés indicar el N° de Expediente.")
 
         # Precio: si el origen no es COMPRA, ignorar precio
         if cleaned.get("origen") and cleaned["origen"] != "COMPRA":
@@ -110,7 +124,8 @@ class BienPatrimonialForm(forms.ModelForm):
         expediente = None
         if n_exp:
             expediente, _ = Expediente.objects.get_or_create(numero_expediente=n_exp)
-            if n_cmp and expediente.numero_compra != n_cmp:
+            # Opcionalmente actualizamos el numero_compra del expediente si se cambió en el bien
+            if n_cmp and (not expediente.numero_compra or expediente.numero_compra != n_cmp):
                 expediente.numero_compra = n_cmp
                 expediente.save()
         else:

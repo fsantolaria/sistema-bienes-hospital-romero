@@ -61,6 +61,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (dropdown) {
             // delegación para acciones dentro del dropdown
             dropdown.addEventListener('click', function(ev) {
+                const btnBorrarTodas = ev.target.closest('.btn-borrar-todas');
+                if (btnBorrarTodas) {
+                    ev.stopPropagation();
+                    borrarTodasNotificaciones();
+                    return;
+                }
+
                 const btnMarcarTodas = ev.target.closest('.btn-marcar-todas');
                 if (btnMarcarTodas) {
                     ev.stopPropagation();
@@ -288,7 +295,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function eliminarNotificacion(id, element) {
-        // Llamada al backend para persistir la eliminación
         fetch(`/notificaciones/${id}/eliminar/`, {
             method: 'POST',
             headers: {
@@ -302,14 +308,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (idx !== -1) notificaciones.splice(idx, 1);
                 if (element && element.parentNode) element.parentNode.removeChild(element);
                 actualizarBadge();
-                mostrarMensaje('Notificación eliminada', 'info');
-            } else {
-                mostrarMensaje('No se pudo eliminar la notificación en el servidor', 'error');
             }
-        }).catch(err => {
-            console.error(err);
-            mostrarMensaje('Error de red al eliminar notificación', 'error');
-        });
+        }).catch(err => console.error(err));
     }
 
     function marcarTodasComoLeidas() {
@@ -332,19 +332,49 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 }
                 actualizarBadge();
-                mostrarMensaje('Todas las notificaciones quedaron como leídas', 'success');
-            } else {
-                mostrarMensaje('No se pudo marcar todas las notificaciones como leídas', 'error');
             }
         }).catch(err => {
             console.error(err);
-            mostrarMensaje('Error de red al marcar todas las notificaciones', 'error');
+        });
+    }
+
+    function borrarTodasNotificaciones() {
+        if (!confirm('¿Estás seguro de que quieres borrar todas las notificaciones? Esta acción no se puede deshacer.')) {
+            return;
+        }
+        fetch('/notificaciones/borrar-todas/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken') || ''
+            },
+            body: '{}'
+        }).then(resp => {
+            if (resp.ok) {
+                const dropdown = document.getElementById('notificacionesDropdown') || wrapperNotificaciones.querySelector('.notificaciones-dropdown');
+                if (dropdown) {
+                    const list = dropdown.querySelector('.dropdown-list');
+                    if (list) {
+                        list.innerHTML = `
+                            <li style="text-align:center; padding:20px; color:#999; list-style:none;">
+                                <i class="fa-solid fa-bell-slash" style="font-size:24px; display:block; margin-bottom:8px;"></i>
+                                <p style="margin:0; font-size:13px;">Sin notificaciones</p>
+                            </li>
+                        `;
+                    }
+                }
+                actualizarBadge();
+            } else {
+                alert('No se pudieron borrar las notificaciones.');
+            }
+        }).catch(err => {
+            console.error(err);
+            alert('Error al conectar con el servidor.');
         });
     }
 
     // Funciones de manejo de notificaciones
     function marcarComoLeido(id) {
-        // Intentar marcar en backend primero (si existe), luego actualizar UI
         fetch(`/notificaciones/${id}/marcar-leida/`, {
             method: 'POST',
             headers: {
@@ -354,11 +384,9 @@ document.addEventListener('DOMContentLoaded', function() {
             body: '{}'
         }).then(resp => {
             if (resp.ok) {
-                // Actualizar array cliente si aplica
                 const notificacion = notificaciones.find(notif => notif.id == id);
                 if (notificacion) notificacion.leida = true;
 
-                // Si hay dropdown renderizado, actualizar atributo/data y clases
                 const dropdown = document.getElementById('notificacionesDropdown') || wrapperNotificaciones.querySelector('.notificaciones-dropdown');
                 if (dropdown) {
                     const li = dropdown.querySelector(`.dropdown-notif-item[data-id="${id}"]`);
@@ -369,36 +397,19 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (actionBtn) actionBtn.remove();
                     }
                 }
-
                 actualizarBadge();
-                mostrarMensaje('Notificación marcada como leída', 'success');
-            } else {
-                mostrarMensaje('No se pudo marcar la notificación como leída', 'error');
             }
-        }).catch(err => {
-            console.error(err);
-            mostrarMensaje('Error de red al marcar notificación', 'error');
-        });
+        }).catch(err => console.error(err));
     }
 
     function manejarAceptar(id) {
         const notificacion = notificaciones.find(notif => notif.id == id);
-        if (notificacion) {
-            // Aquí iría la lógica para aceptar la solicitud
-            console.log('Aceptando notificación:', notificacion);
-            marcarComoLeido(id);
-            mostrarMensaje('Solicitud aceptada correctamente', 'success');
-        }
+        if (notificacion) marcarComoLeido(id);
     }
 
     function manejarRechazar(id) {
         const notificacion = notificaciones.find(notif => notif.id == id);
-        if (notificacion) {
-            // Aquí iría la lógica para rechazar la solicitud
-            console.log('Rechazando notificación:', notificacion);
-            marcarComoLeido(id);
-            mostrarMensaje('Solicitud rechazada', 'info');
-        }
+        if (notificacion) marcarComoLeido(id);
     }
 
     function cerrarModal(modal) {
@@ -410,52 +421,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 300);
     }
 
-    function mostrarMensaje(mensaje, tipo) {
-        let container = document.getElementById("popup-container");
-
-        if (!container) {
-            container = document.createElement("div");
-            container.id = "popup-container";
-            document.body.appendChild(container);
-        }
-
-        // Evitar duplicados
-        if ([...container.children].some(el => el.textContent.includes(mensaje))) {
-            return;
-        }
-
-        const popup = document.createElement("div");
-        popup.className = `popup ${tipo}`;
-
-        const tipoTokens = (tipo || '').split(/\s+/).filter(Boolean);
-        const tipoBase = tipoTokens.find(t => ['success', 'error', 'warning', 'info'].includes(t)) || 'info';
-        let icono = 'ℹ';
-
-        if (tipoTokens.includes('eliminar')) {
-            icono = '⚠';
-        } else if (tipoTokens.includes('editar')) {
-            icono = '✎';
-        } else if (tipoBase === 'success') {
-            icono = '✔';
-        } else if (tipoBase === 'error') {
-            icono = '✖';
-        } else if (tipoBase === 'warning') {
-            icono = '⚠';
-        }
-
-        popup.innerHTML = `
-            <span class="icon">${icono}</span>
-            <span>${mensaje}</span>
-        `;
-
-        container.appendChild(popup);
-
-        setTimeout(() => {
-            popup.style.opacity = "0";
-            popup.style.transform = "translateY(-10px)";
-            setTimeout(() => popup.remove(), 300);
-        }, 3500);
-    }
+    // Función desactivada intencionalmente — no mostrar mensajes de notificaciones
+    function mostrarMensaje(mensaje, tipo) { /* no-op */ }
 
     window.mostrarMensaje = mostrarMensaje;
     window.__processPopupMessages = function() {

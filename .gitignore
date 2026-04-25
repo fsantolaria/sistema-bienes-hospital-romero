@@ -44,7 +44,6 @@ db.sqlite3
 media/
 
 # Static files
-/staticfiles/
 /mediafiles/
 
 # IDE
@@ -70,6 +69,8 @@ Thumbs.db
 # Logs
 logs/
 *.log
+migrate.log
+migrate_utf8.log
 
 # Coverage reports
 .coverage
@@ -80,3 +81,30 @@ htmlcov/
 */migrations/*.py
 !*/migrations/__init__.py
 */migrations/*.pyc
+
+# Vercel
+vercel.json
+
+# Scripts personales / temporales
+merge_upstream.py
+fix_all_conflicts.py
+fix_views.py
+scratch_db.py
+scratch_wipe.py
+script.py
+deploy_completo.sh
+setup_test_users.py
+python
+sistema_bienes/settings_local.py
+
+# Scripts de configuración y archivos de debug
+check_cols.py
+core/views_cleaned.py
+
+# Archivos Excel de datos reales
+*.xls
+*.xlsx
+*.ods
+*.xlsm
+*.xlsb
+
