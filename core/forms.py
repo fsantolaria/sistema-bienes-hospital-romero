@@ -159,11 +159,6 @@ class OperadorForm(forms.Form):
         initial='operador',
         label='Tipo de Usuario'
     )
-    estado = forms.ChoiceField(
-        choices=[('habilitado', 'Habilitado'), ('no-habilitado', 'No Habilitado')],
-        initial='habilitado',
-        label='Estado'
-    )
     password = forms.CharField(required=False, widget=forms.PasswordInput, label='Contraseña')
 
     def __init__(self, *args, operador_pk=None, **kwargs):
