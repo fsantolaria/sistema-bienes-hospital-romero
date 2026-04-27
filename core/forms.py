@@ -117,7 +117,7 @@ class BienPatrimonialForm(forms.ModelForm):
             'fecha_baja': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         }
 
-    def __init__(self, *args, **kwargs):
+def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # Estilo a los campos nuevos
@@ -132,59 +132,65 @@ class BienPatrimonialForm(forms.ModelForm):
             self.fields["numero_expediente"].initial = exp.numero_expediente
             self.fields["numero_compra"].initial = exp.numero_compra
 
-    def clean(self):
-        cleaned = super().clean()
+# Agregar servicios extra al desplegable
+        from core.models.servicio_extra import ServicioExtra
+        extras = list(ServicioExtra.objects.values_list("nombre", "nombre"))
+        opciones_base = list(self.fields["servicios"].widget.choices)
+        self.fields["servicios"].widget.choices = opciones_base + extras
 
-        n_exp = (cleaned.get("numero_expediente") or "").strip()
-        n_cmp = (cleaned.get("numero_compra") or "").strip()
+def clean(self):
+    cleaned = super().clean()
 
-        # Si informan N° de compra, exigir N° de expediente
-        if n_cmp and not n_exp:
-            self.add_error("numero_expediente", "Si informás N° de compra, debés indicar el N° de Expediente.")
+    n_exp = (cleaned.get("numero_expediente") or "").strip()
+    n_cmp = (cleaned.get("numero_compra") or "").strip()
 
-        # Precio: si el origen no es COMPRA, ignorar precio
-        if cleaned.get("origen") and cleaned["origen"] != "COMPRA":
-            cleaned["valor_adquisicion"] = None
+    # Si informan N° de compra, exigir N° de expediente
+    if n_cmp and not n_exp:
+        self.add_error("numero_expediente", "Si informás N° de compra, debés indicar el N° de Expediente.")
 
-        # --- Fecha de baja según estado ---
-        estado = cleaned.get("estado")
-        fecha_baja = cleaned.get("fecha_baja")
+    # Precio: si el origen no es COMPRA, ignorar precio
+    if cleaned.get("origen") and cleaned["origen"] != "COMPRA":
+        cleaned["valor_adquisicion"] = None
 
-        if estado == "BAJA":
-            # exigir fecha de baja si está en BAJA
-            if not fecha_baja:
-            # podés forzar obligatorio:
-            # self.add_error("fecha_baja", "Indicá la fecha de baja.")
-            # o autocompletar con hoy:
-                cleaned["fecha_baja"] = date.today()
-        else:
-            # si NO está en BAJA, limpiar fecha_baja
-            cleaned["fecha_baja"] = None
+    # --- Fecha de baja según estado ---
+    estado = cleaned.get("estado")
+    fecha_baja = cleaned.get("fecha_baja")
 
-        return cleaned
+    if estado == "BAJA":
+        # exigir fecha de baja si está en BAJA
+        if not fecha_baja:
+        # podés forzar obligatorio:
+        # self.add_error("fecha_baja", "Indicá la fecha de baja.")
+        # o autocompletar con hoy:
+            cleaned["fecha_baja"] = date.today()
+    else:
+        # si NO está en BAJA, limpiar fecha_baja
+        cleaned["fecha_baja"] = None
 
-    def save(self, commit=True):
-        bien = super().save(commit=False)
+    return cleaned
 
-        n_exp = (self.cleaned_data.get("numero_expediente") or "").strip()
-        n_cmp = (self.cleaned_data.get("numero_compra") or "").strip()
+def save(self, commit=True):
+    bien = super().save(commit=False)
 
-        expediente = None
-        if n_exp:
-            expediente, _ = Expediente.objects.get_or_create(numero_expediente=n_exp)
-            if n_cmp and expediente.numero_compra != n_cmp:
-                expediente.numero_compra = n_cmp
-                expediente.save()
-        else:
-            # usar lo elegido en el select, si hay
-            expediente = self.cleaned_data.get("expediente")
+    n_exp = (self.cleaned_data.get("numero_expediente") or "").strip()
+    n_cmp = (self.cleaned_data.get("numero_compra") or "").strip()
 
-        bien.expediente = expediente
+    expediente = None
+    if n_exp:
+        expediente, _ = Expediente.objects.get_or_create(numero_expediente=n_exp)
+        if n_cmp and expediente.numero_compra != n_cmp:
+            expediente.numero_compra = n_cmp
+            expediente.save()
+    else:
+        # usar lo elegido en el select, si hay
+        expediente = self.cleaned_data.get("expediente")
 
-        if commit:
-            bien.save()
-            self.save_m2m()
-        return bien
+    bien.expediente = expediente
+
+    if commit:
+        bien.save()
+        self.save_m2m()
+    return bien
 
 
 class OperadorForm(forms.Form):

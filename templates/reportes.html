@@ -6,71 +6,90 @@
 <div class="container py-4">
   <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
     <h2 class="m-0">Reporte de Bienes Patrimoniales</h2>
-    <div class="d-flex gap-2">
-<form method="get" class="d-flex gap-2 flex-wrap align-items-center">
-  <select name="scope" class="form-select" style="min-width: 170px;">
-    <option value="24h" {% if scope == '24h' %}selected{% endif %}>Últimas 24 h</option>
-    <option value="all" {% if scope == 'all' %}selected{% endif %}>Todos</option>
-  </select>
-  <select name="servicio" id="filtro-servicio" class="form-select" style="min-width: 220px;" multiple>
-    <option value="">Todos los servicios</option>
-    <option value="Direccion Asociada Area Tecnica" {% if 'Direccion Asociada Area Tecnica' in servicios_seleccionados %}selected{% endif %}>Direccion Asociada Area Tecnica</option>
-    <option value="SAP (Servicio de Area Programatica y Redes de Salud)" {% if 'SAP (Servicio de Area Programatica y Redes de Salud)' in servicios_seleccionados %}selected{% endif %}>SAP (Servicio de Area Programatica y Redes de Salud)</option>
-    <option value="Departamento Sistema de Informacion - SAMO Turnos y Estadistica" {% if 'Departamento Sistema de Informacion - SAMO Turnos y Estadistica' in servicios_seleccionados %}selected{% endif %}>Departamento Sistema de Informacion - SAMO Turnos y Estadistica</option>
-    <option value="Epidemiologia" {% if 'Epidemiologia' in servicios_seleccionados %}selected{% endif %}>Epidemiologia</option>
-    <option value="Jardin Maternal" {% if 'Jardin Maternal' in servicios_seleccionados %}selected{% endif %}>Jardin Maternal</option>
-    <option value="Recuperacion Clinica" {% if 'Recuperacion Clinica' in servicios_seleccionados %}selected{% endif %}>Recuperacion Clinica</option>
-    <option value="Farmacia" {% if 'Farmacia' in servicios_seleccionados %}selected{% endif %}>Farmacia</option>
-    <option value="Direccion Asociada Medico Quirurgica" {% if 'Direccion Asociada Medico Quirurgica' in servicios_seleccionados %}selected{% endif %}>Direccion Asociada Medico Quirurgica</option>
-    <option value="Percial" {% if 'Percial' in servicios_seleccionados %}selected{% endif %}>Percial</option>
-    <option value="Cirugia" {% if 'Cirugia' in servicios_seleccionados %}selected{% endif %}>Cirugia</option>
-    <option value="Hemoterapia" {% if 'Hemoterapia' in servicios_seleccionados %}selected{% endif %}>Hemoterapia</option>
-    <option value="Clinica" {% if 'Clinica' in servicios_seleccionados %}selected{% endif %}>Clinica</option>
-    <option value="Patologia" {% if 'Patologia' in servicios_seleccionados %}selected{% endif %}>Patologia</option>
-    <option value="Toxicologia" {% if 'Toxicologia' in servicios_seleccionados %}selected{% endif %}>Toxicologia</option>
-    <option value="Esterilizacion" {% if 'Esterilizacion' in servicios_seleccionados %}selected{% endif %}>Esterilizacion</option>
-    <option value="Neuropsicologia" {% if 'Neuropsicologia' in servicios_seleccionados %}selected{% endif %}>Neuropsicologia</option>
-    <option value="Seguridad e Higiene" {% if 'Seguridad e Higiene' in servicios_seleccionados %}selected{% endif %}>Seguridad e Higiene</option>
-    <option value="U.T.I." {% if 'U.T.I.' in servicios_seleccionados %}selected{% endif %}>U.T.I.</option>
-    <option value="Area Limpieza Hospitalaria" {% if 'Area Limpieza Hospitalaria' in servicios_seleccionados %}selected{% endif %}>Area Limpieza Hospitalaria</option>
-    <option value="Emergencia" {% if 'Emergencia' in servicios_seleccionados %}selected{% endif %}>Emergencia</option>
-    <option value="Podologia y Peluqueria" {% if 'Podologia y Peluqueria' in servicios_seleccionados %}selected{% endif %}>Podologia y Peluqueria</option>
-    <option value="Infectologia" {% if 'Infectologia' in servicios_seleccionados %}selected{% endif %}>Infectologia</option>
-    <option value="Odontologia" {% if 'Odontologia' in servicios_seleccionados %}selected{% endif %}>Odontologia</option>
-    <option value="Consultorios" {% if 'Consultorios' in servicios_seleccionados %}selected{% endif %}>Consultorios</option>
-    <option value="Cardiologia" {% if 'Cardiologia' in servicios_seleccionados %}selected{% endif %}>Cardiologia</option>
-    <option value="Gerenciamiento de Camas" {% if 'Gerenciamiento de Camas' in servicios_seleccionados %}selected{% endif %}>Gerenciamiento de Camas</option>
-    <option value="Neurologia" {% if 'Neurologia' in servicios_seleccionados %}selected{% endif %}>Neurologia</option>
-    <option value="Gastroenterologia" {% if 'Gastroenterologia' in servicios_seleccionados %}selected{% endif %}>Gastroenterologia</option>
-    <option value="Rehabilitacion Fisica y Kinesiologia" {% if 'Rehabilitacion Fisica y Kinesiologia' in servicios_seleccionados %}selected{% endif %}>Rehabilitacion Fisica y Kinesiologia</option>
-    <option value="Neonatologia" {% if 'Neonatologia' in servicios_seleccionados %}selected{% endif %}>Neonatologia</option>
-    <option value="Laboratorio" {% if 'Laboratorio' in servicios_seleccionados %}selected{% endif %}>Laboratorio</option>
-    <option value="Sala Gestion de Usuarios" {% if 'Sala Gestion de Usuarios' in servicios_seleccionados %}selected{% endif %}>Sala Gestion de Usuarios</option>
-    <option value="Diagnostico por Imagenes" {% if 'Diagnostico por Imagenes' in servicios_seleccionados %}selected{% endif %}>Diagnostico por Imagenes</option>
-    <option value="Reumatologia y Oftalmologia" {% if 'Reumatologia y Oftalmologia' in servicios_seleccionados %}selected{% endif %}>Reumatologia y Oftalmologia</option>
-    <option value="Costurero" {% if 'Costurero' in servicios_seleccionados %}selected{% endif %}>Costurero</option>
-    <option value="CAPER" {% if 'CAPER' in servicios_seleccionados %}selected{% endif %}>CAPER</option>
-    <option value="Quirofano" {% if 'Quirofano' in servicios_seleccionados %}selected{% endif %}>Quirofano</option>
-    <option value="Consejeria" {% if 'Consejeria' in servicios_seleccionados %}selected{% endif %}>Consejeria</option>
-    <option value="Traumatologia" {% if 'Traumatologia' in servicios_seleccionados %}selected{% endif %}>Traumatologia</option>
-    <option value="Vacunacion" {% if 'Vacunacion' in servicios_seleccionados %}selected{% endif %}>Vacunacion</option>
-    <option value="Pediatria y Neonatologia" {% if 'Pediatria y Neonatologia' in servicios_seleccionados %}selected{% endif %}>Pediatria y Neonatologia</option>
-    <option value="Dermatologia" {% if 'Dermatologia' in servicios_seleccionados %}selected{% endif %}>Dermatologia</option>
-    <option value="Tocoginecologia" {% if 'Tocoginecologia' in servicios_seleccionados %}selected{% endif %}>Tocoginecologia</option>
-    <option value="Oncologia" {% if 'Oncologia' in servicios_seleccionados %}selected{% endif %}>Oncologia</option>
-  </select>
-  <button class="btn btn-primary" type="submit">
-    <i class="fa-solid fa-rotate me-1"></i> Actualizar
-  </button>
-</form>
-        <a  class="btn btn-danger d-flex align-items-center justify-content-center gap-2 px-3"
-            style="min-width: 160px;"
-            href="{% url 'reportes_pdf' %}?scope={{ scope|default:'24h' }}">
-            <i class="fa-solid fa-file-pdf"></i>
-                <span>Exportar PDF</span>
-        </a>
-    </div>
   </div>
+
+  <form method="get" class="d-flex flex-wrap gap-2 align-items-start mb-2">
+    <!-- Desplegable de horas -->
+    <select name="scope" class="form-select" style="min-width: 130px; max-width: 150px;">
+      <option value="24h" {% if scope == '24h' %}selected{% endif %}>Ultimas 24 h</option>
+      <option value="12h" {% if scope == '12h' %}selected{% endif %}>Ultimas 12 h</option>
+      <option value="6h"  {% if scope == '6h'  %}selected{% endif %}>Ultimas 6 h</option>
+      <option value="all" {% if scope == 'all' %}selected{% endif %}>Historico</option>
+    </select>
+
+    <!-- Desplegable de servicios con Select2 -->
+    <select name="servicio" id="filtro-servicio" class="form-select" style="min-width: 280px;" multiple>
+      <option value="Direccion Asociada Area Tecnica" {% if 'Direccion Asociada Area Tecnica' in servicios_seleccionados %}selected{% endif %}>Direccion Asociada Area Tecnica</option>
+      <option value="SAP (Servicio de Area Programatica y Redes de Salud)" {% if 'SAP (Servicio de Area Programatica y Redes de Salud)' in servicios_seleccionados %}selected{% endif %}>SAP (Servicio de Area Programatica y Redes de Salud)</option>
+      <option value="Departamento Sistema de Informacion - SAMO Turnos y Estadistica" {% if 'Departamento Sistema de Informacion - SAMO Turnos y Estadistica' in servicios_seleccionados %}selected{% endif %}>Departamento Sistema de Informacion - SAMO Turnos y Estadistica</option>
+      <option value="Epidemiologia" {% if 'Epidemiologia' in servicios_seleccionados %}selected{% endif %}>Epidemiologia</option>
+      <option value="Jardin Maternal" {% if 'Jardin Maternal' in servicios_seleccionados %}selected{% endif %}>Jardin Maternal</option>
+      <option value="Recuperacion Clinica" {% if 'Recuperacion Clinica' in servicios_seleccionados %}selected{% endif %}>Recuperacion Clinica</option>
+      <option value="Farmacia" {% if 'Farmacia' in servicios_seleccionados %}selected{% endif %}>Farmacia</option>
+      <option value="Direccion Asociada Medico Quirurgica" {% if 'Direccion Asociada Medico Quirurgica' in servicios_seleccionados %}selected{% endif %}>Direccion Asociada Medico Quirurgica</option>
+      <option value="Percial" {% if 'Percial' in servicios_seleccionados %}selected{% endif %}>Percial</option>
+      <option value="Cirugia" {% if 'Cirugia' in servicios_seleccionados %}selected{% endif %}>Cirugia</option>
+      <option value="Hemoterapia" {% if 'Hemoterapia' in servicios_seleccionados %}selected{% endif %}>Hemoterapia</option>
+      <option value="Clinica" {% if 'Clinica' in servicios_seleccionados %}selected{% endif %}>Clinica</option>
+      <option value="Patologia" {% if 'Patologia' in servicios_seleccionados %}selected{% endif %}>Patologia</option>
+      <option value="Toxicologia" {% if 'Toxicologia' in servicios_seleccionados %}selected{% endif %}>Toxicologia</option>
+      <option value="Esterilizacion" {% if 'Esterilizacion' in servicios_seleccionados %}selected{% endif %}>Esterilizacion</option>
+      <option value="Neuropsicologia" {% if 'Neuropsicologia' in servicios_seleccionados %}selected{% endif %}>Neuropsicologia</option>
+      <option value="Seguridad e Higiene" {% if 'Seguridad e Higiene' in servicios_seleccionados %}selected{% endif %}>Seguridad e Higiene</option>
+      <option value="U.T.I." {% if 'U.T.I.' in servicios_seleccionados %}selected{% endif %}>U.T.I.</option>
+      <option value="Area Limpieza Hospitalaria" {% if 'Area Limpieza Hospitalaria' in servicios_seleccionados %}selected{% endif %}>Area Limpieza Hospitalaria</option>
+      <option value="Emergencia" {% if 'Emergencia' in servicios_seleccionados %}selected{% endif %}>Emergencia</option>
+      <option value="Podologia y Peluqueria" {% if 'Podologia y Peluqueria' in servicios_seleccionados %}selected{% endif %}>Podologia y Peluqueria</option>
+      <option value="Infectologia" {% if 'Infectologia' in servicios_seleccionados %}selected{% endif %}>Infectologia</option>
+      <option value="Odontologia" {% if 'Odontologia' in servicios_seleccionados %}selected{% endif %}>Odontologia</option>
+      <option value="Consultorios" {% if 'Consultorios' in servicios_seleccionados %}selected{% endif %}>Consultorios</option>
+      <option value="Cardiologia" {% if 'Cardiologia' in servicios_seleccionados %}selected{% endif %}>Cardiologia</option>
+      <option value="Gerenciamiento de Camas" {% if 'Gerenciamiento de Camas' in servicios_seleccionados %}selected{% endif %}>Gerenciamiento de Camas</option>
+      <option value="Neurologia" {% if 'Neurologia' in servicios_seleccionados %}selected{% endif %}>Neurologia</option>
+      <option value="Gastroenterologia" {% if 'Gastroenterologia' in servicios_seleccionados %}selected{% endif %}>Gastroenterologia</option>
+      <option value="Rehabilitacion Fisica y Kinesiologia" {% if 'Rehabilitacion Fisica y Kinesiologia' in servicios_seleccionados %}selected{% endif %}>Rehabilitacion Fisica y Kinesiologia</option>
+      <option value="Neonatologia" {% if 'Neonatologia' in servicios_seleccionados %}selected{% endif %}>Neonatologia</option>
+      <option value="Laboratorio" {% if 'Laboratorio' in servicios_seleccionados %}selected{% endif %}>Laboratorio</option>
+      <option value="Sala Gestion de Usuarios" {% if 'Sala Gestion de Usuarios' in servicios_seleccionados %}selected{% endif %}>Sala Gestion de Usuarios</option>
+      <option value="Diagnostico por Imagenes" {% if 'Diagnostico por Imagenes' in servicios_seleccionados %}selected{% endif %}>Diagnostico por Imagenes</option>
+      <option value="Reumatologia y Oftalmologia" {% if 'Reumatologia y Oftalmologia' in servicios_seleccionados %}selected{% endif %}>Reumatologia y Oftalmologia</option>
+      <option value="Costurero" {% if 'Costurero' in servicios_seleccionados %}selected{% endif %}>Costurero</option>
+      <option value="CAPER" {% if 'CAPER' in servicios_seleccionados %}selected{% endif %}>CAPER</option>
+      <option value="Quirofano" {% if 'Quirofano' in servicios_seleccionados %}selected{% endif %}>Quirofano</option>
+      <option value="Consejeria" {% if 'Consejeria' in servicios_seleccionados %}selected{% endif %}>Consejeria</option>
+      <option value="Traumatologia" {% if 'Traumatologia' in servicios_seleccionados %}selected{% endif %}>Traumatologia</option>
+      <option value="Vacunacion" {% if 'Vacunacion' in servicios_seleccionados %}selected{% endif %}>Vacunacion</option>
+      <option value="Pediatria y Neonatologia" {% if 'Pediatria y Neonatologia' in servicios_seleccionados %}selected{% endif %}>Pediatria y Neonatologia</option>
+      <option value="Dermatologia" {% if 'Dermatologia' in servicios_seleccionados %}selected{% endif %}>Dermatologia</option>
+      <option value="Tocoginecologia" {% if 'Tocoginecologia' in servicios_seleccionados %}selected{% endif %}>Tocoginecologia</option>
+      <option value="Oncologia" {% if 'Oncologia' in servicios_seleccionados %}selected{% endif %}>Oncologia</option>
+      {% for s in servicios_extra %}
+      <option value="{{ s.nombre }}" {% if s.nombre in servicios_seleccionados %}selected{% endif %}>{{ s.nombre }}</option>
+      {% endfor %}
+    </select>
+
+    <!-- Botones -->
+    <button class="btn btn-primary d-flex align-items-center gap-2 px-3" style="min-width: 160px;" type="submit">
+      <i class="fa-solid fa-rotate"></i>
+      <span>Buscar</span>
+    </button>
+    <a class="btn btn-danger d-flex align-items-center justify-content-center gap-2 px-3"
+       style="min-width: 160px;"
+       href="{% url 'reportes_pdf' %}?scope={{ scope|default:'24h' }}{% for s in servicios_seleccionados %}&servicio={{ s }}{% endfor %}">
+      <i class="fa-solid fa-file-pdf"></i>
+      <span>Exportar PDF</span>
+    </a>
+  </form>
+
+  <!-- Cuadro de servicios seleccionados -->
+  {% if servicios_seleccionados %}
+  <div id="cuadro-servicios" class="border rounded p-2 mb-3 bg-light" style="min-height: 36px; overflow-y: auto;">
+    <small class="text-muted me-2">Servicios seleccionados:</small>
+    {% for s in servicios_seleccionados %}
+      <span class="badge bg-primary me-1 mb-1">{{ s }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
 
   <p class="text-muted">Rango: <strong>{{ rango_desc }}</strong></p>
 
@@ -119,16 +138,12 @@
   </div>
 
   {% if is_paginated %}
-  <nav aria-label="Paginación de reportes" class="mt-3">
+  <nav aria-label="Paginacion de reportes" class="mt-3">
     <ul class="pagination pagination-sm justify-content-center">
       {% with qs_pref=querystring|default_if_none:""|add:"&" %}
-
-      <!-- Primero -->
       <li class="page-item {% if not prev_page %}disabled{% endif %}">
         <a class="page-link" href="?{{ qs_pref }}page=1">Primera</a>
       </li>
-
-      <!-- Anterior -->
       <li class="page-item {% if not prev_page %}disabled{% endif %}">
         {% if prev_page %}
           <a class="page-link" href="?{{ qs_pref }}page={{ prev_page }}">«</a>
@@ -136,8 +151,6 @@
           <span class="page-link">«</span>
         {% endif %}
       </li>
-
-      <!-- Números -->
       {% for num in page_range %}
         {% if num == '…' %}
           <li class="page-item disabled"><span class="page-link">…</span></li>
@@ -147,8 +160,6 @@
           <li class="page-item"><a class="page-link" href="?{{ qs_pref }}page={{ num }}">{{ num }}</a></li>
         {% endif %}
       {% endfor %}
-
-      <!-- Siguiente -->
       <li class="page-item {% if not next_page %}disabled{% endif %}">
         {% if next_page %}
           <a class="page-link" href="?{{ qs_pref }}page={{ next_page }}">»</a>
@@ -156,8 +167,6 @@
           <span class="page-link">»</span>
         {% endif %}
       </li>
-
-      <!-- Última -->
       <li class="page-item {% if not next_page %}disabled{% endif %}">
         <a class="page-link" href="?{{ qs_pref }}page={{ paginator.num_pages }}">Última</a>
       </li>
@@ -166,7 +175,6 @@
   </nav>
   {% endif %}
 
-  <!-- Notificaciones del período (si scope=24h) -->
   {% if notifs %}
   <h5 class="mt-4">Acciones registradas (notificaciones)</h5>
   <div class="table-responsive">
@@ -189,6 +197,7 @@
   </div>
   {% endif %}
 </div>
+
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -197,7 +206,7 @@
     $('#filtro-servicio').select2({
       placeholder: "Buscar servicio...",
       allowClear: true,
-      width: '300px'
+      width: '100%'
     });
   });
 </script>

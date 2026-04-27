@@ -5,7 +5,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from core.forms import CargaMasivaForm, BienPatrimonialForm, OperadorForm
-from core.models import BienPatrimonial
+from core.models import BienPatrimonial, ServicioExtra
 from django.db.models import Q, F
 from django.views.decorators.http import require_POST
 from django.db import transaction, IntegrityError
@@ -217,7 +217,10 @@ def bienes(request):
         form = BienPatrimonialForm()
  
     context = perms
-    context.update({"form": form})
+    context.update({
+        "form": form,
+        "servicios_extra": ServicioExtra.objects.all(),
+})
     return render(request, "bienes.html", context)
  
  
@@ -804,6 +807,30 @@ def reportes_pdf(request):
         resp["Content-Disposition"] = f'inline; filename="reporte_{scope}_fallback.pdf"'
         return resp
  
+@login_required
+def agregar_servicio(request):
+    perms = permisos_context(request.user)
+    if not perms["es_admin"]:
+        messages.error(request, "No tienes permisos para acceder a esta página.")
+        return redirect("home_operador")
+
+    if request.method == "POST":
+        nombre = (request.POST.get("nombre") or "").strip()
+        if not nombre:
+            messages.error(request, "El nombre no puede estar vacío.")
+        elif any(c.isdigit() for c in nombre):
+            messages.error(request, "El nombre no puede contener números.")
+        elif ServicioExtra.objects.filter(nombre__iexact=nombre).exists():
+            messages.error(request, f"El servicio '{nombre}' ya existe.")
+        else:
+            ServicioExtra.objects.create(nombre=nombre)
+            messages.success(request, f"Servicio '{nombre}' agregado correctamente.")
+            return redirect("agregar_servicio")
+
+    servicios = ServicioExtra.objects.all()
+    ctx = perms
+    ctx.update({"servicios": servicios})
+    return render(request, "agregar_servicio.html", ctx)
  
 @login_required
 def reportes_view(request):
@@ -814,6 +841,30 @@ def reportes_view(request):
 
     if scope == "24h":
         since_dt = now - timedelta(hours=24)
+        since_date = since_dt.date()
+        bienes = (
+            BienPatrimonial.objects
+            .select_related("expediente")
+            .filter(
+                Q(fecha_adquisicion__gte=since_date) |
+                Q(fecha_baja__gte=since_date)
+            )
+            .order_by("-fecha_baja", "-fecha_adquisicion", "pk")
+        )
+    elif scope == "12h":
+        since_dt = now - timedelta(hours=12)
+        since_date = since_dt.date()
+        bienes = (
+            BienPatrimonial.objects
+            .select_related("expediente")
+            .filter(
+                Q(fecha_adquisicion__gte=since_date) |
+                Q(fecha_baja__gte=since_date)
+            )
+            .order_by("-fecha_baja", "-fecha_adquisicion", "pk")
+        )
+    elif scope == "6h":
+        since_dt = now - timedelta(hours=6)
         since_date = since_dt.date()
         bienes = (
             BienPatrimonial.objects
@@ -884,6 +935,7 @@ def reportes_view(request):
     "bienes": page_obj.object_list,
     "scope": scope,
     "servicios_seleccionados": servicios_seleccionados,
+    "servicios_extra": ServicioExtra.objects.all(),
     "paginator": paginator,
     "page_obj": page_obj,
     "is_paginated": paginator.num_pages > 1,
@@ -892,6 +944,7 @@ def reportes_view(request):
     "next_page": next_page,
     "querystring": querystring,
 })
+
     return render(request, "reportes.html", ctx)
  
  
