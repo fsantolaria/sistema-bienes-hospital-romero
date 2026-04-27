@@ -11,7 +11,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="bienpatrimonial",
             name="numero_compra",
-            field=models.CharField(max_length=50, blank=True, default="", verbose_name="N° de Compra"),
-            preserve_default=False,
+            field=models.CharField(max_length=50, blank=True, null=True, verbose_name="N° de Compra"),
         ),
     ]
