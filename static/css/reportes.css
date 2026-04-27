@@ -1,0 +1,42 @@
+.alta-header {
+    background-color: #00a4c6;
+    border: 1px solid #00a4c6;
+    border-radius: 6px;
+    padding: 8px 12px;
+    text-align: center;
+    display: inline-block;
+}
+
+.alta-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #000;
+    margin: 0;
+}
+
+/* Search input adjustments */
+.input-group .input-group-text {
+    border-right: 0;
+    background: transparent;
+    color: #333;
+    padding: 8px 10px;
+    font-size: 14px;
+}
+
+.input-group .form-control {
+    border-left: 0;
+    padding: 8px 12px;
+    height: 40px;
+}
+
+/* Make the search icon slightly darker and centered */
+.input-group .fa-search {
+    font-size: 16px;
+    color: #0d6efd;
+}
+
+/* Small responsive tweak */
+@media (max-width: 576px) {
+    .alta-header { display: block; width: 100%; margin-bottom: 8px; }
+    .input-group { width: 100%; }
+}
