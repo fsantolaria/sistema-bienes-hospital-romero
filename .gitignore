@@ -81,6 +81,7 @@ htmlcov/
 */migrations/*.py
 !*/migrations/__init__.py
 !core/migrations/0003_archivocargamasiva.py
+!core/migrations/0003_add_numero_compra_bien.py
 */migrations/*.pyc
 
 # Vercel
