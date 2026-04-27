@@ -77,13 +77,8 @@ migrate_utf8.log
 htmlcov/
 .coverage.*
 
-# Migrations (excluye archivos .py pero mantiene el __init__.py)
-*/migrations/*.py
-!*/migrations/__init__.py
-!core/migrations/0003_archivocargamasiva.py
-!core/migrations/0003_add_numero_compra_bien.py
-!core/migrations/0001_initial.py
-*/migrations/*.pyc
+# Migrations: track migration .py files in the repo to avoid missing dependencies
+# (no longer ignore migrations; keep __init__.py behavior by default)
 
 # Vercel
 vercel.json
