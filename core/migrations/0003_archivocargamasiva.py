@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ("core", "0002_bienpatrimonial_numero_compra_notificacion_eliminada_and_more"),
+        ("core", "0002_notificacion_eliminada_operador_dni_and_more"),
     ]
 
     operations = [

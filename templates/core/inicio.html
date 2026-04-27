@@ -23,12 +23,15 @@
     <p class="subtitle">Inicia sesión como</p>
     
     <div class="login-options">
-        <button class="login-button" id="admin-btn">
-            <i class="fas fa-user-cog"></i> Administrador
-        </button>
-        <button class="login-button" id="user-btn">
-            <i class="fas fa-user"></i> Usuario
-        </button>
+    <a href="{% url 'login' %}?tipo=admin" class="login-button">
+        <i class="fas fa-user-cog"></i> Administrador
+    </a>
+    <a href="{% url 'login' %}?tipo=supervisor" class="login-button">
+        <i class="fas fa-eye"></i> Supervisor
+    </a>
+    <a href="{% url 'login' %}?tipo=empleado" class="login-button">
+        <i class="fas fa-user"></i> Usuario
+    </a>
     </div>
 </div>
 {% endblock %}
