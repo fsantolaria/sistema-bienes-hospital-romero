@@ -81,6 +81,7 @@ class BienPatrimonial(models.Model):
     numero_compra = models.CharField(
         max_length=50,
         blank=True,
+        null=True,
         verbose_name="N° de Compra",
     )
 
