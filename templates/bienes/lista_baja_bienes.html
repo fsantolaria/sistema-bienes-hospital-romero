@@ -106,6 +106,7 @@
           <th>Estado</th>
           <th>Servicios</th>
           <th>Observaciones</th>
+          <th>SIEM</th>
           <th>Descripción de Baja</th>
           <th>Precio</th>
           <th>Fecha de Alta</th>
@@ -173,6 +174,7 @@
           <td class="text-nowrap">{{ b.servicios|default:"—" }}</td>
 
           <td style="min-width:220px;">{{ b.observaciones|default:"—" }}</td>
+          <td class="text-nowrap">{% if b.siem %}{{ b.siem|date:"d/m/Y" }}{% else %}—{% endif %}</td>
           <td style="min-width:220px;">{{ b.descripcion_baja|default:"—" }}</td>
 
           <td class="text-end">

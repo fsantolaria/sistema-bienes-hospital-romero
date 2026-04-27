@@ -144,6 +144,13 @@
             {% for e in form.observaciones.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
           </div>
 
+          <!-- SIEM (fecha) -->
+          <div class="col-md-4">
+            <label class="form-label" for="{{ form.siem.id_for_label }}">SIEM</label>
+            {{ form.siem }}
+            {% for e in form.siem.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+          </div>
+
           <!-- Precio (solo COMPRA) -->
           <div class="col-md-4" id="grupo-precio">
             <label class="form-label" for="{{ form.valor_adquisicion.id_for_label }}">Precio</label>

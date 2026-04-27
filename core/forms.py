@@ -51,7 +51,7 @@ class BienPatrimonialForm(forms.ModelForm):
         fields = [
             'descripcion', 'cantidad', 'expediente', 'cuenta_codigo', 'nomenclatura_bienes',
             'numero_serie', 'numero_identificacion', 'numero_compra', 'origen', 'estado', 'servicios',
-            'observaciones', 'valor_adquisicion', 'fecha_adquisicion', 'fecha_baja',
+            'observaciones', 'siem', 'valor_adquisicion', 'fecha_adquisicion', 'fecha_baja',
         ]
         widgets = {
             'descripcion': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
@@ -66,6 +66,7 @@ class BienPatrimonialForm(forms.ModelForm):
             'estado': forms.Select(attrs={'class': 'form-select'}),
             'servicios': forms.TextInput(attrs={'class': 'form-control'}),
             'observaciones': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
+            'siem': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'valor_adquisicion': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': 0}),
             'fecha_adquisicion': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'fecha_baja': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
