@@ -95,6 +95,16 @@ class Migration(migrations.Migration):
                 ('expediente', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='bienes', to='core.expediente', verbose_name='N° de Expediente')),
             ],
             options={
+        migrations.CreateModel(
+            name='Notificacion',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('mensaje', models.CharField(max_length=255)),
+                ('leida', models.BooleanField(default=False)),
+                ('fecha', models.DateTimeField(auto_now_add=True)),
+                ('usuario', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='core.usuario')),
+            ],
+        ),
                 'verbose_name': 'Bien Patrimonial',
                 'verbose_name_plural': 'Bienes Patrimoniales',
                 'ordering': ['clave_unica'],
