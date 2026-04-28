@@ -1,28 +1,13 @@
 {% extends 'base.html' %}
 {% load humanize %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/reportes.css' %}">
-{% endblock %}
 {% block title %}Reportes{% endblock %}
 
 {% block content %}
 <div class="container py-4">
   <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
-    <div class="alta-header">
-      <h2 class="m-0">Reporte de Bienes Patrimoniales</h2>
-    </div>
-    <div class="d-flex gap-2 align-items-center">
-      <form method="get" class="d-flex gap-2 align-items-center">
-        <div class="input-group">
-          <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-search"></i></span>
-          <input name="q" class="form-control border-start-0" type="search" placeholder="Buscar bien, descripción o clave" value="{{ request.GET.q|default:'' }}">
-        </div>
-        <select name="f_estado" class="form-select me-2" style="min-width: 170px;">
-          <option value="">Estado: Todos</option>
-          <option value="activo" {% if request.GET.f_estado == 'activo' %}selected{% endif %}>Activo</option>
-          <option value="baja" {% if request.GET.f_estado == 'baja' %}selected{% endif %}>Baja</option>
-        </select>
+    <h2 class="m-0">Reporte de Bienes Patrimoniales</h2>
+    <div class="d-flex gap-2">
+      <form method="get" class="d-flex gap-2">
         <select name="scope" class="form-select me-2" style="min-width: 170px;">
           <option value="24h" {% if scope == '24h' %}selected{% endif %}>Últimas 24 h</option>
           <option value="all" {% if scope == 'all' %}selected{% endif %}>Todos</option>

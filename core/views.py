@@ -827,23 +827,6 @@ def reportes_view(request):
             .select_related("expediente")
             .order_by("-fecha_adquisicion", "pk")
         )
-
-    # Aplicar filtros de búsqueda y estado desde query params
-    q = (request.GET.get("q") or "").strip()
-    f_estado = (request.GET.get("f_estado") or "").strip().lower()
-
-    if q:
-        bienes = bienes.filter(
-            Q(descripcion__icontains=q) |
-            Q(clave_unica__icontains=q) |
-            Q(servicios__icontains=q)
-        )
-
-    if f_estado:
-        if f_estado == "activo":
-            bienes = bienes.filter(Q(fecha_baja__isnull=True) | Q(fecha_baja=""))
-        elif f_estado == "baja":
-            bienes = bienes.filter(fecha_baja__isnull=False)
  
     try:
         per_page = int(request.GET.get("per_page") or 30)
