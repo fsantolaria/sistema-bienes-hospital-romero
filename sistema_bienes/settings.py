@@ -95,7 +95,7 @@ LOGIN_REDIRECT_URL = '/inicio/'
 LOGOUT_REDIRECT_URL = '/login/'   # ← sin punto al final
 
 # ==========================
-# REGIONAL
+# REGIONAL.
 # ==========================
 LANGUAGE_CODE = 'es-ar'
 TIME_ZONE = 'America/Argentina/Buenos_Aires'
