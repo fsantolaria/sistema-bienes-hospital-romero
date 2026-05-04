@@ -7,6 +7,9 @@
     <title>{% block title %}Sistema de Gestión de Bienes Patrimoniales{% endblock %}</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Encode+Sans:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
     <link rel="stylesheet" href="{% static 'libs/fontawesome/css/all.min.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -187,6 +190,20 @@
     })();
     </script>
     {% endif %}
+
+    <script>
+    // Limpiar selección masiva de bienes al salir de las listas
+    (function(){
+        // Si la URL actual no es la lista de bienes activos, limpiamos el localStorage de bajas
+        if (window.location.pathname !== '{% url "lista_bienes" %}') {
+            localStorage.removeItem('bienes_baja_seleccionados');
+        }
+        // Si la URL actual no es la lista de bienes dados de baja, limpiamos el localStorage de restaurar
+        if (window.location.pathname !== '{% url "lista_baja_bienes" %}') {
+            localStorage.removeItem('bienesARestablecer');
+        }
+    })();
+    </script>
 
     {% block extra_js %}{% endblock %}
 </body>

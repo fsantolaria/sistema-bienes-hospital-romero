@@ -40,9 +40,11 @@
         <i class="fas fa-sliders-h me-1"></i> Filtros
       </button>
       <a class="btn btn-outline-secondary" href="{% url 'lista_baja_bienes' %}">Limpiar</a>
-      <a class="btn btn-success" href="{% url 'bienes' %}">
-        <i class="fa-solid fa-plus me-1"></i> Cargar bien
-      </a>
+      {% if es_admin %}
+      <button class="btn btn-success d-none" type="button" id="btn-top-restaurar-multiple">
+        <i class="fas fa-undo me-1"></i> Restablecer bien (0)
+      </button>
+      {% endif %}
     </div>
 
     <div class="col-12 collapse mt-3" id="filtrosBox">
@@ -87,7 +89,14 @@
     </div>
   </form>
 
-  <!-- TABLA -->
+  <!-- Formulario para Restauración Masiva -->
+  {% if es_admin %}
+  <form id="form-restaurar-multiple" method="post" action="{% url 'restablecer_bienes_seleccionados' %}" class="d-none">
+    {% csrf_token %}
+    <select multiple name="bienes_seleccionados_restaurar" id="select-bienes-restaurar"></select>
+  </form>
+  {% endif %}
+
   <div class="table-responsive">
     <table class="table table-sm table-bordered align-middle">
       <thead class="table-light text-center">
@@ -106,6 +115,7 @@
           <th>Estado</th>
           <th>Servicios</th>
           <th>Observaciones</th>
+          <th>SIEM</th>
           <th>Descripción de Baja</th>
           <th>Precio</th>
           <th>Fecha de Alta</th>
@@ -173,6 +183,7 @@
           <td class="text-nowrap">{{ b.servicios|default:"—" }}</td>
 
           <td style="min-width:220px;">{{ b.observaciones|default:"—" }}</td>
+          <td class="text-nowrap">{% if b.siem %}{{ b.siem|date:"d/m/Y" }}{% else %}—{% endif %}</td>
           <td style="min-width:220px;">{{ b.descripcion_baja|default:"—" }}</td>
 
           <td class="text-end">
@@ -191,8 +202,9 @@
 
           <td class="text-center text-nowrap">
             <!-- Botones ahora abren modal de confirmación centralizado -->
-            <button type="button" class="btn btn-sm btn-success btn-open-confirm" title="Restablecer a ACTIVO"
+            <button type="button" class="btn btn-sm btn-success btn-open-confirm btn-toggle-restaurar" title="Restablecer a ACTIVO"
                     data-action="{% url 'restablecer_bien' b.pk %}"
+                    data-pk="{{ b.pk }}"
                     data-title="Restablecer bien"
                     data-message="¿Restablecer este bien a ACTIVO?">
               <i class="fas fa-undo"></i>
@@ -311,7 +323,7 @@
   <div id="confirmItemModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:2000; align-items:center; justify-content:center;">
     <div style="max-width:480px; width:94%;">
       <div style="background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 18px 50px rgba(0,0,0,0.35);">
-        <div style="background:#0087a3; color:#000; padding:14px 18px; font-size:18px; font-weight:600;"> <span id="confirmItemTitle">Confirmar</span></div>
+        <div style="background:#00aec3; color:#fff; padding:14px 18px; font-size:18px; font-weight:600;"> <span id="confirmItemTitle">Confirmar</span></div>
         <div style="padding:18px; color:#333; background:#fff;">
           <p id="confirmItemMessage" style="margin:0 0 12px;"></p>
         </div>
@@ -335,18 +347,85 @@
     const btnCancel = document.getElementById('confirmItemCancel');
     const submitBtn = document.getElementById('confirmItemSubmit');
 
-    document.body.addEventListener('click', function(e){
-      const btn = e.target.closest('.btn-open-confirm');
-      if (!btn) return;
-      const action = btn.getAttribute('data-action');
-      const title = btn.getAttribute('data-title') || 'Confirmar';
-      const message = btn.getAttribute('data-message') || '';
-      const danger = btn.getAttribute('data-danger');
-      if (!action) return;
+    const esAdmin = {% if es_admin %}true{% else %}false{% endif %};
+    const LS_KEY = 'bienesARestablecer';
+    let bienesParaRestaurar = new Map(JSON.parse(localStorage.getItem(LS_KEY)) || []);
+    const btnRestaurarMultiple = document.getElementById('btn-top-restaurar-multiple');
+    const selectBienesRestaurar = document.getElementById('select-bienes-restaurar');
+    const formRestaurarMultiple = document.getElementById('form-restaurar-multiple');
+
+    function saveRestaurarState() {
+      localStorage.setItem(LS_KEY, JSON.stringify(Array.from(bienesParaRestaurar.entries())));
+      updateRestaurarMultipleUI();
+    }
+
+    function updateRestaurarMultipleUI() {
+      if (!btnRestaurarMultiple) return;
+      const count = bienesParaRestaurar.size;
+      if (count > 0) {
+        btnRestaurarMultiple.classList.remove('d-none');
+        btnRestaurarMultiple.innerHTML = `<i class="fas fa-undo me-1"></i> Restablecer bien (${count})`;
+      } else {
+        btnRestaurarMultiple.classList.add('d-none');
+      }
+    }
+
+    // Renderizar selecciones al cargar la página
+    if (esAdmin) {
+      document.querySelectorAll('.btn-toggle-restaurar').forEach(btn => {
+        const pk = btn.getAttribute('data-pk');
+        if (bienesParaRestaurar.has(pk)) {
+          const tr = btn.closest('tr');
+          if (tr) {
+            tr.style.backgroundColor = '#e8f5e9'; // verde suave
+            tr.style.border = '2px solid #198754'; // verde borde
+          }
+        }
+      });
+      updateRestaurarMultipleUI();
+    }
+
+    function showRestaurarModal() {
+      titleEl.textContent = "Restablecer bien";
+      titleEl.parentElement.style.background = "#00aec3";
+      msgEl.textContent = "¿Quiere restablecer estos bienes?";
+      form.style.display = 'block';
+      form.setAttribute('action', '#');
+      form.onsubmit = function(e) {
+        e.preventDefault();
+        if (selectBienesRestaurar && formRestaurarMultiple) {
+          selectBienesRestaurar.innerHTML = '';
+          bienesParaRestaurar.forEach((_, pk_val) => {
+            selectBienesRestaurar.innerHTML += `<option value="${pk_val}" selected></option>`;
+          });
+          localStorage.removeItem(LS_KEY);
+          formRestaurarMultiple.submit();
+        }
+      };
+
+      btnCancel.textContent = "Cancelar";
+      btnCancel.style.background = "#6c757d";
+      btnCancel.style.borderColor = "#6c757d";
+
+      submitBtn.classList.remove('btn-delete');
+      submitBtn.style.background = '#28a745';
+      submitBtn.style.color = '#fff';
+
+      modal.style.display = 'flex';
+      submitBtn.focus();
+    }
+
+    function showNormalConfirm(action, title, message, danger) {
+      form.onsubmit = null; // Limpiar handler custom
 
       titleEl.textContent = title;
+      titleEl.parentElement.style.background = "#00aec3";
       msgEl.textContent = message;
+      form.style.display = 'block';
       form.setAttribute('action', action);
+      btnCancel.textContent = "Cancelar";
+      btnCancel.style.background = "#6c757d";
+      btnCancel.style.borderColor = "#6c757d";
       if (danger) {
         submitBtn.classList.remove('btn-delete');
         submitBtn.style.background = '#e74c3c';
@@ -355,15 +434,65 @@
         submitBtn.style.background = '#28a745';
         submitBtn.style.color = '#fff';
       }
-
       modal.style.display = 'flex';
       submitBtn.focus();
+    }
+
+    document.body.addEventListener('click', function(e){
+      const btn = e.target.closest('.btn-open-confirm');
+      if (!btn) return;
+      
+      const pk = btn.getAttribute('data-pk');
+      if (esAdmin && btn.classList.contains('btn-toggle-restaurar')) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const tr = btn.closest('tr');
+        
+        if (bienesParaRestaurar.has(pk)) {
+          // Deseleccionar
+          bienesParaRestaurar.delete(pk);
+          if (tr) {
+            tr.style.backgroundColor = '';
+            tr.style.border = '';
+          }
+        } else {
+          if (bienesParaRestaurar.size >= 20) {
+            showRestaurarModal();
+            return;
+          }
+          // Seleccionar
+          bienesParaRestaurar.set(pk, true);
+          if (tr) {
+            tr.style.backgroundColor = '#e8f5e9';
+            tr.style.border = '2px solid #198754';
+          }
+        }
+        saveRestaurarState();
+        return;
+      }
+
+      // Comportamiento original si no es toggle
+      const action = btn.getAttribute('data-action');
+      const title = btn.getAttribute('data-title') || 'Confirmar';
+      const message = btn.getAttribute('data-message') || '';
+      const danger = btn.getAttribute('data-danger');
+      if (!action) return;
+
+      showNormalConfirm(action, title, message, danger);
     });
 
     function closeModal(){ modal.style.display = 'none'; }
     btnCancel.addEventListener('click', closeModal);
     document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape' && modal.style.display === 'flex') closeModal(); });
     modal.addEventListener('click', function(ev){ if (ev.target === modal) closeModal(); });
+
+    // Abrir modal de restauracion multiple desde el boton superior
+    if (btnRestaurarMultiple && formRestaurarMultiple && selectBienesRestaurar) {
+      btnRestaurarMultiple.addEventListener('click', function() {
+        showRestaurarModal();
+      });
+    }
 
   });
 })();

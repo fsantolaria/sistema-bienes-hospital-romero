@@ -724,7 +724,7 @@ def reportes_pdf(request):
         elems.append(Spacer(1, 8))
  
         data = [[
-            P("ID", True), P("Clave", True), P("Descripción", True), P("Servicios", True),
+            P("ID", True), P("Descripción", True), P("Servicios", True),
             P("Estado", True), P("Alta", True), P("Baja", True), P("Valor", True),
         ]]
  
@@ -734,7 +734,6 @@ def reportes_pdf(request):
             baja = b.fecha_baja.strftime("%d/%m/%Y") if b.fecha_baja else "—"
             data.append([
                 P(b.pk or ""),
-                P(b.clave_unica or "—"),
                 P(b.descripcion or "—"),
                 P(b.servicios or "—"),
                 P(estado),
@@ -745,7 +744,7 @@ def reportes_pdf(request):
  
         page_w, _ = A4
         usable_w = page_w - (doc.leftMargin + doc.rightMargin)
-        base_col_cm = [1.2, 2.0, 9.0, 2.2, 2.0, 2.0, 2.0, 1.6]
+        base_col_cm = [1.2, 11.0, 2.2, 2.0, 2.0, 2.0, 1.6]
         base_col_pts = [w * cm for w in base_col_cm]
         scale = float(usable_w) / float(sum(base_col_pts))
         col_widths = [w * scale for w in base_col_pts]
@@ -1733,6 +1732,51 @@ def dar_baja_bien(request, pk):
     )
     messages.success(request, f"Bien '{bien.nombre}' dado de baja correctamente.")
     return redirect("lista_bienes")
+
+
+@login_required
+@require_POST
+@transaction.atomic
+def dar_baja_bienes_seleccionados(request):
+    perms = permisos_context(request.user)
+    if not perms["es_admin"]:
+        messages.error(request, "No tienes permisos para dar de baja bienes.")
+        return redirect("lista_bienes")
+
+    pks = request.POST.getlist("bienes_seleccionados_baja")
+    if not pks:
+        messages.warning(request, "No se seleccionó ningún bien para dar de baja.")
+        return redirect("lista_bienes")
+
+    bienes = BienPatrimonial.objects.filter(pk__in=pks)
+    count = bienes.count()
+    if count == 0:
+        messages.warning(request, "No se encontraron los bienes seleccionados.")
+        return redirect("lista_bienes")
+
+    nombres_bienes = []
+    
+    for bien in bienes:
+        pk = str(bien.pk)
+        fecha_str = request.POST.get(f"fecha_baja_{pk}")
+        fecha_baja = parse_date(fecha_str or "") or date.today()
+        expediente_baja = (request.POST.get(f"expediente_baja_{pk}") or "").strip()
+        descripcion_baja = (request.POST.get(f"descripcion_baja_{pk}") or "").strip()
+
+        bien.estado = "BAJA"
+        bien.fecha_baja = fecha_baja
+        bien.expediente_baja = expediente_baja
+        bien.descripcion_baja = descripcion_baja
+        bien.save(update_fields=["estado", "fecha_baja", "expediente_baja", "descripcion_baja"])
+        
+        nombre = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
+        nombres_bienes.append(nombre)
+
+    crear_notificacion_admins(
+        f"Se dieron de baja {count} bienes: {', '.join(nombres_bienes[:5])}{'...' if count > 5 else ''}."
+    )
+    messages.success(request, f"Se han dado de baja {count} bienes correctamente.")
+    return redirect("lista_bienes")
  
  
 @login_required
@@ -1768,6 +1812,55 @@ def restablecer_bien(request, pk):
         f"Se restableció el bien '{nombre_bien}' (Clave: {bien.clave_unica}) a ACTIVO."
     )
     messages.success(request, f"Bien '{bien.nombre}' restablecido a ACTIVO.")
+    return redirect("lista_bienes")
+ 
+ 
+@login_required
+@require_POST
+@transaction.atomic
+def restablecer_bienes_seleccionados(request):
+    perms = permisos_context(request.user)
+    if not perms["es_admin"]:
+        messages.error(request, "No tienes permisos para restablecer bienes.")
+        return redirect("lista_baja_bienes")
+
+    pks = request.POST.getlist("bienes_seleccionados_restaurar")
+    if not pks:
+        messages.warning(request, "No se seleccionó ningún bien.")
+        return redirect("lista_baja_bienes")
+
+    bienes = BienPatrimonial.objects.filter(pk__in=pks)
+    count = bienes.count()
+    if count == 0:
+        return redirect("lista_baja_bienes")
+
+    nombres = []
+    for bien in bienes:
+        bien.estado = "ACTIVO"
+        if hasattr(bien, "fecha_baja"):
+            bien.fecha_baja = None
+        if hasattr(bien, "expediente_baja"):
+            bien.expediente_baja = None
+        if hasattr(bien, "descripcion_baja"):
+            bien.descripcion_baja = ""
+            
+        nombres.append(getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre"))
+
+        update_fields = ["estado"]
+        if hasattr(bien, "fecha_baja"): update_fields.append("fecha_baja")
+        if hasattr(bien, "expediente_baja"): update_fields.append("expediente_baja")
+        if hasattr(bien, "descripcion_baja"): update_fields.append("descripcion_baja")
+
+        bien.save(update_fields=update_fields)
+
+    nombres_str = ", ".join(nombres[:5])
+    if count > 5:
+        nombres_str += f" y {count - 5} más"
+
+    crear_notificacion_admins(
+        f"Se restablecieron {count} bienes a ACTIVO: {nombres_str}."
+    )
+    messages.success(request, f"Se han restablecido {count} bienes correctamente.")
     return redirect("lista_bienes")
  
  

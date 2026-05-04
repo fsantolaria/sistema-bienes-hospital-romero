@@ -134,13 +134,13 @@ main.main-content > .messages-container {
 
 .input-recuperar:focus {
     outline: none;
-    border-color: #00a4c6;
+    border-color: #00aec3;
     box-shadow: 0 0 0 3px rgba(0, 164, 198, 0.15);
 }
 
 /* ===== BOTÓN ===== */
 .btn-send {
-    background-color: #00a4c6;
+    background-color: #00aec3;
     border: none;
     padding: 12px 30px;
     color: #fff;
@@ -158,7 +158,7 @@ main.main-content > .messages-container {
 .back-link {
     display: block;
     margin-top: 15px;
-    color: #00a4c6;
+    color: #00aec3;
     text-decoration: none;
 }
 

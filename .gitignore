@@ -77,10 +77,11 @@ migrate_utf8.log
 htmlcov/
 .coverage.*
 
-# Migrations (excluye archivos .py pero mantiene el __init__.py)
+# Migrations: ignorar archivos generados automáticamente, excepto el inicial
 */migrations/*.py
 !*/migrations/__init__.py
-!core/migrations/0003_archivocargamasiva.py
+!core/migrations/0001_initial.py
+!core/migrations/0002_add_missing_fields.py
 */migrations/*.pyc
 
 # Vercel
@@ -108,4 +109,3 @@ core/views_cleaned.py
 *.ods
 *.xlsm
 *.xlsb
-

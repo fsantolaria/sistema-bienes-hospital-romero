@@ -40,6 +40,42 @@ document.addEventListener('DOMContentLoaded', function() {
     const wrapperNotificaciones = document.getElementById('notificacionesBell') || document.querySelector('.notificaciones-wrapper');
     let badgeNotificaciones = null;
 
+    // Modal de confirmación para borrar notificaciones
+    const confirmNotifModalHtml = `
+    <div id="confirmNotifModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:9999; align-items:center; justify-content:center;">
+      <div style="max-width:480px; width:94%;">
+        <div style="background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 18px 50px rgba(0,0,0,0.35);">
+          <div style="background:#00aec3; color:#fff; padding:14px 18px; font-size:18px; font-weight:600;">
+            <span>Borrar notificaciones</span>
+          </div>
+          <div style="padding:18px; color:#333; background:#fff;">
+            <p style="margin:0 0 8px; font-size:16px;">¿Estás seguro de que quieres borrar todas las notificaciones?</p>
+            <small style="color:#6c757d; display:block;">Esta acción no se puede deshacer</small>
+          </div>
+          <div style="padding:12px 18px 18px; display:flex; gap:10px; justify-content:flex-end; background:#fff;">
+            <button type="button" id="confirmNotifCancel" style="background:#6c757d; color:#fff; border:1px solid #6c757d; padding:8px 14px; border-radius:6px; cursor:pointer;">Cancelar</button>
+            <button type="button" id="confirmNotifSubmit" style="background:#00b4d8; color:#fff; border:1px solid #00b4d8; padding:8px 14px; border-radius:6px; cursor:pointer; font-weight:bold;">Aceptar</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+    const modalWrapper = document.createElement('div');
+    modalWrapper.innerHTML = confirmNotifModalHtml;
+    document.body.appendChild(modalWrapper.firstElementChild);
+
+    const customConfirmModal = document.getElementById('confirmNotifModal');
+    const customConfirmCancel = document.getElementById('confirmNotifCancel');
+    const customConfirmSubmit = document.getElementById('confirmNotifSubmit');
+
+    customConfirmCancel.addEventListener('click', () => { customConfirmModal.style.display = 'none'; });
+    customConfirmModal.addEventListener('click', (ev) => { if(ev.target === customConfirmModal) customConfirmModal.style.display = 'none'; });
+
+    customConfirmSubmit.addEventListener('click', () => {
+        customConfirmModal.style.display = 'none';
+        ejecutarBorrarTodasNotificaciones();
+    });
+
     // Inicializar sistema de notificaciones
     function inicializarNotificaciones() {
         if (!wrapperNotificaciones) return;
@@ -339,9 +375,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function borrarTodasNotificaciones() {
-        if (!confirm('¿Estás seguro de que quieres borrar todas las notificaciones? Esta acción no se puede deshacer.')) {
-            return;
-        }
+        // Mostrar el modal personalizado en lugar de confirm()
+        customConfirmModal.style.display = 'flex';
+        customConfirmSubmit.focus();
+    }
+
+    function ejecutarBorrarTodasNotificaciones() {
         fetch('/notificaciones/borrar-todas/', {
             method: 'POST',
             headers: {

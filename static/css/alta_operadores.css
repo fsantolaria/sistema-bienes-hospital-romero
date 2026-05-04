@@ -5,8 +5,8 @@ body {
 }
 
 .alta-header {
-    background-color: #00a4c6;
-    border: 1px solid #00a4c6;
+    background-color: #00aec3;
+    border: 1px solid #00aec3;
     border-radius: 6px;
     max-width: 800px;
     margin: 20px auto;
@@ -17,7 +17,7 @@ body {
 .alta-header h2 {
     font-size: 24px;
     font-weight: bold;
-    color: #000;
+    color: #fff;
     margin: 0;
 }
 
@@ -74,9 +74,11 @@ body {
     0% {
         opacity: 1;
     }
+
     90% {
         opacity: 1;
     }
+
     100% {
         opacity: 0;
     }
@@ -84,7 +86,7 @@ body {
 
 .form-alta {
     background-color: #fff;
-    border: 2px solid #0097c2;
+    border: 2px solid var(--primary-turquesa);
     padding: 20px;
     border-radius: 12px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
@@ -106,8 +108,8 @@ body {
 }
 
 .section-title {
-    background-color: #00a4c6;
-    color: #000;
+    background-color: #00aec3;
+    color: #fff;
     font-weight: 600;
     font-size: 16px;
     padding: 8px 12px;
@@ -132,7 +134,7 @@ body {
     margin-right: 15px;
     font-size: 14px;
     font-weight: 600;
-    color: #000;
+    color: var(--secondary-gris);
     flex-shrink: 0;
 }
 
@@ -144,7 +146,7 @@ body {
     border: 1px solid #bbb;
     border-radius: 6px;
     font-size: 14px;
-    color: #000;
+    color: var(--secondary-gris);
     box-sizing: border-box;
     height: 44px;
     line-height: 1.2;
@@ -182,7 +184,7 @@ body {
     margin-right: 15px;
     font-size: 14px;
     font-weight: 600;
-    color: #000;
+    color: var(--secondary-gris);
 }
 
 .form-group-item input,
@@ -193,7 +195,7 @@ body {
     border: 1px solid #bbb;
     border-radius: 6px;
     font-size: 14px;
-    color: #000;
+    color: var(--secondary-gris);
     box-sizing: border-box;
     height: 44px;
     line-height: 1.2;
@@ -263,7 +265,7 @@ body {
 }
 
 .form-buttons .btn-success {
-    background-color: #28a745 !important;
+    background-color: var(--primary-turquesa) !important;
     color: #fff !important;
     border: 0;
 }

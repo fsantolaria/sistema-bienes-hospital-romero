@@ -45,6 +45,15 @@
 
     <!-- CONTROLES DERECHA -->
     <div class="col ms-auto d-flex align-items-end justify-content-end gap-2">
+      {% if es_admin %}
+      <button type="button" id="btn-abrir-baja-multiple"
+              class="btn btn-warning text-dark d-none"
+              data-bs-toggle="offcanvas"
+              data-bs-target="#offcanvasDarBaja" title="Dar de baja seleccionados">
+        <i class="fas fa-level-down-alt me-1"></i> Baja múltiple (0)
+      </button>
+      {% endif %}
+
       {% if not es_supervisor %}
       <button type="submit" id="btn-confirm-eliminar"
               form="form-eliminar-bienes"
@@ -125,6 +134,7 @@
             <th>Estado</th>
             <th>Servicios</th>
             <th>Observaciones</th>
+            <th>SIEM</th>
             <th>Precio</th>
             <th>Fecha Alta</th>
             {% if not es_supervisor %}
@@ -192,6 +202,9 @@
             </td>
             <td class="text-nowrap">{{ b.servicios|default:"—" }}</td>
             <td style="min-width:220px;">{{ b.observaciones|default:"—" }}</td>
+            <td class="text-nowrap">
+              {% if b.siem %}{{ b.siem|date:"d/m/Y" }}{% else %}—{% endif %}
+            </td>
             <td class="text-end">
               {% if b.valor_adquisicion %}
                 ${{ b.valor_adquisicion|floatformat:0|intcomma }}
@@ -213,13 +226,15 @@
                 <i class="fas fa-pen"></i>
               </a>
               <a href="#"
-                 class="btn btn-sm btn-danger ms-1 btn-dar-baja"
+                 class="btn btn-sm btn-danger ms-1 btn-dar-baja {% if es_admin %}btn-toggle-baja{% endif %}"
                  data-pk="{{ b.pk }}"
                  data-action="{% url 'dar_baja_bien' b.pk %}"
                  data-descripcion="{{ b.descripcion|escapejs }}"
+                 {% if not es_admin %}
                  data-bs-toggle="offcanvas"
                  data-bs-target="#offcanvasDarBaja"
-                 title="Dar de baja">
+                 {% endif %}
+                 title="{% if es_admin %}Seleccionar para dar de baja{% else %}Dar de baja{% endif %}">
                  <i class="fas fa-trash"></i>
               </a>
             </td>
@@ -314,21 +329,116 @@
   });
 
   // Preparar OFFCANVAS
+  const esAdmin = {% if es_admin %}true{% else %}false{% endif %};
+  const LS_KEY = 'bienes_baja_seleccionados';
+  
+  // Cargar de localStorage o crear mapa vacío
+  let bienesParaBaja = new Map(JSON.parse(localStorage.getItem(LS_KEY)) || []);
+  const btnBajaMultiple = document.getElementById('btn-abrir-baja-multiple');
+
+  // Modal de Alerta Límite
+  const alertModalHtml = `
+  <div id="alertLimitModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:2000; align-items:center; justify-content:center;">
+    <div style="max-width:480px; width:94%;">
+      <div style="background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 18px 50px rgba(0,0,0,0.35);">
+        <div style="background:#00aec3; color:#fff; padding:14px 18px; font-size:18px; font-weight:600;"> 
+          <i class="fas fa-exclamation-circle me-1"></i> Aviso
+        </div>
+        <div style="padding:18px; color:#333; background:#fff;">
+          <p style="margin:0 0 12px; font-size: 16px;">Límite de 20 bienes por operación alcanzado.</p>
+        </div>
+        <div style="padding:12px 18px 18px; display:flex; gap:10px; justify-content:flex-end; background:#fff;">
+          <button type="button" id="alertLimitBtn" style="background:#28a745; color:#fff; padding:8px 14px; border-radius:6px; border:1px solid transparent; box-sizing:border-box;">Entendido</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = alertModalHtml;
+  document.body.appendChild(wrapper.firstElementChild);
+
+  const alertModal = document.getElementById('alertLimitModal');
+  const alertBtn = document.getElementById('alertLimitBtn');
+  
+  function closeAlertModal() { alertModal.style.display = 'none'; }
+  alertBtn.addEventListener('click', closeAlertModal);
+  alertModal.addEventListener('click', function(ev) { if (ev.target === alertModal) closeAlertModal(); });
+
+  function saveBajaState() {
+    localStorage.setItem(LS_KEY, JSON.stringify(Array.from(bienesParaBaja.entries())));
+    updateBajaMultipleUI();
+  }
+
+  function updateBajaMultipleUI() {
+    if (!btnBajaMultiple) return;
+    const count = bienesParaBaja.size;
+    if (count > 0) {
+      btnBajaMultiple.classList.remove('d-none');
+      btnBajaMultiple.innerHTML = `<i class="fas fa-level-down-alt me-1"></i> Baja múltiple (${count})`;
+    } else {
+      btnBajaMultiple.classList.add('d-none');
+    }
+  }
+
+  // Al cargar la página, restaurar estilos visuales si ya están seleccionados
+  if (esAdmin) {
+    document.querySelectorAll('.btn-toggle-baja').forEach(btn => {
+      const pk = btn.getAttribute('data-pk');
+      if (bienesParaBaja.has(pk)) {
+        const tr = btn.closest('tr');
+        if (tr) {
+          tr.style.backgroundColor = '#fde8e8';
+          tr.style.border = '2px solid #dc3545';
+        }
+      }
+    });
+    updateBajaMultipleUI();
+  }
+
   document.addEventListener('click', function(e) {
     const btn = e.target.closest('.btn-dar-baja');
     if (!btn) return;
-    e.preventDefault();
 
+    if (esAdmin && btn.classList.contains('btn-toggle-baja')) {
+      e.preventDefault();
+      e.stopPropagation(); // Evitar que abra un modal si tiene data-bs-toggle
+
+      const pk = btn.getAttribute('data-pk');
+      const desc = btn.getAttribute('data-descripcion');
+      const tr = btn.closest('tr');
+
+      if (bienesParaBaja.has(pk)) {
+        // Deseleccionar
+        bienesParaBaja.delete(pk);
+        if (tr) {
+          tr.style.backgroundColor = '';
+          tr.style.border = '';
+        }
+      } else {
+        if (bienesParaBaja.size >= 20) {
+          alertModal.style.display = 'flex';
+          alertBtn.focus();
+          return;
+        }
+        // Seleccionar
+        bienesParaBaja.set(pk, desc);
+        if (tr) {
+          tr.style.backgroundColor = '#fde8e8'; // rojo suave
+          tr.style.border = '2px solid #dc3545'; // rojo borde
+        }
+      }
+      saveBajaState();
+      return;
+    }
+
+    // Comportamiento original para no admin (o un solo item)
+    e.preventDefault();
     const form = document.getElementById('form-dar-baja');
     if (form) form.action = btn.getAttribute('data-action') || '';
 
-    const info = document.getElementById('dar-baja-desc');
-    if (info) info.textContent = (btn.getAttribute('data-descripcion') || '');
-
-    const hoy = new Date().toISOString().slice(0,10);
-    const f = document.getElementById('fecha_baja');       if (f) f.value = hoy;
-    const exp = document.getElementById('expediente_baja'); if (exp) exp.value = '';
-    const d = document.getElementById('descripcion_baja');  if (d) d.value = '';
+    // Construir tabla para 1 solo item
+    buildBajaTable([[btn.getAttribute('data-pk'), btn.getAttribute('data-descripcion') || '']]);
 
     const offcanvasEl = document.getElementById('offcanvasDarBaja');
     if (offcanvasEl) {
@@ -336,6 +446,70 @@
       offcanvas.show();
     }
   });
+
+  function buildBajaTable(items) {
+    const container = document.getElementById('tabla-bienes-baja');
+    const select = document.getElementById('bienes_seleccionados_baja');
+    if (!container || !select) return;
+
+    const hoy = new Date().toISOString().slice(0,10);
+    
+    select.innerHTML = '';
+    let html = `
+      <table class="table table-sm table-striped table-hover align-middle mb-0" style="border-collapse: collapse;">
+        <thead>
+          <tr>
+            <th style="padding-left: 12px;">ID / Nombre</th>
+            <th style="width: 160px;">Fecha Baja <span class="text-danger">*</span></th>
+            <th>Expediente</th>
+            <th style="padding-right: 12px;">Motivo</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    items.forEach(([pk, desc]) => {
+      select.innerHTML += `<option value="${pk}" selected></option>`;
+      html += `
+        <tr>
+          <td style="padding-left: 12px;"><small><strong>#${pk}</strong><br>${desc}</small></td>
+          <td>
+            <div class="input-group input-group-sm input-group-baja">
+              <span class="input-group-text text-secondary"><i class="fas fa-calendar-alt"></i></span>
+              <input type="date" class="form-control custom-input-baja" name="fecha_baja_${pk}" value="${hoy}" required>
+            </div>
+          </td>
+          <td><input type="text" class="form-control form-control-sm custom-input-baja" name="expediente_baja_${pk}" placeholder="Ej: EX-2025..."></td>
+          <td style="padding-right: 12px;"><input type="text" class="form-control form-control-sm custom-input-baja" name="descripcion_baja_${pk}" placeholder="Motivo, destino..."></td>
+        </tr>
+      `;
+    });
+
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+  }
+
+  // Al abrir el offcanvas por "Baja múltiple", sincronizar el form
+  if (btnBajaMultiple) {
+    btnBajaMultiple.addEventListener('click', function(e) {
+      const form = document.getElementById('form-dar-baja');
+      // Enviamos a la nueva vista de bajas múltiples
+      if (form) form.action = "{% url 'dar_baja_bienes_seleccionados' %}";
+
+      buildBajaTable(Array.from(bienesParaBaja.entries()));
+    });
+  }
+
+  // Limpiar localStorage al enviar el formulario exitosamente
+  const formDarBaja = document.getElementById('form-dar-baja');
+  if (formDarBaja) {
+    formDarBaja.addEventListener('submit', function() {
+      // Si el formulario es válido y se va a enviar, limpiamos
+      if (formDarBaja.checkValidity()) {
+        localStorage.removeItem(LS_KEY);
+      }
+    });
+  }
 })();
 </script>
 

@@ -21,7 +21,7 @@
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  border: 2px solid #00a4c6;
+  border: 2px solid #00aec3;
   background-color: #eaeaea;
   margin-bottom: 10px;
 }
@@ -85,7 +85,7 @@
 
 /* Título de sección */
 .section-title {
-  background-color: #00a4c6;
+  background-color: #00aec3;
   color: #000;
   font-weight: 600;
   font-size: 16px;
@@ -132,7 +132,7 @@
 
 input:focus,
 select:focus {
-  border-color: #00a4c6;
+  border-color: #00aec3;
   outline: none;
 }
 
