@@ -1,195 +1,238 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 {% load static %}
-{% load humanize %}
 
-{% block title %}Editar Bien Patrimonial{% endblock %}
+{% block title %}Editar Bien Patrimonial — #{{ bien.clave_unica }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/formularios_bienes.css' %}">
+<link rel="stylesheet" href="{% static 'libs/fontawesome/css/all.min.css' %}">
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <h3 class="mb-0">Editar Bien Patrimonial #{{ bien.pk }}</h3>
-    <a href="{% url 'lista_bienes' %}" class="btn btn-outline-secondary">← Volver</a>
+<div class="container py-3">
+
+  <!-- FORMULARIO DE EDICIÓN -->
+  <div class="form-alta-bien" id="form-editar">
+    <div class="form-alta-bien-header">
+      <i class="fa-solid fa-pen-to-square me-2"></i> EDITAR BIEN PATRIMONIAL #{{ bien.clave_unica }}
+    </div>
+    <div class="card-body p-4">
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="row g-3">
+          
+          <!-- === SECCIÓN: DATOS DEL BIEN === -->
+          <div class="col-12">
+            <div class="form-section-title">Datos del bien</div>
+          </div>
+
+          <!-- Descripción (100%) -->
+          <div class="col-12">
+            <div class="form-group-item {% if form.descripcion.errors %}campo-error{% endif %}">
+              <label for="{{ form.descripcion.id_for_label }}">Descripción</label>
+              {{ form.descripcion }}
+              {% for e in form.descripcion.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+
+          <!-- Cantidad, Origen, Estado (33%) -->
+          <div class="col-md-4">
+            <div class="form-group-item {% if form.cantidad.errors %}campo-error{% endif %}">
+              <label for="{{ form.cantidad.id_for_label }}">Cantidad</label>
+              {{ form.cantidad }}
+              {% for e in form.cantidad.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group-item {% if form.origen.errors %}campo-error{% endif %}">
+              <label for="{{ form.origen.id_for_label }}">Origen</label>
+              {{ form.origen }}
+              {% for e in form.origen.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group-item {% if form.estado.errors %}campo-error{% endif %}">
+              <label for="{{ form.estado.id_for_label }}">Estado</label>
+              {{ form.estado }}
+              {% for e in form.estado.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+
+          <!-- Cuenta Código, Nomenclatura, Servicios (33%) -->
+          <div class="col-md-4">
+            <div class="form-group-item {% if form.cuenta_codigo.errors %}campo-error{% endif %}">
+              <label for="{{ form.cuenta_codigo.id_for_label }}">Cuenta Código</label>
+              {{ form.cuenta_codigo }}
+              {% for e in form.cuenta_codigo.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group-item {% if form.nomenclatura_bienes.errors %}campo-error{% endif %}">
+              <label for="{{ form.nomenclatura_bienes.id_for_label }}">Nomenclatura</label>
+              {{ form.nomenclatura_bienes }}
+              {% for e in form.nomenclatura_bienes.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group-item {% if form.servicios.errors %}campo-error{% endif %}">
+              <label for="{{ form.servicios.id_for_label }}">Servicios / Sector</label>
+              {{ form.servicios }}
+              {% for e in form.servicios.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+
+          <!-- N° de Serie, N° de ID (50%) -->
+          <div class="col-md-6">
+            <div class="form-group-item {% if form.numero_serie.errors %}campo-error{% endif %}">
+              <label for="{{ form.numero_serie.id_for_label }}">N° de Serie</label>
+              {{ form.numero_serie }}
+              {% for e in form.numero_serie.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group-item {% if form.numero_identificacion.errors %}campo-error{% endif %}">
+              <label for="{{ form.numero_identificacion.id_for_label }}">N° de ID</label>
+              {{ form.numero_identificacion }}
+              {% for e in form.numero_identificacion.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+
+          <!-- Precio, SIEM, Fecha de Alta (33%) -->
+          <div class="col-md-4" id="grupo-precio">
+            <div class="form-group-item {% if form.valor_adquisicion.errors %}campo-error{% endif %}">
+              <label for="{{ form.valor_adquisicion.id_for_label }}">Precio</label>
+              {{ form.valor_adquisicion }}
+              {% for e in form.valor_adquisicion.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group-item {% if form.siem.errors %}campo-error{% endif %}">
+              <label for="{{ form.siem.id_for_label }}">SIEM</label>
+              {{ form.siem }}
+              {% for e in form.siem.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group-item {% if form.fecha_adquisicion.errors %}campo-error{% endif %}">
+              <label for="{{ form.fecha_adquisicion.id_for_label }}">Fecha de Alta</label>
+              {{ form.fecha_adquisicion }}
+              {% for e in form.fecha_adquisicion.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+
+          <!-- Fecha de Baja (oculta) (33%) -->
+          <div class="col-md-4 {% if bien.estado != 'BAJA' %}d-none{% endif %}" id="grupo-fecha-baja">
+            <div class="form-group-item {% if form.fecha_baja.errors %}campo-error{% endif %}">
+              <label for="{{ form.fecha_baja.id_for_label }}">Fecha de Baja</label>
+              {{ form.fecha_baja }}
+              {% for e in form.fecha_baja.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+
+          <!-- Observaciones (100%) -->
+          <div class="col-12">
+            <div class="form-group-item {% if form.observaciones.errors %}campo-error{% endif %}">
+              <label for="{{ form.observaciones.id_for_label }}">Observaciones</label>
+              {{ form.observaciones }}
+              {% for e in form.observaciones.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+
+          <!-- === SECCIÓN: DATOS DE EXPEDIENTE === -->
+          <div class="col-12 mt-3">
+            <div class="form-section-title">Datos de expediente</div>
+          </div>
+          
+          <div class="col-md-6">
+            <div class="form-group-item {% if form.numero_expediente.errors %}campo-error{% endif %}">
+              <label for="{{ form.numero_expediente.id_for_label }}">N° de Expediente</label>
+              {{ form.numero_expediente }}
+              {% for e in form.numero_expediente.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group-item {% if form.numero_compra.errors %}campo-error{% endif %}">
+              <label for="{{ form.numero_compra.id_for_label }}">N° de Compra</label>
+              {{ form.numero_compra }}
+              {% for e in form.numero_compra.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+
+        </div>
+
+        <div class="form-buttons position-relative d-flex justify-content-center flex-wrap align-items-center">
+          
+          <a href="{% if es_admin %}{% url 'lista_bienes' %}{% else %}{% url 'lista_bienes_operador' %}{% endif %}" class="btn btn-ver-lista">
+            <i class="fa-solid fa-list me-1"></i> Ver lista
+          </a>
+
+          <a href="{% if es_admin %}{% url 'lista_bienes' %}{% else %}{% url 'lista_bienes_operador' %}{% endif %}" class="btn btn-cancelar">
+            <i class="fa-solid fa-times me-1"></i> Cancelar
+          </a>
+
+          <button type="submit" class="btn btn-guardar">
+            <i class="fas fa-save me-1"></i> Guardar cambios
+          </button>
+          
+          <div id="inline-message" style="display: none; position: absolute; left: calc(100% + 6px); top: 50%; transform: translateY(-50%); z-index: 10; white-space: nowrap;" class="py-1 px-3 mb-0 shadow-sm"></div>
+        </div>
+      </form>
+    </div>
   </div>
 
-  <form method="post" novalidate>
-    {% csrf_token %}
-
-    {% if form.non_field_errors %}
-      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-    {% endif %}
-
-    <div class="row g-3">
-      <!-- Descripción -->
-      <div class="col-12">
-        <label class="form-label" for="{{ form.descripcion.id_for_label }}">Descripción</label>
-        {{ form.descripcion }}
-        {% for e in form.descripcion.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
-      </div>
-
-      <!-- Cantidad -->
-      <div class="col-md-2">
-        <label class="form-label" for="{{ form.cantidad.id_for_label }}">Cantidad</label>
-        {{ form.cantidad }}
-        {% for e in form.cantidad.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
-      </div>
-
-      <!-- Datos de Expediente y Compra -->
-      <div class="col-md-3">
-        <label class="form-label" for="{{ form.numero_expediente.id_for_label }}">N° de Expediente</label>
-        {{ form.numero_expediente }}
-        {% for e in form.numero_expediente.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
-      </div>
-      <div class="col-md-3">
-        <label class="form-label" for="{{ form.numero_compra.id_for_label }}">N° de Compra</label>
-        {{ form.numero_compra }}
-        {% for e in form.numero_compra.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
-      </div>
-
-      <!-- Cuenta código / Nomenclatura -->
-      <div class="col-md-3">
-        <label class="form-label" for="{{ form.cuenta_codigo.id_for_label }}">Cuenta Código</label>
-        {{ form.cuenta_codigo }}
-        {% for e in form.cuenta_codigo.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
-      </div>
-      <div class="col-md-3">
-        <label class="form-label" for="{{ form.nomenclatura_bienes.id_for_label }}">Nomenclatura de Bienes</label>
-        {{ form.nomenclatura_bienes }}
-        {% for e in form.nomenclatura_bienes.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
-      </div>
-
-      <!-- Identificación -->
-      <div class="col-md-6">
-        <label class="form-label" for="{{ form.numero_serie.id_for_label }}">N° de Serie</label>
-        {{ form.numero_serie }}
-        {% for e in form.numero_serie.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
-      </div>
-      <div class="col-md-6">
-        <label class="form-label" for="{{ form.numero_identificacion.id_for_label }}">N° de ID</label>
-        {{ form.numero_identificacion }}
-        {% for e in form.numero_identificacion.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
-      </div>
-
-      <!-- Origen / Estado / Servicios -->
-      <div class="col-md-4">
-        <label class="form-label" for="{{ form.origen.id_for_label }}">Origen</label>
-        {{ form.origen }}
-        {% for e in form.origen.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
-      </div>
-      <div class="col-md-4">
-        <label class="form-label" for="{{ form.estado.id_for_label }}">Estado</label>
-        {{ form.estado }}
-        {% for e in form.estado.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
-      </div>
-      <div class="col-md-4">
-        <label class="form-label" for="{{ form.servicios.id_for_label }}">Servicios / Sector</label>
-        {{ form.servicios }}
-        {% for e in form.servicios.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
-      </div>
-
-      <!-- Observaciones -->
-      <div class="col-12">
-        <label class="form-label" for="{{ form.observaciones.id_for_label }}">Observaciones</label>
-        {{ form.observaciones }}
-        {% for e in form.observaciones.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
-      </div>
-
-      <!-- Precio (solo si Origen = COMPRA) -->
-      <div class="col-md-4 {% if bien.origen != 'COMPRA' %}d-none{% endif %}" id="grupo-precio">
-        <label class="form-label" for="{{ form.valor_adquisicion.id_for_label }}">Precio</label>
-        {{ form.valor_adquisicion }}
-        {% for e in form.valor_adquisicion.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
-      </div>
-
-      <!-- Fechas -->
-      <div class="col-md-4">
-        <label class="form-label" for="{{ form.fecha_adquisicion.id_for_label }}">Fecha de Alta</label>
-        {{ form.fecha_adquisicion }}
-        {% for e in form.fecha_adquisicion.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
-      </div>
-
-      <!-- Fecha de Baja (solo visible si estado = BAJA) -->
-      <div class="col-md-4 {% if bien.estado != 'BAJA' %}d-none{% endif %}" id="grupo-baja">
-        <label class="form-label" for="{{ form.fecha_baja.id_for_label }}">Fecha de Baja</label>
-        {{ form.fecha_baja }}
-        {% for e in form.fecha_baja.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
-      </div>
-    </div>
-
-    <div class="d-flex gap-2 mt-4">
-      <button type="submit" class="btn btn-success">
-        <i class="fas fa-save me-1"></i> Guardar
-      </button>
-      <a href="{% url 'lista_bienes' %}" class="btn btn-secondary">Cancelar</a>
-    </div>
-  </form>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-(function () {
-  // --- Mostrar/ocultar Precio según Origen ---
-  const origen = document.getElementById('id_origen');
-  const grupoPrecio = document.getElementById('grupo-precio');
-  const inputPrecio = document.getElementById('id_valor_adquisicion');
+  // Ocultar "Precio" si Origen ≠ COMPRA y mostrar "Fecha de Baja" si Estado = BAJA
+  (function () {
+    const origen = document.getElementById('id_origen');
+    const grupoPrecio = document.getElementById('grupo-precio');
+    const inputPrecio = document.getElementById('id_valor_adquisicion');
 
-  function togglePrecio() {
-    const v = (origen?.value || '').toUpperCase();
-    if (v === 'COMPRA') {
-      grupoPrecio?.classList.remove('d-none');
-    } else {
-      grupoPrecio?.classList.add('d-none');
-      // Opcional: limpiar valor cuando no es COMPRA
-      // if (inputPrecio) inputPrecio.value = '';
-    }
-  }
-
-  // --- Mostrar/ocultar Fecha de Baja según Estado ---
-  const estado = document.getElementById('id_estado');
-  const grupoBaja = document.getElementById('grupo-baja');
-  const inputFechaBaja = document.getElementById('id_fecha_baja');
-
-  function toggleBaja() {
-    const v = (estado?.value || '').toUpperCase();
-    if (v === 'BAJA') {
-      grupoBaja?.classList.remove('d-none');
-      if (inputFechaBaja && !inputFechaBaja.value) {
-        inputFechaBaja.value = new Date().toISOString().slice(0,10);
+    function togglePrecio() {
+      const v = (origen?.value || '').toUpperCase();
+      if (v === 'COMPRA') {
+        grupoPrecio?.classList.remove('d-none');
+        if (inputPrecio) inputPrecio.disabled = false;
+      } else {
+        grupoPrecio?.classList.add('d-none');
+        if (inputPrecio) { inputPrecio.disabled = true; }
       }
-    } else {
-      grupoBaja?.classList.add('d-none');
-      // Si querés limpiar cuando no es BAJA:
-      // if (inputFechaBaja) inputFechaBaja.value = '';
     }
-  }
+    togglePrecio();
+    origen?.addEventListener('change', togglePrecio);
 
-  // === Mantener la fecha de ALTA si el usuario la deja vacía al guardar ===
-  const form = document.querySelector('form[method="post"]');
-  const inputFechaAlta = document.getElementById('id_fecha_adquisicion');
-  // Guardamos el valor inicial renderizado por Django (la fecha previa del bien)
-  const fechaAltaInicial = inputFechaAlta ? (inputFechaAlta.value || '') : '';
+    // === Mostrar Fecha de Baja si Estado = BAJA ===
+    const estado = document.getElementById('id_estado');
+    const grupoFechaBaja = document.getElementById('grupo-fecha-baja');
+    const inputFechaBaja = document.getElementById('id_fecha_baja');
 
-  // Si el usuario borra y deja vacío, restauramos al salir del campo
-  inputFechaAlta?.addEventListener('blur', function () {
-    if (!this.value && fechaAltaInicial) {
-      this.value = fechaAltaInicial;
+    function hoyISO() {
+      const d = new Date();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${d.getFullYear()}-${m}-${day}`;
     }
-  });
 
-  // Y, por seguridad, antes del submit también restauramos si está vacío
-  form?.addEventListener('submit', function () {
-    if (inputFechaAlta && !inputFechaAlta.value && fechaAltaInicial) {
-      inputFechaAlta.value = fechaAltaInicial;
+    function toggleFechaBaja() {
+      const v = (estado?.value || '').toUpperCase();
+      if (v === 'BAJA') {
+        grupoFechaBaja?.classList.remove('d-none');
+        if (inputFechaBaja && !inputFechaBaja.value) inputFechaBaja.value = hoyISO();
+      } else {
+        grupoFechaBaja?.classList.add('d-none');
+      }
     }
-  });
 
-  // Estado inicial de UI
-  togglePrecio();
-  toggleBaja();
-
-  // Listeners
-  origen?.addEventListener('change', togglePrecio);
-  estado?.addEventListener('change', toggleBaja);
-})();
+    toggleFechaBaja();
+    estado?.addEventListener('change', toggleFechaBaja);
+  })();
 </script>
 {% endblock %}

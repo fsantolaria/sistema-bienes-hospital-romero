@@ -1,45 +1,284 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Carga Masiva{% endblock %}
+{% block title %}Carga Masiva - Sistema de Patrimonio{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'libs/fontawesome/css/all.min.css' %}">
+<style>
+  /* GBA Identity - Carga Masiva */
+  .carga-masiva-card {
+    background-color: #fff;
+    border: 2px solid #00aec3;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+    font-family: 'Roboto', sans-serif;
+  }
+  .carga-masiva-header {
+    background-color: #00aec3;
+    color: #fff;
+    font-family: 'Encode Sans', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    padding: 14px 20px;
+  }
+  .dropzone-container {
+    border: 2px dashed #838383;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    transition: background-color 0.2s, border-color 0.2s;
+  }
+  .dropzone-container:hover {
+    background-color: #f0f8f9;
+    border-color: #00aec3;
+  }
+  .dropzone-icon {
+    font-size: 40px;
+    color: #00aec3;
+    margin-bottom: 15px;
+  }
+  .dropzone-text {
+    font-size: 16px;
+    color: #555;
+    margin: 0;
+  }
+  .dropzone-container input[type="file"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .file-name-display {
+    margin-top: 10px;
+    font-weight: bold;
+    color: #00aec3;
+  }
+  .instrucciones-section {
+    background-color: #f8f8f8;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 15px;
+    margin-top: 20px;
+  }
+  .instrucciones-section h5 {
+    font-family: 'Encode Sans', sans-serif;
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 10px;
+  }
+  .instrucciones-section ul {
+    margin-bottom: 0;
+    padding-left: 20px;
+    font-size: 14px;
+    color: #555;
+  }
+  .link-plantilla {
+    display: inline-flex;
+    align-items: center;
+    color: #00aec3;
+    font-weight: bold;
+    text-decoration: none;
+    margin-top: 15px;
+  }
+  .link-plantilla:hover {
+    color: #008f9f;
+    text-decoration: underline;
+  }
+  .form-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+  }
+  .form-buttons .btn {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 6px;
+    color: #fff;
+  }
+  .btn-subir {
+    background-color: #00aec3 !important;
+    border: 1px solid #00aec3 !important;
+  }
+  .btn-subir:hover {
+    background-color: #008f9f !important;
+  }
+  .btn-cancelar {
+    background-color: #ee5544 !important;
+    border: 1px solid #ee5544 !important;
+  }
+  .btn-cancelar:hover {
+    background-color: #d44938 !important;
+  }
+  .progress-container {
+    display: none;
+    margin-top: 20px;
+  }
+  .progress-bar-custom {
+    height: 8px;
+    background-color: #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background-color: #00aec3;
+    transition: width 0.3s ease;
+  }
+  .progress-text {
+    font-size: 13px;
+    color: #555;
+    margin-top: 5px;
+    text-align: right;
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4" style="max-width: 720px;">
-    <h2 class="mb-3">Carga Masiva de Bienes Patrimoniales</h2>
-
-    <div class="card">
-        <div class="card-body">
-            <form method="post" enctype="multipart/form-data">
+<div class="container mt-4 mb-5" style="max-width: 800px;">
+    
+    <div class="carga-masiva-card">
+        <div class="carga-masiva-header">
+            <i class="fa-solid fa-file-excel me-2"></i> CARGA MASIVA DE BIENES
+        </div>
+        
+        <div class="card-body p-4">
+            <form id="formCargaMasiva" method="post" enctype="multipart/form-data">
                 {% csrf_token %}
+                
+                {% if messages %}
+                  {% for message in messages %}
+                    <div class="alert {% if 'error' in message.tags %}alert-danger{% else %}alert-info{% endif %} mb-3">
+                        {{ message }}
+                    </div>
+                  {% endfor %}
+                {% endif %}
+                
+                {% if form.non_field_errors %}
+                  <div class="alert alert-danger mb-3">{{ form.non_field_errors }}</div>
+                {% endif %}
 
-                <div class="mb-3">
-                    <label class="form-label">Archivo Excel</label>
-                    {{ form.archivo_excel }}
-                    <div class="form-text">{{ form.archivo_excel.help_text }}</div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Servicio</label>
+                <!-- Selector de Servicio -->
+                <div class="mb-4">
+                    <label class="form-label" style="font-weight:600; color:#838383;">Servicio (opcional)</label>
                     {{ form.servicio }}
                     <div class="form-text">{{ form.servicio.help_text }}</div>
                 </div>
 
-                <button type="submit" class="btn btn-success">
-                    <i class="fas fa-upload"></i> Procesar Archivo(s)
-                </button>
-                <a href="{% url 'lista_bienes' %}" class="btn btn-secondary">Cancelar</a>
+                <!-- Dropzone -->
+                <label style="font-weight:600; color:#838383; margin-bottom:8px; display:block;">Archivo de datos</label>
+                <div class="dropzone-container" id="dropzoneBox">
+                    <i class="fa-solid fa-cloud-arrow-up dropzone-icon"></i>
+                    <p class="dropzone-text">Arrastre su archivo Excel/CSV aquí o haga clic para seleccionar</p>
+                    <div id="fileNameDisplay" class="file-name-display"></div>
+                    <!-- Input nativo oculto pero cubriendo la zona -->
+                    {{ form.archivo_excel }}
+                </div>
+                {% if form.archivo_excel.errors %}
+                  <div class="text-danger small mt-1">{{ form.archivo_excel.errors }}</div>
+                {% endif %}
+
+                <!-- Instrucciones -->
+                <div class="instrucciones-section">
+                    <h5>Instrucciones de Carga</h5>
+                    <ul>
+                        <li>Puede seleccionar múltiples archivos Excel a la vez.</li>
+                        <li>Columnas recomendadas: <code>n° id</code>, <code>descripcion</code>, <code>cantidad</code>, <code>n° expediente</code>, <code>n° compra</code>, <code>n° serie</code>, <code>origen</code>, <code>estado</code>, <code>servicios</code>.</li>
+                        <li>Si el archivo Excel contiene guiones "-", se conservarán tal cual en la base de datos.</li>
+                    </ul>
+                    
+                    <a href="#" class="link-plantilla" onclick="alert('La descarga de plantilla está en desarrollo.'); return false;">
+                        <i class="fa-solid fa-download me-1"></i> Descargar Plantilla de Ejemplo
+                    </a>
+                </div>
+
+                <!-- Barra de progreso visual -->
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-bar-custom">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">Procesando archivo...</div>
+                </div>
+
+                <!-- Botonera Inferior -->
+                <div class="form-buttons">
+                    <a href="{% url 'lista_bienes' %}" class="btn btn-cancelar">
+                        <i class="fa-solid fa-times me-1"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-subir" id="btnSubir">
+                        <i class="fas fa-upload me-1"></i> Subir Archivo
+                    </button>
+                </div>
             </form>
         </div>
     </div>
-
-    <div class="mt-4">
-        <h5>Instrucciones</h5>
-        <ul>
-            <li>Puede seleccionar múltiples archivos Excel a la vez manteniendo presionada la tecla Ctrl.</li>
-            <li>Columnas recomendadas: <code>n° id</code>, <code>descripcion</code>, <code>cantidad</code>, <code>n° expediente</code>, <code>n° compra</code>, <code>n° serie</code>, <code>origen</code>, <code>estado</code>, <code>servicios</code>.</li>
-            <li>Si el archivo Excel contiene guiones "-", se guardarán como tal y no se vaciarán.</li>
-            <li>Si falta <code>n° id</code>, se intenta evitar duplicados cruzando <code>n° serie</code> con <code>descripcion</code>.</li>
-        </ul>
-    </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const fileInput = document.querySelector('.dropzone-container input[type="file"]');
+    const fileNameDisplay = document.getElementById('fileNameDisplay');
+    const dropzoneBox = document.getElementById('dropzoneBox');
+    const form = document.getElementById('formCargaMasiva');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressFill = document.getElementById('progressFill');
+    const btnSubir = document.getElementById('btnSubir');
+
+    if (fileInput) {
+        // Estilizar input por defecto de Django si tiene clases que rompen el tamaño
+        fileInput.className = ""; 
+        fileInput.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;";
+
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                let names = [];
+                for(let i=0; i<this.files.length; i++){
+                    names.push(this.files[i].name);
+                }
+                fileNameDisplay.textContent = "Seleccionado: " + names.join(', ');
+                dropzoneBox.style.borderColor = "#00aec3";
+                dropzoneBox.style.backgroundColor = "#e0f7fa";
+            } else {
+                fileNameDisplay.textContent = "";
+                dropzoneBox.style.borderColor = "#838383";
+                dropzoneBox.style.backgroundColor = "#f9f9f9";
+            }
+        });
+    }
+
+    form.addEventListener('submit', function(e) {
+        if (fileInput && fileInput.files.length > 0) {
+            // Retrasar la deshabilitación del botón para no bloquear el submit nativo
+            setTimeout(() => {
+                btnSubir.disabled = true;
+                btnSubir.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Procesando...';
+            }, 10);
+            
+            progressContainer.style.display = 'block';
+            
+            // Simular avance de barra mientras el backend procesa
+            let p = 0;
+            const interval = setInterval(() => {
+                p += 2;
+                if (p > 95) clearInterval(interval);
+                progressFill.style.width = p + '%';
+            }, 100);
+        }
+    });
+});
+</script>
 {% endblock %}

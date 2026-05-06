@@ -22,6 +22,11 @@ class Usuario(AbstractUser):
         verbose_name='Número de Documento'
     )
 
+    tema_oscuro = models.BooleanField(
+        default=False,
+        verbose_name='Preferencia Modo Oscuro'
+    )
+
     groups = models.ManyToManyField(
         'auth.Group',
         verbose_name='grupos',

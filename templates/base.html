@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="{% if tema_oscuro %}dark{% else %}light{% endif %}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="{% static 'libs/fontawesome/css/all.min.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{% static 'libs/bootstrap/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     <link rel="stylesheet" href="{% static 'css/notificaciones.css' %}">
 
@@ -26,6 +27,7 @@
 
     {% block extra_css %}{% endblock %}
 </head>
+
 <body>
     {% block header %}
         {% include 'includes/header.html' %}
@@ -105,8 +107,38 @@
     </div>
     {% endif %}
     <script src="{% static 'libs/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
     <script src="{% static 'js/base.js' %}"></script>
     <script src="{% static 'js/notificaciones.js' %}"></script>
+
+    <script>
+    // Global Flatpickr initialization
+    document.addEventListener('DOMContentLoaded', function() {
+        const initFlatpickr = () => {
+            flatpickr('input[type="date"]', {
+                locale: 'es',
+                dateFormat: 'Y-m-d',
+                altInput: true,
+                altFormat: 'd/m/Y',
+                allowInput: true,
+                disableMobile: true // Use flatpickr even on mobile for consistent UI
+            });
+        };
+        initFlatpickr();
+
+        // Re-init when dynamic content is added (MutationObserver)
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.addedNodes.length) {
+                    initFlatpickr();
+                }
+            });
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+    });
+    </script>
+
 
     <script>
     (function() {
@@ -194,15 +226,21 @@
     <script>
     // Limpiar selección masiva de bienes al salir de las listas
     (function(){
-        // Si la URL actual no es la lista de bienes activos, limpiamos el localStorage de bajas
-        if (window.location.pathname !== '{% url "lista_bienes" %}') {
+        const path = window.location.pathname;
+        const urlListaBienes = '{% url "lista_bienes" %}';
+        const urlListaBienesOp = '{% url "lista_bienes_operador" %}';
+        const urlListaBajas = '{% url "lista_baja_bienes" %}';
+
+        // Si la URL actual no es ninguna de las listas de bienes activos, limpiamos el localStorage de bajas
+        if (path !== urlListaBienes && path !== urlListaBienesOp) {
             localStorage.removeItem('bienes_baja_seleccionados');
         }
         // Si la URL actual no es la lista de bienes dados de baja, limpiamos el localStorage de restaurar
-        if (window.location.pathname !== '{% url "lista_baja_bienes" %}') {
+        if (path !== urlListaBajas) {
             localStorage.removeItem('bienesARestablecer');
         }
     })();
+
     </script>
 
     {% block extra_js %}{% endblock %}

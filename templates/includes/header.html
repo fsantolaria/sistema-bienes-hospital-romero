@@ -6,17 +6,24 @@
         <div class="logo-section">
             <a href="{% url 'inicio' %}" class="logo-link">
                 <img src="{% static 'img/logo.png' %}" alt="Logo Hospital" class="logo-img">
-                <span class="system-title">Sistema de Gestión de Bienes Patrimoniales</span>
+                <span class="system-title d-none d-sm-inline">Sistema de Gestión de Bienes Patrimoniales</span>
+                <span class="system-title d-inline d-sm-none">SGBP</span>
             </a>
         </div>
 
         <!-- Íconos de acciones -->
         <div class="icon-section">
+            {% if request.resolver_match.url_name == 'home_admin' or request.resolver_match.url_name == 'home_operador' or request.resolver_match.url_name == 'home_supervisor' or request.resolver_match.url_name == 'inicio' %}
+            <button id="theme-toggle" class="header-icon" title="Cambiar modo claro/oscuro" style="background: none; border: none; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                <span class="material-symbols-outlined" id="theme-icon">dark_mode</span>
+            </button>
+            {% endif %}
+
             <a href="{% url 'inicio' %}" class="header-icon" title="Volver al inicio">
                 <span class="material-symbols-outlined">home</span>
             </a>
 
-            {% if es_admin %}
+            {% if es_admin and request.resolver_match.url_name == 'home_admin' %}
             <span class="notificaciones-wrapper" title="Notificaciones" id="notificacionesBell">
                 <span class="material-symbols-outlined header-icon" aria-hidden="true">notifications</span>
 

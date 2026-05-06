@@ -9,8 +9,8 @@
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="m-0">Bienes — Dados de Baja</h3>
     <div class="d-flex gap-2">
-      <a class="btn btn-outline-secondary" href="{% url 'lista_bienes' %}">
-        <i class="fas fa-arrow-left me-1"></i> Volver a lista de bienes
+      <a class="btn-inst-nav" href="{% url 'lista_bienes' %}">
+        <i class="fas fa-arrow-left"></i> Volver a lista de bienes
       </a>
     </div>
   </div>
@@ -34,12 +34,14 @@
     </div>
 
     <div class="col-auto d-flex align-items-end gap-2">
-      <button class="btn btn-outline-primary" type="button"
+      <button class="btn-inst-filter" type="button"
               data-bs-toggle="collapse" data-bs-target="#filtrosBox"
               aria-expanded="false" aria-controls="filtrosBox" id="btn-filtros">
-        <i class="fas fa-sliders-h me-1"></i> Filtros
+        <i class="fas fa-sliders-h"></i> Filtros
       </button>
-      <a class="btn btn-outline-secondary" href="{% url 'lista_baja_bienes' %}">Limpiar</a>
+      <a class="btn-inst-clear" href="{% url 'lista_baja_bienes' %}">
+        <i class="fas fa-times"></i> Limpiar
+      </a>
       {% if es_admin %}
       <button class="btn btn-success d-none" type="button" id="btn-top-restaurar-multiple">
         <i class="fas fa-undo me-1"></i> Restablecer bien (0)
@@ -83,9 +85,9 @@
       </div>
     </div>
 
-    <div class="col-12 mt-2 text-muted">
+    <div class="col-12 mt-2" style="font-family: var(--font-roboto); color: var(--secondary-gris); font-size: 14px;">
       {% if request.GET.q %}Mostrando resultados para: <strong>{{ request.GET.q }}</strong> · {% endif %}
-      Total {{ paginator.count }}{% if is_paginated %} — página {{ page_obj.number }} de {{ paginator.num_pages }}{% endif %}
+      Mostrando {{ page_obj.paginator.count }} bienes en total
     </div>
   </form>
 
@@ -223,52 +225,39 @@
 
   <!-- PAGINACIÓN -->
   {% if is_paginated %}
-  <nav aria-label="Paginación de bienes dados de baja" class="mt-3">
-    <ul class="pagination pagination-sm justify-content-center">
-      {% with qs_pref=querystring|default_if_none:""|add:"&" %}
+  <div class="pagination-container">
+    <nav aria-label="Paginación de bienes dados de baja">
+      <ul class="pagination pagination-sm">
+        {% with qs_pref=querystring|default_if_none:""|add:"&" %}
+        <li class="page-item {% if not prev_page %}disabled{% endif %}">
+          <a class="page-link" href="?{{ qs_pref }}page=1">Primera</a>
+        </li>
+        <li class="page-item {% if not prev_page %}disabled{% endif %}">
+          <a class="page-link" href="{% if prev_page %}?{{ qs_pref }}page={{ prev_page }}{% else %}#{% endif %}">Anterior</a>
+        </li>
 
-      <!-- Primero -->
-      <li class="page-item {% if not prev_page %}disabled{% endif %}">
-        <a class="page-link" href="?{{ qs_pref }}page=1">Primera</a>
-      </li>
+        {% for num in page_range %}
+          {% if num == '…' %}
+            <li class="page-item disabled"><span class="page-link">…</span></li>
+          {% elif num == page_obj.number %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% else %}
+            <li class="page-item"><a class="page-link" href="?{{ qs_pref }}page={{ num }}">{{ num }}</a></li>
+          {% endif %}
+        {% endfor %}
 
-      <!-- Anterior -->
-      <li class="page-item {% if not prev_page %}disabled{% endif %}">
-        {% if prev_page %}
-          <a class="page-link" href="?{{ qs_pref }}page={{ prev_page }}">«</a>
-        {% else %}
-          <span class="page-link">«</span>
-        {% endif %}
-      </li>
-
-      <!-- Números -->
-      {% for num in page_range %}
-        {% if num == '…' %}
-          <li class="page-item disabled"><span class="page-link">…</span></li>
-        {% elif num == page_obj.number %}
-          <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-        {% else %}
-          <li class="page-item"><a class="page-link" href="?{{ qs_pref }}page={{ num }}">{{ num }}</a></li>
-        {% endif %}
-      {% endfor %}
-
-      <!-- Siguiente -->
-      <li class="page-item {% if not next_page %}disabled{% endif %}">
-        {% if next_page %}
-          <a class="page-link" href="?{{ qs_pref }}page={{ next_page }}">»</a>
-        {% else %}
-          <span class="page-link">»</span>
-        {% endif %}
-      </li>
-
-      <!-- Última -->
-      <li class="page-item {% if not next_page %}disabled{% endif %}">
-        <a class="page-link" href="?{{ qs_pref }}page={{ paginator.num_pages }}">Última</a>
-      </li>
-      {% endwith %}
-    </ul>
-  </nav>
+        <li class="page-item {% if not next_page %}disabled{% endif %}">
+          <a class="page-link" href="{% if next_page %}?{{ qs_pref }}page={{ next_page }}{% else %}#{% endif %}">Siguiente</a>
+        </li>
+        <li class="page-item {% if not next_page %}disabled{% endif %}">
+          <a class="page-link" href="?{{ qs_pref }}page={{ paginator.num_pages }}">Última</a>
+        </li>
+        {% endwith %}
+      </ul>
+    </nav>
+  </div>
   {% endif %}
+
 
 </div>
 {% endblock %}

@@ -39,35 +39,29 @@
             <input type="hidden" name="tipo_usuario" value="{{ tipo_value|default:tipo_default|default:'' }}"/>
 
             <div class="input-group">
-                <label for="usuario">Usuario</label>
-                <div class="input-field" id="usernameField">
-                    <i class="fas fa-user"></i>
-                    <input
-                        type="text"
-                        id="usuario"
-                        name="usuario"
-                        autocomplete="username"
-                        placeholder="Ingrese su usuario"
-                        value="{{ usuario_value|default:'' }}"
-                        required
-                    >
-                </div>
+                <input
+                    type="text"
+                    id="usuario"
+                    name="usuario"
+                    class="input-field-new"
+                    autocomplete="username"
+                    placeholder="Usuario"
+                    value="{{ usuario_value|default:'' }}"
+                    required
+                >
                 <div class="error-message" id="usernameError"></div>
             </div>
 
             <div class="input-group">
-                <label for="contrasena">Contraseña</label>
-                <div class="input-field" id="passwordField">
-                    <i class="fas fa-lock"></i>
-                    <input
-                        type="password"
-                        id="contrasena"
-                        name="contrasena"
-                        autocomplete="current-password"
-                        placeholder="Ingrese su contraseña"
-                        required
-                    >
-                </div>
+                <input
+                    type="password"
+                    id="contrasena"
+                    name="contrasena"
+                    class="input-field-new"
+                    autocomplete="current-password"
+                    placeholder="Contraseña"
+                    required
+                >
                 <div class="error-message" id="passwordError"></div>
             </div>
 
@@ -77,12 +71,12 @@
             <div class="error-message" id="loginError">El Usuario y/o Contraseña es incorrecto</div>
             {% endif %}
 
-            <a href="{% url 'recuperar_password' %}" class="forgot-password">Olvidé mi Contraseña</a>
-
             <button type="submit" class="login-button" id="loginButton">
                 <span class="spinner"></span>
                 <span class="button-text">Iniciar Sesión</span>
             </button>
+
+            <a href="{% url 'recuperar_password' %}" class="forgot-password">Olvidé mi Contraseña</a>
         </form>
     </div>
 </div>

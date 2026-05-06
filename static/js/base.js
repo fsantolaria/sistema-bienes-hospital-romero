@@ -52,4 +52,71 @@ document.addEventListener('DOMContentLoaded', function() {
     // NO REMOVER MENSAJES AUTOMÁTICAMENTE
     // ---------------------------
     // Los mensajes de éxito se muestran de forma estática y no se eliminan ni animan.
+    
+    // ---------------------------
+    // MODO OSCURO (DARK MODE)
+    // ---------------------------
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeIcon = document.getElementById('theme-icon');
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    if (themeToggle) {
+        const updateIcon = (theme) => {
+            if (!themeIcon) return;
+            if (theme === 'dark') {
+                themeIcon.textContent = 'light_mode';
+            } else {
+                themeIcon.textContent = 'dark_mode';
+            }
+        };
+
+        // El tema inicial ya lo pone Django en el <html> via data-theme
+        // Solo actualizamos el icono
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+        updateIcon(currentTheme);
+
+        themeToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            const isDark = newTheme === 'dark';
+
+            // Cambio visual inmediato
+            document.documentElement.setAttribute('data-theme', newTheme);
+            updateIcon(newTheme);
+            
+            // Sincronización con el servidor (si está autenticado)
+            fetch('/actualizar-tema/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify({ tema_oscuro: isDark })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status !== 'ok') {
+                    console.error('Error al guardar preferencia de tema:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error en la petición de tema:', error);
+            });
+        });
+    }
 });

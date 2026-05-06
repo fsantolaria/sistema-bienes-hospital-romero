@@ -94,32 +94,59 @@ body {
 .input-group { margin-bottom: 20px; text-align: left; }
 .input-group label { display: block; margin-bottom: 5px; color: #555; font-weight: 500; }
 
-.input-field {
-    display: flex;
-    align-items: center;
-    border: 1.5px solid #000;
-    border-radius: 20px;
-    padding: 10px 15px;
+.input-field-new {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid #b8dce3;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 400;
+    font-family: inherit;
     background-color: #fff;
-    transition: border-color 0.3s ease;
+    transition: all 0.3s ease;
 }
-.input-field.error { border-color: #e74c3c; }
-.input-field i { color: #333; margin-right: 10px; width: 16px; }
-.input-field input {
-    border: none; outline: none; width: 100%;
-    font-size: 1em; background: transparent; padding: 0;
+
+.input-field-new:focus {
+    outline: none;
+    border-color: #00aec3;
+    box-shadow: 0 0 0 3px rgba(0, 164, 198, 0.15);
+}
+
+.input-field-new.error {
+    border-color: #e74c3c;
+}
+
+/* Limpiar absolutamente el rectángulo de autofill del navegador */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px white inset !important;
+    -webkit-text-fill-color: #000 !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Ocultar iconos nativos del navegador que pueden parecer rectángulos */
+input::-ms-reveal,
+input::-ms-clear,
+input::-webkit-contacts-auto-fill-button,
+input::-webkit-credentials-auto-fill-button {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    position: absolute !important;
+    right: 0 !important;
 }
 
 /* ======== LINK DE OLVIDÉ CONTRASEÑA ======== */
 .forgot-password {
     display: block;
-    text-align: center; /* centrar debajo del campo contraseña */
-    font-size: 0.95em;
-    color: #007c91;
+    text-align: center;
+    font-size: 0.9em;
+    color: #00aec3;
     text-decoration: none;
-    margin: 8px auto 18px; /* un poco más abajo y centrado */
-    font-weight: 600;
-    width: 100%;
+    margin-top: 15px;
+    font-weight: 500;
 }
 .forgot-password:hover { text-decoration: underline; }
 

@@ -3,8 +3,8 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# ⚠️ Cambiá esto por una clave segura en producción
-SECRET_KEY = 'poné-tu-secret-key-aca'
+
+SECRET_KEY = 
 DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
@@ -22,7 +22,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     # Tu app principal
-    'core',  # Asegurate que exista core/apps.py y esté en INSTALLED_APPS
+    'core',  
 ]
 
 # ==========================

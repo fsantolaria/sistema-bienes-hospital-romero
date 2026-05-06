@@ -64,4 +64,5 @@ urlpatterns = [
     path('notificaciones/borrar-todas/', borrar_todas_notificaciones, name='borrar_todas_notificaciones'),
     path('notificaciones/<int:pk>/eliminar/', views.eliminar_notificacion, name='eliminar_notificacion'),
     path('notificaciones/<int:pk>/marcar-leida/', views.marcar_notificacion_leida, name='marcar_notificacion_leida'),
+    path('actualizar-tema/', views.actualizar_tema, name='actualizar_tema'),
 ]

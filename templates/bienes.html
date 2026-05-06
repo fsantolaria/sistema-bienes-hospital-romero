@@ -11,36 +11,15 @@
 {% block content %}
 <div class="container py-3">
 
-  <!-- Título + accesos -->
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <h2 class="mb-0">Alta de Bien Patrimonial</h2>
-    <div class="d-flex gap-2">
-      <a class="btn btn-outline-primary" href="{% if es_admin %}{% url 'lista_bienes' %}{% else %}{% url 'lista_bienes_operador' %}{% endif %}">
-        <i class="fa-solid fa-list me-1"></i> Ver lista de bienes
-      </a>
-      {% if es_admin %}
-      <a class="btn btn-dark" href="{% url 'lista_baja_bienes' %}">
-        <i class="fa-solid fa-trash-can me-1"></i> Ver bienes de baja
-      </a>
-      {% endif %}
-    </div>
-  </div>
 
-  <!-- Barra de acciones -->
-  {% if es_admin %}
-  <div class="d-flex align-items-center gap-2 mb-3">
-    <a class="btn btn-success" href="{% url 'carga_masiva' %}">
-      <i class="fa-solid fa-file-import me-1"></i> Carga masiva
-    </a>
-  </div>
-  {% endif %}
+<link rel="stylesheet" href="{% static 'css/formularios_bienes.css' %}">
 
   <!-- FORMULARIO DE ALTA -->
-  <div class="card shadow-sm" id="form-alta">
-    <div class="card-header bg-primary text-white">
-      <i class="fa-solid fa-plus me-2"></i> Nuevo bien
+  <div class="form-alta-bien" id="form-alta">
+    <div class="form-alta-bien-header">
+      <i class="fa-solid fa-plus me-2"></i> ALTA DE BIEN PATRIMONIAL
     </div>
-    <div class="card-body">
+    <div class="card-body p-4">
       <form method="post" novalidate>
         {% csrf_token %}
 
@@ -49,140 +28,171 @@
         {% endif %}
 
         <div class="row g-3">
-          <!-- Descripción -->
+          
+          <!-- === SECCIÓN: DATOS DEL BIEN === -->
           <div class="col-12">
-            <label class="form-label" for="{{ form.descripcion.id_for_label }}">Descripción</label>
-            {{ form.descripcion }}
-            {% for e in form.descripcion.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+            <div class="form-section-title">Datos del bien</div>
           </div>
 
-          <!-- Cantidad -->
-          <div class="col-md-2">
-            <label class="form-label" for="{{ form.cantidad.id_for_label }}">Cantidad</label>
-            {{ form.cantidad }}
-            {% for e in form.cantidad.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
-          </div>
-
-          <!-- BLOQUE AMPLIABLE: DATOS DE EXPEDIENTE -->
+          <!-- Descripción (100%) -->
           <div class="col-12">
-            <button class="btn btn-outline-info mb-2" type="button"
-                    data-bs-toggle="collapse" data-bs-target="#expedienteCollapse"
-                    aria-expanded="false" aria-controls="expedienteCollapse">
-              <i class="fa-solid fa-folder-open me-1"></i> Agregar datos de expediente
-            </button>
-
-            <div class="collapse {% if form.numero_expediente.errors or form.numero_compra.errors %}show{% endif %}"
-                 id="expedienteCollapse">
-              <div class="card card-body border border-primary bg-light">
-                <div class="row g-3">
-                  <div class="col-md-6">
-                    <label class="form-label" for="{{ form.numero_expediente.id_for_label }}">N° de Expediente </label>
-                    {{ form.numero_expediente }}
-                    {% for e in form.numero_expediente.errors %}
-                      <div class="invalid-feedback d-block">{{ e }}</div>
-                    {% endfor %}
-                  </div>
-
-                  <div class="col-md-6">
-                    <label class="form-label" for="{{ form.numero_compra.id_for_label }}">N° de Compra    </label>
-                    {{ form.numero_compra }}
-                    {% for e in form.numero_compra.errors %}
-                      <div class="invalid-feedback d-block">{{ e }}</div>
-                    {% endfor %}
-                  </div>
-                </div>
-              </div>
+            <div class="form-group-item {% if form.descripcion.errors %}campo-error{% endif %}">
+              <label for="{{ form.descripcion.id_for_label }}">Descripción</label>
+              {{ form.descripcion }}
+              {% for e in form.descripcion.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
             </div>
           </div>
-          <!-- FIN BLOQUE EXPEDIENTE -->
 
-          <!-- Cuenta código / Nomenclatura -->
-          <div class="col-md-3">
-            <label class="form-label" for="{{ form.cuenta_codigo.id_for_label }}">Cuenta Código</label>
-            {{ form.cuenta_codigo }}
-            {% for e in form.cuenta_codigo.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+          <!-- Cantidad, Origen, Estado (33%) -->
+          <div class="col-md-4">
+            <div class="form-group-item {% if form.cantidad.errors %}campo-error{% endif %}">
+              <label for="{{ form.cantidad.id_for_label }}">Cantidad</label>
+              {{ form.cantidad }}
+              {% for e in form.cantidad.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
           </div>
-          <div class="col-md-3">
-            <label class="form-label" for="{{ form.nomenclatura_bienes.id_for_label }}">Nomenclatura de Bienes</label>
-            {{ form.nomenclatura_bienes }}
-            {% for e in form.nomenclatura_bienes.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+          <div class="col-md-4">
+            <div class="form-group-item {% if form.origen.errors %}campo-error{% endif %}">
+              <label for="{{ form.origen.id_for_label }}">Origen</label>
+              {{ form.origen }}
+              {% for e in form.origen.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group-item {% if form.estado.errors %}campo-error{% endif %}">
+              <label for="{{ form.estado.id_for_label }}">Estado</label>
+              {{ form.estado }}
+              {% for e in form.estado.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
           </div>
 
-          <!-- Identificación -->
+          <!-- Cuenta Código, Nomenclatura, Servicios (33%) -->
+          <div class="col-md-4">
+            <div class="form-group-item {% if form.cuenta_codigo.errors %}campo-error{% endif %}">
+              <label for="{{ form.cuenta_codigo.id_for_label }}">Cuenta Código</label>
+              {{ form.cuenta_codigo }}
+              {% for e in form.cuenta_codigo.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group-item {% if form.nomenclatura_bienes.errors %}campo-error{% endif %}">
+              <label for="{{ form.nomenclatura_bienes.id_for_label }}">Nomenclatura</label>
+              {{ form.nomenclatura_bienes }}
+              {% for e in form.nomenclatura_bienes.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group-item {% if form.servicios.errors %}campo-error{% endif %}">
+              <label for="{{ form.servicios.id_for_label }}">Servicios / Sector</label>
+              {{ form.servicios }}
+              {% for e in form.servicios.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+
+          <!-- N° de Serie, N° de ID (50%) -->
           <div class="col-md-6">
-            <label class="form-label" for="{{ form.numero_serie.id_for_label }}">N° de Serie</label>
-            {{ form.numero_serie }}
-            {% for e in form.numero_serie.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+            <div class="form-group-item {% if form.numero_serie.errors %}campo-error{% endif %}">
+              <label for="{{ form.numero_serie.id_for_label }}">N° de Serie</label>
+              {{ form.numero_serie }}
+              {% for e in form.numero_serie.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
           </div>
           <div class="col-md-6">
-            <label class="form-label" for="{{ form.numero_identificacion.id_for_label }}">N° de ID</label>
-            {{ form.numero_identificacion }}
-            {% for e in form.numero_identificacion.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+            <div class="form-group-item {% if form.numero_identificacion.errors %}campo-error{% endif %}">
+              <label for="{{ form.numero_identificacion.id_for_label }}">N° de ID</label>
+              {{ form.numero_identificacion }}
+              {% for e in form.numero_identificacion.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
           </div>
 
-          <!-- Origen / Estado / Servicios -->
-          <div class="col-md-4">
-            <label class="form-label" for="{{ form.origen.id_for_label }}">Origen</label>
-            {{ form.origen }}
-            {% for e in form.origen.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label" for="{{ form.estado.id_for_label }}">Estado</label>
-            {{ form.estado }}
-            {% for e in form.estado.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label" for="{{ form.servicios.id_for_label }}">Servicios / Sector</label>
-            {{ form.servicios }}
-            {% for e in form.servicios.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
-          </div>
-
-          <!-- Observaciones -->
-          <div class="col-12">
-            <label class="form-label" for="{{ form.observaciones.id_for_label }}">Observaciones</label>
-            {{ form.observaciones }}
-            {% for e in form.observaciones.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
-          </div>
-
-          <!-- SIEM (fecha) -->
-          <div class="col-md-4">
-            <label class="form-label" for="{{ form.siem.id_for_label }}">SIEM</label>
-            {{ form.siem }}
-            {% for e in form.siem.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
-          </div>
-
-          <!-- Precio (solo COMPRA) -->
+          <!-- Precio, SIEM, Fecha de Alta (33%) -->
           <div class="col-md-4" id="grupo-precio">
-            <label class="form-label" for="{{ form.valor_adquisicion.id_for_label }}">Precio</label>
-            {{ form.valor_adquisicion }}
-            {% for e in form.valor_adquisicion.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+            <div class="form-group-item {% if form.valor_adquisicion.errors %}campo-error{% endif %}">
+              <label for="{{ form.valor_adquisicion.id_for_label }}">Precio</label>
+              {{ form.valor_adquisicion }}
+              {% for e in form.valor_adquisicion.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
           </div>
-
-          <!-- Fecha de Alta -->
           <div class="col-md-4">
-            <label class="form-label" for="{{ form.fecha_adquisicion.id_for_label }}">Fecha de Alta</label>
-            {{ form.fecha_adquisicion }}
-            {% for e in form.fecha_adquisicion.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+            <div class="form-group-item {% if form.siem.errors %}campo-error{% endif %}">
+              <label for="{{ form.siem.id_for_label }}">SIEM</label>
+              {{ form.siem }}
+              {% for e in form.siem.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group-item {% if form.fecha_adquisicion.errors %}campo-error{% endif %}">
+              <label for="{{ form.fecha_adquisicion.id_for_label }}">Fecha de Alta</label>
+              {{ form.fecha_adquisicion }}
+              {% for e in form.fecha_adquisicion.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
           </div>
 
-          <!-- NUEVO: Fecha de Baja (oculta hasta que el estado sea BAJA) -->
+          <!-- Fecha de Baja (oculta) (33%) -->
           <div class="col-md-4 d-none" id="grupo-fecha-baja">
-            <label class="form-label" for="{{ form.fecha_baja.id_for_label }}">Fecha de Baja</label>
-            {{ form.fecha_baja }}
-            {% for e in form.fecha_baja.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+            <div class="form-group-item {% if form.fecha_baja.errors %}campo-error{% endif %}">
+              <label for="{{ form.fecha_baja.id_for_label }}">Fecha de Baja</label>
+              {{ form.fecha_baja }}
+              {% for e in form.fecha_baja.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
           </div>
+
+          <!-- Observaciones (100%) -->
+          <div class="col-12">
+            <div class="form-group-item {% if form.observaciones.errors %}campo-error{% endif %}">
+              <label for="{{ form.observaciones.id_for_label }}">Observaciones</label>
+              {{ form.observaciones }}
+              {% for e in form.observaciones.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+
+          <!-- === SECCIÓN: DATOS DE EXPEDIENTE === -->
+          <div class="col-12 mt-3">
+            <div class="form-section-title">Datos de expediente</div>
+          </div>
+          
+          <div class="col-md-6">
+            <div class="form-group-item {% if form.numero_expediente.errors %}campo-error{% endif %}">
+              <label for="{{ form.numero_expediente.id_for_label }}">N° de Expediente</label>
+              {{ form.numero_expediente }}
+              {% for e in form.numero_expediente.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group-item {% if form.numero_compra.errors %}campo-error{% endif %}">
+              <label for="{{ form.numero_compra.id_for_label }}">N° de Compra</label>
+              {{ form.numero_compra }}
+              {% for e in form.numero_compra.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+
         </div>
 
-        <div class="d-flex gap-2 mt-4 align-items-center">
-          <div class="position-relative">
-            <button type="submit" class="btn btn-success">
-              <i class="fas fa-save me-1"></i> Guardar bien
-            </button>
-            <div id="inline-message" style="display: none; position: absolute; left: calc(100% + 6px); top: 50%; transform: translateY(-50%); z-index: 10; white-space: nowrap;" class="py-1 px-3 mb-0 shadow-sm"></div>
-          </div>
-          <a href="{% if es_admin %}{% url 'lista_bienes' %}{% else %}{% url 'lista_bienes_operador' %}{% endif %}" class="btn btn-secondary">
-            Ir a lista
+        <div class="form-buttons position-relative d-flex justify-content-center flex-wrap align-items-center">
+          
+          {% if es_admin %}
+          <a href="{% url 'carga_masiva' %}" class="btn btn-gris">
+            <i class="fa-solid fa-upload me-1"></i> Carga masiva
           </a>
+          
+          <a href="{% url 'lista_baja_bienes' %}" class="btn btn-gris">
+            <i class="fa-solid fa-trash-can me-1"></i> Ver bienes de baja
+          </a>
+          {% endif %}
+          
+          <a href="{% if es_admin %}{% url 'lista_bienes' %}{% else %}{% url 'lista_bienes_operador' %}{% endif %}" class="btn btn-ver-lista">
+            <i class="fa-solid fa-list me-1"></i> Ver lista
+          </a>
+
+          <a href="{% if es_admin %}{% url 'home_admin' %}{% else %}{% url 'home_operador' %}{% endif %}" class="btn btn-cancelar">
+            <i class="fa-solid fa-times me-1"></i> Cancelar
+          </a>
+
+          <button type="submit" class="btn btn-guardar">
+            <i class="fas fa-save me-1"></i> Guardar bien
+          </button>
+          
+          <div id="inline-message" style="display: none; position: absolute; left: calc(100% + 6px); top: 50%; transform: translateY(-50%); z-index: 10; white-space: nowrap;" class="py-1 px-3 mb-0 shadow-sm"></div>
         </div>
       </form>
     </div>

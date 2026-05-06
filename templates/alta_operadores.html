@@ -23,43 +23,42 @@
     <div class="form-section">
       <h3 class="section-title">Datos del usuario</h3>
 
-      <div class="form-group-item">
+      <div class="form-group-item {% if form.nombre.errors %}campo-error{% endif %}">
         <label for="nombre">Nombre:</label>
         <input type="text" id="nombre" name="nombre" required
                value="{{ form.nombre.value|default:'' }}">
+        <small class="text-error" id="error-nombre">{% if form.nombre.errors %}{{ form.nombre.errors.0 }}{% endif %}</small>
       </div>
 
-      <div class="form-group-item">
+      <div class="form-group-item {% if form.apellido.errors %}campo-error{% endif %}">
         <label for="apellido">Apellido:</label>
         <input type="text" id="apellido" name="apellido" required
                value="{{ form.apellido.value|default:'' }}">
+        <small class="text-error" id="error-apellido">{% if form.apellido.errors %}{{ form.apellido.errors.0 }}{% endif %}</small>
       </div>
 
-      <div class="form-group-item">
+      <div class="form-group-item {% if form.pais.errors %}campo-error{% endif %}">
         <label for="pais">Nacionalidad:</label>
         <input type="text" id="pais" name="pais" required
                value="{{ form.pais.value|default:'Argentina' }}">
+        <small class="text-error" id="error-pais">{% if form.pais.errors %}{{ form.pais.errors.0 }}{% endif %}</small>
       </div>
 
       <div class="form-group-item {% if form.errors.dni %}campo-error{% endif %}">
         <label for="dni">Número de Documento:</label>
-        <input type="text" id="dni" name="dni" required maxlength="8" pattern="\d{1,8}"
-               inputmode="numeric" title="Hasta 8 números" value="{{ form.dni.value|default:'' }}">
-        {% if form.dni.errors %}
-          <small class="text-error">{{ form.dni.errors.0 }}</small>
-        {% endif %}
+        <input type="text" id="dni" name="dni" required maxlength="8"
+               inputmode="numeric" title="hasta 8 números" value="{{ form.dni.value|default:'' }}">
+        <small class="text-error" id="error-dni">{% if form.dni.errors %}{{ form.dni.errors.0 }}{% endif %}</small>
       </div>
 
       <div class="form-group-item {% if form.errors.email %}campo-error{% endif %}">
         <label for="email">Email:</label>
         <input type="email" id="email" name="email" required
                value="{{ form.email.value|default:'' }}">
-        {% if form.email.errors %}
-          <small class="text-error">{{ form.email.errors.0 }}</small>
-        {% endif %}
+        <small class="text-error" id="error-email">{% if form.email.errors %}{{ form.email.errors.0 }}{% endif %}</small>
       </div>
 
-      <div class="form-group-item">
+      <div class="form-group-item {% if form.tipo_usuario.errors %}campo-error{% endif %}">
         <label for="tipo_usuario">Tipo de Usuario:</label>
         <div class="input-container">
           <select id="tipo_usuario" name="tipo_usuario" required>
@@ -67,14 +66,18 @@
             <option value="supervisor" {% if form.tipo_usuario.value == 'supervisor' %}selected{% endif %}>Supervisor</option>
           </select>
         </div>
+        {% if form.tipo_usuario.errors %}
+          <small class="text-error">{{ form.tipo_usuario.errors.0 }}</small>
+        {% endif %}
       </div>
 
       <!-- Campo 'estado' removido según solicitud -->
 
-      <div class="form-group-item">
+      <div class="form-group-item {% if form.password.errors %}campo-error{% endif %}">
         <label for="password">Contraseña:</label>
         <input type="password" id="password" name="password" placeholder="....." required
                value="{{ form.password.value|default:'' }}">
+        <small class="text-error" id="error-password">{% if form.password.errors %}{{ form.password.errors.0 }}{% endif %}</small>
       </div>
     </div>
 
@@ -91,4 +94,79 @@
     </div>
   </form>
 </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('form-alta-operador');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const dniInput = document.getElementById('dni');
+    
+    // Validaciones en tiempo real
+    const inputs = form.querySelectorAll('input[required], select[required]');
+    
+    const validateField = (input) => {
+        const groupItem = input.closest('.form-group-item');
+        const errorMsg = document.getElementById(`error-${input.id}`);
+        let isValid = true;
+        let message = '';
+
+        if (input.required && !input.value.trim()) {
+            isValid = false;
+            message = 'Este campo es obligatorio.';
+        } else if (input.id === 'dni') {
+            if (!/^\d+$/.test(input.value)) {
+                isValid = false;
+                message = 'El DNI debe contener solo números.';
+            } else if (input.value.length < 1 || input.value.length > 8) {
+                isValid = false;
+                message = 'El DNI debe tener hasta 8 números.';
+            }
+        } else if (input.type === 'email' && input.value.trim()) {
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value)) {
+                isValid = false;
+                message = 'Ingrese un email válido.';
+            }
+        }
+
+        if (!isValid) {
+            groupItem.classList.add('campo-error');
+            if (errorMsg) errorMsg.textContent = message;
+        } else {
+            groupItem.classList.remove('campo-error');
+            if (errorMsg) errorMsg.textContent = '';
+        }
+        
+        checkFormValidity();
+    };
+
+    const checkFormValidity = () => {
+        let isFormValid = true;
+        inputs.forEach(input => {
+            if (input.required && !input.value.trim()) isFormValid = false;
+            if (input.id === 'dni' && (!/^\d{1,8}$/.test(input.value))) isFormValid = false;
+            if (input.closest('.form-group-item').classList.contains('campo-error')) isFormValid = false;
+        });
+        
+        submitBtn.disabled = !isFormValid;
+        submitBtn.style.opacity = isFormValid ? '1' : '0.6';
+        submitBtn.style.cursor = isFormValid ? 'pointer' : 'not-allowed';
+    };
+
+    // Bloquear entrada no numérica en DNI
+    dniInput.addEventListener('keypress', function(e) {
+        if (!/\d/.test(e.key)) {
+            e.preventDefault();
+        }
+    });
+
+    inputs.forEach(input => {
+        input.addEventListener('input', () => validateField(input));
+        input.addEventListener('blur', () => validateField(input));
+    });
+
+    // Validación inicial
+    checkFormValidity();
+});
+</script>
 {% endblock %}

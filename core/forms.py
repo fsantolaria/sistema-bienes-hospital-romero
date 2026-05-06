@@ -150,7 +150,7 @@ class OperadorForm(forms.Form):
         required=True,
         label='DNI',
         validators=[
-            RegexValidator(r'^\d{1,8}$', 'El DNI debe tener sólo números y hasta 8 dígitos.')
+            RegexValidator(r'^\d{1,8}$', 'El DNI debe tener hasta 8 números.')
         ]
     )
     email = forms.EmailField(required=False, label='Email')
@@ -172,8 +172,8 @@ class OperadorForm(forms.Form):
         if not dni:
             return dni
 
-        if not dni.isdigit() or len(dni) > 8:
-            raise ValidationError('El DNI debe tener sólo números y hasta 8 dígitos.')
+        if not dni.isdigit() or not (1 <= len(dni) <= 8):
+            raise ValidationError('El DNI debe tener hasta 8 números.')
 
         Operador = get_user_model()
         operadores = Operador.objects.filter(numero_doc__iexact=dni)
