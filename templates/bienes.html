@@ -198,12 +198,34 @@
     </div>
   </div>
 
+  {% if es_admin %}
+  <!-- Modal agregar servicio -->
+  <div class="modal fade" id="modalAgregarServicio" tabindex="-1" aria-labelledby="modalAgregarServicioLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalAgregarServicioLabel">Agregar nuevo servicio</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="modal-mensaje" class="mb-2" style="display:none;"></div>
+          <label class="form-label">Nombre del servicio</label>
+          <input type="text" id="input-nuevo-servicio" class="form-control" placeholder="Ej: Cardiologia Pediatrica">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-success" id="btn-guardar-servicio">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-  // Ocultar "Precio" si Origen ≠ COMPRA y mostrar "Fecha de Baja" si Estado = BAJA
   (function () {
     const origen = document.getElementById('id_origen');
     const grupoPrecio = document.getElementById('grupo-precio');
@@ -222,7 +244,6 @@
     togglePrecio();
     origen?.addEventListener('change', togglePrecio);
 
-    // === Mostrar Fecha de Baja si Estado = BAJA ===
     const estado = document.getElementById('id_estado');
     const grupoFechaBaja = document.getElementById('grupo-fecha-baja');
     const inputFechaBaja = document.getElementById('id_fecha_baja');
@@ -248,6 +269,62 @@
     toggleFechaBaja();
     estado?.addEventListener('change', toggleFechaBaja);
   })();
+
+  {% if es_admin %}
+  document.getElementById('btn-guardar-servicio').addEventListener('click', function() {
+    const nombre = document.getElementById('input-nuevo-servicio').value.trim();
+    const msgDiv = document.getElementById('modal-mensaje');
+
+    if (!nombre) {
+      msgDiv.style.display = 'block';
+      msgDiv.className = 'alert alert-warning';
+      msgDiv.textContent = 'El nombre no puede estar vacío.';
+      return;
+    }
+
+    fetch("{% url 'agregar_servicio_ajax' %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({nombre: nombre})
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        msgDiv.style.display = 'block';
+        msgDiv.className = 'alert alert-success';
+        msgDiv.textContent = data.mensaje;
+
+        const select = document.getElementById('id_servicios');
+        const option = new Option(data.nombre, data.nombre);
+
+        // Insertar en orden alfabético
+        let inserted = false;
+        for (let i = 1; i < select.options.length; i++) {
+          if (select.options[i].text.localeCompare(data.nombre) > 0) {
+            select.add(option, i);
+            inserted = true;
+            break;
+          }
+        }
+        if (!inserted) select.add(option);
+        select.value = data.nombre;
+
+        setTimeout(() => {
+          document.getElementById('input-nuevo-servicio').value = '';
+          msgDiv.style.display = 'none';
+          bootstrap.Modal.getInstance(document.getElementById('modalAgregarServicio')).hide();
+        }, 1200);
+      } else {
+        msgDiv.style.display = 'block';
+        msgDiv.className = 'alert alert-danger';
+        msgDiv.textContent = data.error;
+      }
+    });
+  });
+  {% endif %}
 </script>
 
 {% if messages %}

@@ -61,6 +61,7 @@
     --input-bg: #383d41;
     --input-text: #ffffff;
     --contrast-negro: #ffffff;
+    color-scheme: dark;
 }
 
 body, p, div, a, li, input, select, textarea, td {
@@ -129,6 +130,8 @@ body {
 
 main.main-content {
     flex: 1;
+    display: flex;
+    flex-direction: column;
     background-color: var(--bg-main);
 }
 

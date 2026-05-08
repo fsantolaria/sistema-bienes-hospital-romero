@@ -1,7 +1,12 @@
 from django.urls import path
 from django.views.generic import RedirectView
 from . import views
+
 from core.views import marcar_notificaciones_leidas, borrar_todas_notificaciones
+
+
+from core.views import marcar_notificaciones_leidas
+from core.views import home_supervisor, lista_bienes_supervisor
 
 urlpatterns = [
     # ===== Raíz del sitio =====
@@ -20,7 +25,11 @@ urlpatterns = [
     # ===== Dashboards =====
     path('home_admin/', views.home_admin, name='home_admin'),
     path('home_operador/', views.home_operador, name='home_operador'),
+
+    path("supervisor/", home_supervisor, name="home_supervisor"),
+    path("supervisor/bienes/", lista_bienes_supervisor, name="lista_bienes_supervisor"),
     path('home_supervisor/', views.home_supervisor, name='home_supervisor'),
+
 
     # ===== Operadores =====
     path('operadores/', views.operadores, name='operadores'),
@@ -33,6 +42,8 @@ urlpatterns = [
     path('base/', views.base, name='base'),
     path("reportes/", views.reportes_view, name="reportes"),
     path("reportes/pdf/", views.reportes_pdf, name="reportes_pdf"),
+    path('servicios/agregar/', views.agregar_servicio, name='agregar_servicio'),
+    path('servicios/agregar-ajax/', views.agregar_servicio_ajax, name='agregar_servicio_ajax'),
 
     # ===== Bienes =====
     # Acciones específicas primero

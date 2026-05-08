@@ -157,6 +157,10 @@ body {
     background-color: #fff5f5;
 }
 
+[data-theme="dark"] .form-group-item.campo-error {
+    background-color: #3b2a2a;
+}
+
 .form-group-item.campo-error input,
 .form-group-item.campo-error select {
     border-color: #ee5544;

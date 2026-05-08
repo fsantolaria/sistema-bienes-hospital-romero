@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Lista de Bienes — Supervisor{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h4 class="mb-0">
+        <i class="bi bi-list-ul me-2 text-primary"></i>Lista de Bienes Patrimoniales
+      </h4>
+      <small class="text-muted">Vista de solo lectura · Rol: Supervisor</small>
+    </div>
+    <span class="badge bg-warning text-dark px-3 py-2">
+      <i class="bi bi-eye me-1"></i> Solo lectura
+    </span>
+  </div>
+
+  <form method="get" class="card border-0 shadow-sm p-3 mb-3">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label small text-muted mb-1">Buscar</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="text" name="q" value="{{ q }}" class="form-control"
+                 placeholder="Clave, descripción, serie…">
+        </div>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-muted mb-1">Estado</label>
+        <select name="f_estado" class="form-select">
+          <option value="">Todos</option>
+          <option value="ACTIVO" {% if request.GET.f_estado == "ACTIVO" %}selected{% endif %}>Activo</option>
+          <option value="BAJA" {% if request.GET.f_estado == "BAJA" %}selected{% endif %}>Baja</option>
+          <option value="INACTIVO" {% if request.GET.f_estado == "INACTIVO" %}selected{% endif %}>Inactivo</option>
+          <option value="MANTENIMIENTO" {% if request.GET.f_estado == "MANTENIMIENTO" %}selected{% endif %}>Mantenimiento</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-muted mb-1">Origen</label>
+        <select name="f_origen" class="form-select">
+          <option value="">Todos</option>
+          <option value="COMPRA" {% if request.GET.f_origen == "COMPRA" %}selected{% endif %}>Compra</option>
+          <option value="DONACION" {% if request.GET.f_origen == "DONACION" %}selected{% endif %}>Donación</option>
+          <option value="TRANSFERENCIA" {% if request.GET.f_origen == "TRANSFERENCIA" %}selected{% endif %}>Transferencia</option>
+          <option value="OMISION" {% if request.GET.f_origen == "OMISION" %}selected{% endif %}>Omisión</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-muted mb-1">Desde</label>
+        <input type="date" name="f_desde" value="{{ request.GET.f_desde }}" class="form-control">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small text-muted mb-1">Hasta</label>
+        <input type="date" name="f_hasta" value="{{ request.GET.f_hasta }}" class="form-control">
+      </div>
+      <div class="col-12 d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm px-4">
+          <i class="bi bi-filter me-1"></i>Filtrar
+        </button>
+        <a href="{% url 'lista_bienes_supervisor' %}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-x-circle me-1"></i>Limpiar
+        </a>
+      </div>
+    </div>
+  </form>
+
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Fecha alta</th>
+            <th>Clave única</th>
+            <th>Descripción</th>
+            <th>Servicios</th>
+            <th>Origen</th>
+            <th>Estado</th>
+            <th>Valor</th>
+            <th>Expediente</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for bien in bienes %}
+          <tr>
+            <td class="text-nowrap">
+              {% if bien.fecha_adquisicion %}{{ bien.fecha_adquisicion|date:"d/m/Y" }}{% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            <td><code class="text-primary">{{ bien.clave_unica|default:"—" }}</code></td>
+            <td>
+              <div class="fw-semibold">{{ bien.descripcion|default:"—"|truncatechars:60 }}</div>
+              {% if bien.numero_serie %}<small class="text-muted">Serie: {{ bien.numero_serie }}</small>{% endif %}
+            </td>
+            <td>{{ bien.servicios|default:"—" }}</td>
+            <td>
+              {% if bien.origen %}
+                <span class="badge bg-light text-dark border">{{ bien.get_origen_display|default:bien.origen }}</span>
+              {% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            <td>
+              {% if bien.estado == "ACTIVO" %}<span class="badge bg-success">Activo</span>
+              {% elif bien.estado == "BAJA" %}<span class="badge bg-danger">Baja</span>
+              {% elif bien.estado == "INACTIVO" %}<span class="badge bg-secondary">Inactivo</span>
+              {% elif bien.estado == "MANTENIMIENTO" %}<span class="badge bg-warning text-dark">Mantenimiento</span>
+              {% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            <td class="text-end text-nowrap">
+              {% if bien.valor_adquisicion %}${{ bien.valor_adquisicion|floatformat:0 }}{% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            <td>
+              {% if bien.expediente %}<small>{{ bien.expediente.numero_expediente }}</small>{% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center text-muted py-5">
+              <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+              No se encontraron bienes con los filtros aplicados.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if is_paginated %}
+    <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+      <small class="text-muted">
+        Página {{ page_obj.number }} de {{ paginator.num_pages }}
+        · {{ paginator.count }} resultado{% if paginator.count != 1 %}s{% endif %}
+      </small>
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          {% if prev_page %}<li class="page-item"><a class="page-link" href="?page={{ prev_page }}&{{ querystring }}"><i class="bi bi-chevron-left"></i></a></li>{% endif %}
+          {% for p in page_range %}
+            {% if p == "…" %}<li class="page-item disabled"><span class="page-link">…</span></li>
+            {% elif p == page_obj.number %}<li class="page-item active"><span class="page-link">{{ p }}</span></li>
+            {% else %}<li class="page-item"><a class="page-link" href="?page={{ p }}&{{ querystring }}">{{ p }}</a></li>
+            {% endif %}
+          {% endfor %}
+          {% if next_page %}<li class="page-item"><a class="page-link" href="?page={{ next_page }}&{{ querystring }}"><i class="bi bi-chevron-right"></i></a></li>{% endif %}
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="alert alert-warning d-flex gap-2 align-items-center mt-3" role="alert">
+    <i class="bi bi-lock-fill"></i>
+    <span>Como <strong>supervisor</strong>, solo podés visualizar los bienes. Las acciones de alta, edición o baja requieren permisos de administrador.</span>
+  </div>
+
+</div>
+{% endblock %}

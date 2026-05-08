@@ -3,6 +3,7 @@ from datetime import date
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
+from core.models.servicio_extra import ServicioExtra
 
 from ..constants import (
     ESTADO_CHOICES,
@@ -96,6 +97,8 @@ class BienPatrimonial(models.Model):
     )
 
     # Datos complementarios
+    
+
     servicios = models.CharField(max_length=200, blank=True, verbose_name="Servicios")
     observaciones = models.TextField(blank=True, null=True, verbose_name="Observaciones")
     # Fecha SIEM (campo nuevo para almacenar fechas SIEM)

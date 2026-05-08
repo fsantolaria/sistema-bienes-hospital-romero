@@ -1,9 +1,15 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.apps import apps
 from sistema_bienes.admin import custom_admin_site  # tu admin personalizado
 from .models.expediente import Expediente
 from .models.bien_patrimonial import BienPatrimonial
 from .models.notificacion import Notificacion
+from .models.usuario import Usuario
+from .models.servicio_extra import ServicioExtra
 
 
 # ===== Helpers seguros =====
@@ -16,6 +22,75 @@ def first_present(model, candidates):
         if model_has_field(model, c):
             return c
     return None
+
+
+# ===== Formulario de creación de usuario con contraseña fuerte =====
+class StrongPasswordUserCreationForm(UserCreationForm):
+    """Extiende UserCreationForm para validar contraseña fuerte."""
+    
+    def clean_password2(self):
+        password = self.cleaned_data.get('password2')
+        if password:
+            try:
+                validate_password(password)
+            except ValidationError as e:
+                raise ValidationError(e.messages)
+        return password
+
+    class Meta:
+        model = Usuario
+        fields = ('username', 'email', 'first_name', 'last_name', 'tipo_usuario', 'numero_doc')
+
+
+# ===== Usuario Admin =====
+@admin.register(Usuario, site=custom_admin_site)
+class UsuarioAdmin(BaseUserAdmin):
+    add_form = StrongPasswordUserCreationForm
+    
+    fieldsets = (
+        (None, {'fields': ('username', 'password')}),
+        ('Información personal', {
+            'fields': ('first_name', 'last_name', 'email', 'numero_doc')
+        }),
+        ('Permisos', {
+            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),
+            'classes': ('collapse',)
+        }),
+        ('Tipo de usuario', {'fields': ('tipo_usuario',)}),
+        ('Fechas importantes', {
+            'fields': ('last_login', 'date_joined'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username', 'email', 'password1', 'password2'),
+        }),
+        ('Información personal', {
+            'classes': ('wide',),
+            'fields': ('first_name', 'last_name', 'numero_doc'),
+        }),
+        ('Tipo de usuario', {
+            'classes': ('wide',),
+            'fields': ('tipo_usuario', 'is_staff', 'is_superuser'),
+        }),
+    )
+    
+    list_display = ('username', 'email', 'first_name', 'last_name', 'tipo_usuario', 'is_active')
+    list_filter = ('tipo_usuario', 'is_active', 'is_staff', 'date_joined')
+    search_fields = ('username', 'email', 'first_name', 'last_name', 'numero_doc')
+    ordering = ('-date_joined',)
+    
+    def save_model(self, request, obj, form, change):
+        if 'password' in form.changed_data:
+            try:
+                validate_password(obj.password)
+            except ValidationError as e:
+                raise ValidationError(f'Error en contraseña: {", ".join(e.messages)}')
+        super().save_model(request, obj, form, change)
+
 
 
 # ===== Expediente Admin =====
@@ -68,7 +143,6 @@ class BienPatrimonialAdmin(admin.ModelAdmin):
         'clave_unica',
         first_present(BienPatrimonial, ['nombre', 'descripcion']),
         'cantidad',
-        'servicios',
         'estado',
         'expediente',
         'origen',
@@ -137,6 +211,15 @@ class BienPatrimonialAdmin(admin.ModelAdmin):
         # Mantiene tu validación del modelo
         obj.full_clean()
         super().save_model(request, obj, form, change)
+
+
+# ===== Servicio Extra Admin =====
+@admin.register(ServicioExtra, site=custom_admin_site)
+class ServicioExtraAdmin(admin.ModelAdmin):
+    list_display = ['nombre']
+    search_fields = ['nombre']
+    ordering = ['nombre']
+
 
 
 # ===== Notificacion Admin =====

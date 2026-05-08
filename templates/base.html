@@ -211,14 +211,7 @@
     // En paginas que NO son home, marcar que el usuario esta "dentro" de la app
     // para que el guard del home sepa que no debe cerrar sesion al volver.
     (function () {
-        var navType = 'navigate';
-        try {
-            var e = performance.getEntriesByType('navigation');
-            if (e.length) navType = e[0].type;
-        } catch (_) {}
-        if (navType === 'navigate') {
-            sessionStorage.setItem('appBeyondHome', '1');
-        }
+        sessionStorage.setItem('appBeyondHome', '1');
     })();
     </script>
     {% endif %}
