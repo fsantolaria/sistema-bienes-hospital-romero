@@ -293,10 +293,29 @@
 {% block extra_js %}
 <script>
 (function () {
+  const esAdmin = {% if es_admin %}true{% else %}false{% endif %};
+  const LS_KEY = 'bienes_baja_seleccionados';
+  let bienesParaBaja = new Map(JSON.parse(localStorage.getItem(LS_KEY)) || []);
+
   // Selección múltiple
   const btnToggle = document.getElementById('btn-toggle-seleccion');
   const btnEliminar = document.getElementById('btn-confirm-eliminar');
   const selectAll  = document.getElementById('select-all');
+
+  const updateRowStyles = () => {
+    document.querySelectorAll('.chk-bien').forEach(c => {
+      const tr = c.closest('tr');
+      if (tr) {
+        const pk = c.value;
+        const isBajaSelected = bienesParaBaja.has(pk);
+        if (c.checked || isBajaSelected) {
+          tr.classList.add('fila-baja-seleccionada');
+        } else {
+          tr.classList.remove('fila-baja-seleccionada');
+        }
+      }
+    });
+  };
 
   const updateCount = () => {
     const n = Array.from(document.querySelectorAll('.chk-bien')).filter(c => c.checked).length;
@@ -304,6 +323,7 @@
       btnEliminar.textContent = n > 0 ? `Eliminar (${n})` : 'Eliminar (0)';
       btnEliminar.disabled = n === 0;
     }
+    updateRowStyles();
   };
 
   const toggleCols = () => {
@@ -326,11 +346,6 @@
   });
 
   // Preparar OFFCANVAS
-  const esAdmin = {% if es_admin %}true{% else %}false{% endif %};
-  const LS_KEY = 'bienes_baja_seleccionados';
-  
-  // Cargar de localStorage o crear mapa vacío
-  let bienesParaBaja = new Map(JSON.parse(localStorage.getItem(LS_KEY)) || []);
   const btnBajaMultiple = document.getElementById('btn-abrir-baja-multiple');
 
   // Modal de Alerta Límite
@@ -380,16 +395,7 @@
 
   // Al cargar la página, restaurar estilos visuales si ya están seleccionados
   if (esAdmin) {
-    document.querySelectorAll('.btn-toggle-baja').forEach(btn => {
-      const pk = btn.getAttribute('data-pk');
-      if (bienesParaBaja.has(pk)) {
-        const tr = btn.closest('tr');
-        if (tr) {
-          tr.style.backgroundColor = '#fde8e8';
-          tr.style.border = '2px solid #dc3545';
-        }
-      }
-    });
+    updateRowStyles();
     updateBajaMultipleUI();
   }
 
@@ -403,15 +409,10 @@
 
       const pk = btn.getAttribute('data-pk');
       const desc = btn.getAttribute('data-descripcion');
-      const tr = btn.closest('tr');
 
       if (bienesParaBaja.has(pk)) {
         // Deseleccionar
         bienesParaBaja.delete(pk);
-        if (tr) {
-          tr.style.backgroundColor = '';
-          tr.style.border = '';
-        }
       } else {
         if (bienesParaBaja.size >= 20) {
           alertModal.style.display = 'flex';
@@ -420,11 +421,8 @@
         }
         // Seleccionar
         bienesParaBaja.set(pk, desc);
-        if (tr) {
-          tr.style.backgroundColor = '#fde8e8'; // rojo suave
-          tr.style.border = '2px solid #dc3545'; // rojo borde
-        }
       }
+      updateRowStyles();
       saveBajaState();
       return;
     }

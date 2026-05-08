@@ -24,7 +24,7 @@
       </div>
 
       <!-- Desplegable de servicios con Select2 -->
-      <div style="flex: 1; min-width: 0; height: 38px;">
+      <div style="width: 25%; height: 38px;">
         <select name="servicio" id="filtro-servicio" class="form-select" multiple>
           {% for s in todos_servicios %}
           <option value="{{ s }}" {% if s in servicios_seleccionados %}selected{% endif %}>{{ s }}</option>

@@ -215,7 +215,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="19" class="text-center text-muted py-4">No hay bienes dados de baja.</td>
+          <td colspan="20" class="text-center text-muted py-4">No hay bienes dados de baja.</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -358,18 +358,23 @@
       }
     }
 
-    // Renderizar selecciones al cargar la página
-    if (esAdmin) {
+    function updateRowStyles() {
       document.querySelectorAll('.btn-toggle-restaurar').forEach(btn => {
         const pk = btn.getAttribute('data-pk');
-        if (bienesParaRestaurar.has(pk)) {
-          const tr = btn.closest('tr');
-          if (tr) {
-            tr.style.backgroundColor = '#e8f5e9'; // verde suave
-            tr.style.border = '2px solid #198754'; // verde borde
+        const tr = btn.closest('tr');
+        if (tr) {
+          if (bienesParaRestaurar.has(pk)) {
+            tr.classList.add('fila-restaurar-seleccionada');
+          } else {
+            tr.classList.remove('fila-restaurar-seleccionada');
           }
         }
       });
+    }
+
+    // Renderizar selecciones al cargar la página
+    if (esAdmin) {
+      updateRowStyles();
       updateRestaurarMultipleUI();
     }
 
@@ -435,15 +440,9 @@
         e.preventDefault();
         e.stopPropagation();
         
-        const tr = btn.closest('tr');
-        
         if (bienesParaRestaurar.has(pk)) {
           // Deseleccionar
           bienesParaRestaurar.delete(pk);
-          if (tr) {
-            tr.style.backgroundColor = '';
-            tr.style.border = '';
-          }
         } else {
           if (bienesParaRestaurar.size >= 20) {
             showRestaurarModal();
@@ -451,11 +450,8 @@
           }
           // Seleccionar
           bienesParaRestaurar.set(pk, true);
-          if (tr) {
-            tr.style.backgroundColor = '#e8f5e9';
-            tr.style.border = '2px solid #198754';
-          }
         }
+        updateRowStyles();
         saveRestaurarState();
         return;
       }

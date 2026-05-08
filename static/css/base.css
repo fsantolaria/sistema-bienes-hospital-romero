@@ -1253,3 +1253,32 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         justify-content: center;
     }
 }
+
+/* =========================================================================
+   SELECCIÓN DINÁMICA DE FILAS (v1.2) - MODO CLARO Y OSCURO
+   ========================================================================= */
+.fila-baja-seleccionada {
+    background-color: #fdecea !important; /* Rojo suave / rosado institucional */
+    outline: 2px solid #ee5544 !important; /* Rojo oficial para el borde */
+    outline-offset: -2px;
+}
+
+.fila-restaurar-seleccionada {
+    background-color: #e8f5e9 !important; /* Verde suave */
+    outline: 2px solid #198754 !important; /* Verde de éxito para el borde */
+    outline-offset: -2px;
+}
+
+/* Modo Oscuro Adaptativo */
+[data-theme="dark"] .fila-baja-seleccionada {
+    background-color: #3d1414 !important; /* Rojo muy oscuro */
+    outline: 2px solid #ee5544 !important; /* Borde rojo oficial */
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .fila-restaurar-seleccionada {
+    background-color: #112d1b !important; /* Verde muy oscuro */
+    outline: 2px solid #198754 !important; /* Borde verde éxito */
+    color: #ffffff !important;
+}
+
