@@ -22,6 +22,7 @@
         <option value="fecha"   {% if request.GET.orden == "fecha" %}selected{% endif %}>Más antiguos</option>
         <option value="-precio" {% if request.GET.orden == "-precio" %}selected{% endif %}>Precio ↓</option>
         <option value="precio"  {% if request.GET.orden == "precio" %}selected{% endif %}>Precio ↑</option>
+        <option value="servicios" {% if request.GET.orden == "servicios" %}selected{% endif %}>Servicios (A-Z)</option>
       </select>
     </div>
 

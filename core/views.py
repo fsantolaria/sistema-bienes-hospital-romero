@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate, login, logout, get_user_model
 import pandas as pd
+import hashlib
 from datetime import date, timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -1289,7 +1290,21 @@ def _filtrar_bienes(request, base_qs):
         if h:
             base_qs = base_qs.filter(fecha_adquisicion__lte=h)
 
-    base_qs = base_qs.order_by(*_build_ordering(orden))
+    if orden == "servicios":
+        from django.db.models import Case, When, Value, IntegerField
+        from django.db.models.functions import Upper, Substr
+        base_qs = base_qs.annotate(
+            first_char=Upper(Substr('servicios', 1, 1))
+        ).annotate(
+            starts_with_letter=Case(
+                When(first_char__gte='A', first_char__lte='Z', then=Value(0)),
+                default=Value(1),
+                output_field=IntegerField()
+            )
+        )
+        base_qs = base_qs.order_by('starts_with_letter', 'servicios', 'pk')
+    else:
+        base_qs = base_qs.order_by(*_build_ordering(orden))
     return base_qs, q
 
 
@@ -1414,7 +1429,7 @@ def carga_masiva_bienes(request):
         hashes_contenido_esta_carga = set()
 
         creados, actualizados, sin_cambios, duplicados_omitidos, errores = 0, 0, 0, 0, []
-        from core.models import Expediente, BienPatrimonial, Notificacion
+        from core.models import Expediente, BienPatrimonial, Notificacion, ArchivoCargaMasiva
         import unicodedata
         import os
         from datetime import date
