@@ -4,6 +4,22 @@
 
 {% block title %}Bienes Patrimoniales{% endblock %}
 
+{% block extra_css %}
+<style>
+  tr.seleccionado-baja td {
+    background-color: #fde8e8 !important;
+    border-top: 1.5px solid #dc3545 !important;
+    border-bottom: 1.5px solid #dc3545 !important;
+  }
+  tr.seleccionado-baja td:first-child {
+    border-left: 1.5px solid #dc3545 !important;
+  }
+  tr.seleccionado-baja td:last-child {
+    border-right: 1.5px solid #dc3545 !important;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-3">
     <h3 class="m-0">Lista de Bienes</h3>
@@ -22,6 +38,7 @@
         <option value="fecha"   {% if request.GET.orden == "fecha" %}selected{% endif %}>Más antiguos</option>
         <option value="-precio" {% if request.GET.orden == "-precio" %}selected{% endif %}>Precio ↓</option>
         <option value="precio"  {% if request.GET.orden == "precio" %}selected{% endif %}>Precio ↑</option>
+        <option value="servicios" {% if request.GET.orden == "servicios" %}selected{% endif %}>Servicios (A-Z)</option>
       </select>
     </div>
 
@@ -385,8 +402,7 @@
       if (bienesParaBaja.has(pk)) {
         const tr = btn.closest('tr');
         if (tr) {
-          tr.style.backgroundColor = '#fde8e8';
-          tr.style.border = '2px solid #dc3545';
+          tr.classList.add('seleccionado-baja');
         }
       }
     });
@@ -409,8 +425,7 @@
         // Deseleccionar
         bienesParaBaja.delete(pk);
         if (tr) {
-          tr.style.backgroundColor = '';
-          tr.style.border = '';
+          tr.classList.remove('seleccionado-baja');
         }
       } else {
         if (bienesParaBaja.size >= 20) {
@@ -421,8 +436,7 @@
         // Seleccionar
         bienesParaBaja.set(pk, desc);
         if (tr) {
-          tr.style.backgroundColor = '#fde8e8'; // rojo suave
-          tr.style.border = '2px solid #dc3545'; // rojo borde
+          tr.classList.add('seleccionado-baja');
         }
       }
       saveBajaState();

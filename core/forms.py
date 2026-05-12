@@ -11,17 +11,30 @@ from datetime import date
 
 
 # ========== FORMULARIO DE CARGA MASIVA ==========
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+class MultipleFileField(forms.FileField):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("widget", MultipleFileInput(attrs={'class': 'form-control', 'accept': '.xlsx,.xls,.xlsm,.xlsb,.ods,.csv'}))
+        super().__init__(*args, **kwargs)
+
+    def clean(self, data, initial=None):
+        single_file_clean = super().clean
+        if isinstance(data, (list, tuple)):
+            return [single_file_clean(d, initial) for d in data]
+        return single_file_clean(data, initial)
+
 class CargaMasivaForm(forms.Form):
-    archivo_excel = forms.FileField(
-        label='Seleccionar archivo Excel',
-        help_text='Formatos soportados: .xlsx, .xls',
-        widget=forms.ClearableFileInput(attrs={'class': 'form-control'})
+    archivo_excel = MultipleFileField(
+        label='Seleccionar archivo(s) Excel',
+        help_text='Formatos soportados: .xlsx, .xls, .xlsm, .xlsb, .ods, .csv'
     )
-    sector = forms.CharField(
+    servicio = forms.CharField(
         max_length=100,
         required=False,
-        label='Sector por defecto (opcional)',
-        help_text='Si se deja vacío, se tomará el sector de cada fila del archivo.',
+        label='Servicio por defecto (opcional)',
+        help_text='Si se deja vacío, se tomará el servicio de cada fila del archivo. Si el archivo se llama "RELEVAMIENTO...", se asignará automáticamente.',
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
 
@@ -76,49 +89,34 @@ class BienPatrimonialForm(forms.ModelForm):
         from core.models.servicio_extra import ServicioExtra
 
         SERVICIOS_FIJOS = [
-            'Area Limpieza Hospitalaria',
-            'CAPER',
-            'Cardiologia',
-            'Cirugia',
-            'Clinica',
-            'Consejeria',
-            'Consultorios',
-            'Departamento Sistema De Informacion - Samo Turnos Y Estadistica',
-            'Dermatologia',
-            'Diagnostico Por Imagenes',
-            'Direccion Asociada Area Tecnica',
-            'Direccion Asociada Medico Quirurgica',
-            'Emergencia',
-            'Epidemiologia',
-            'Esterilizacion',
-            'Farmacia',
-            'Gastroenterologia',
-            'Gerenciamiento De Camas',
-            'Hemoterapia',
-            'Infectologia',
-            'Jardin Maternal',
-            'Laboratorio',
-            'Neonatologia',
-            'Neurologia',
-            'Neuropsicologia',
-            'Odontologia',
-            'Oncologia',
-            'Patologia',
-            'Pediatria Y Neonatologia',
-            'Percial',
-            'Podologia Y Peluqueria',
-            'Quirofano',
-            'Recuperacion Clinica',
-            'Rehabilitacion Fisica Y Kinesiologia',
-            'Reumatologia Y Oftalmologia',
-            'SAP (Servicio De Area Programatica Y Redes De Salud)',
-            'Sala Gestion De Usuarios',
-            'Seguridad E Higiene',
-            'Tocoginecologia',
-            'Toxicologia',
-            'Traumatologia',
-            'U.T.I.',
-            'Vacunacion',
+            "Apoyo A La Comunidad", "Area Guardia", "Area Limpieza Hospitalaria",
+            "Area Parque Cultural", "Arquitectura", "CAPER", "Camilleros", "Cardiologia",
+            "Charcot", "Cirugia", "Clinica", "Cocina", "Compras", "Conmutador", "Consejeria",
+            "Consultorio De Gastroenterologia", "Consultorio Externo Salud Mental",
+            "Consultorios Externos Pab V", "Contable", "Costurero",
+            "Cud Y Servicios De Consumos Problematicos", "Departamento De Enfermerias Supervision",
+            "Departamento Sistema De Informacion - Samo Turnos Y Estadistica",
+            "Deposito Descartable", "Deposito General", "Dermatologia", "Diagnostico Por Imagenes",
+            "Dira", "Direccion Administrativa", "Direccion Asociada Area Tecnica",
+            "Direccion Asociada Medico Quirurgica", "Direccion Ejecutiva", "Direccion Salud Mental",
+            "Dispositivo Artistico Cultural", "Docencia E Investigacion",
+            "Donacion Fundacion Florencio Perez", "Emergencia", "En Guarda Patrimoniales",
+            "Enfermeria", "Epidemiologia", "Estadistica", "Estadistica Central",
+            "Estadistica Pabellon V", "Esterilizacion", "Farmacia", "Gastroenterologia",
+            "Gerenciamiento De Camas", "Hemoterapia", "Infancias Y Juventudes", "Infectologia",
+            "Informatica", "Infraestructura Y Mantenimiento", "Intendencia", "Jardin Maternal",
+            "Laboratorio", "Lasegue", "Legales", "Limpieza", "Mesa De Entrada",
+            "Neumonologia Y Oftalmologia", "Neurocirugia", "Neuropsicologia", "Odontologia",
+            "Oncologia", "Patologia", "Patrimoniales", "Pediatria Y Neonatologia", "Penfield",
+            "Percial", "Podologia Y Peluqueria", "Polo Educativo", "Pre Alta", "Quirofano",
+            "RRHH", "Recuperacion Clinica", "Registro Civil", "Rehabilitacion Fisica Y Kinesiologia",
+            "Rehabilitacion Salud Mental Direccion", "Reumatologia Y Oftalmologia",
+            "SAC", "SAM", "SAMO Contable", "SAMO Facturacion",
+            "SAP (Servicio De Area Programatica Y Redes De Salud)", "SGU", "Sala De Endoscopia",
+            "Sala F", "Sala G", "Seguridad E Higiene", "Servicio De Psicologia",
+            "Servicio Rehabilitacion Larga Distancia", "Servicio Social", "Sumar",
+            "Tocoginecologia", "Toxicologia", "Traumatologia", "U.T.I.", "UCAC",
+            "Vacunacion", "Vigilancia",
         ]
 
         extras = [s.nombre for s in ServicioExtra.objects.all()]

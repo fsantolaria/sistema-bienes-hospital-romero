@@ -18,6 +18,9 @@
   <h2>Reporte de Bienes Patrimoniales</h2>
   <div class="muted">
     Rango: <strong>{{ rango_desc }}</strong> · Generado: {{ generado_en|date:"d/m/Y H:i" }} · Usuario: {{ usuario.username }}
+    {% if servicios_seleccionados %}
+      · Servicios: <strong>{{ servicios_seleccionados|join:", " }}</strong>
+    {% endif %}
   </div>
 
   <table>

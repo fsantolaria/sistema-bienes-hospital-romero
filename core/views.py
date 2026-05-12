@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate, login, logout, get_user_model
 import pandas as pd
+import hashlib
 from datetime import date, timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -666,6 +667,28 @@ def reportes_pdf(request):
         )
         notifs = Notificacion.objects.filter(fecha__gte=since_dt).order_by("-fecha")
         rango_desc = "Últimas 24 horas"
+    elif scope == "12h":
+        since_dt = now - timedelta(hours=12)
+        since_date = since_dt.date()
+        bienes = (
+            BienPatrimonial.objects
+            .select_related("expediente")
+            .filter(Q(fecha_adquisicion__gte=since_date) | Q(fecha_baja__gte=since_date))
+            .order_by("-fecha_baja", "-fecha_adquisicion", "pk")
+        )
+        notifs = Notificacion.objects.filter(fecha__gte=since_dt).order_by("-fecha")
+        rango_desc = "Últimas 12 horas"
+    elif scope == "6h":
+        since_dt = now - timedelta(hours=6)
+        since_date = since_dt.date()
+        bienes = (
+            BienPatrimonial.objects
+            .select_related("expediente")
+            .filter(Q(fecha_adquisicion__gte=since_date) | Q(fecha_baja__gte=since_date))
+            .order_by("-fecha_baja", "-fecha_adquisicion", "pk")
+        )
+        notifs = Notificacion.objects.filter(fecha__gte=since_dt).order_by("-fecha")
+        rango_desc = "Últimas 6 horas"
     else:
         bienes = (
             BienPatrimonial.objects
@@ -675,12 +698,52 @@ def reportes_pdf(request):
         notifs = Notificacion.objects.none()
         rango_desc = "Todos"
 
+    servicios_seleccionados = request.GET.getlist("servicio")
+    if servicios_seleccionados:
+        q_services = Q()
+        for s in servicios_seleccionados:
+            val = s.strip()
+            if "samo" in val.lower():
+                q_services |= Q(servicios__icontains="SAMO") | Q(servicios__icontains="Samo")
+            else:
+                import unicodedata
+                def clean_word(w):
+                    nfkd = unicodedata.normalize('NFKD', w)
+                    return "".join([c for c in nfkd if not unicodedata.combining(c)]).lower()
+                words = [clean_word(w) for w in val.split() if len(w) > 2 and w.lower() not in ["de", "la", "el", "los", "las", "del"]]
+                if words:
+                    q_words = Q()
+                    for w in words:
+                        q_words |= Q(servicios__icontains=w)
+                    q_services |= q_words
+                else:
+                    q_services |= Q(servicios__icontains=val)
+        bienes = bienes.filter(q_services)
+
+    q = (request.GET.get("q") or "").strip()
+    if q:
+        bienes = bienes.filter(
+            Q(clave_unica__icontains=q)
+            | Q(descripcion__icontains=q)
+            | Q(observaciones__icontains=q)
+            | Q(numero_identificacion__icontains=q)
+            | Q(servicios__icontains=q)
+            | Q(cuenta_codigo__icontains=q)
+            | Q(nomenclatura_bienes__icontains=q)
+            | Q(numero_serie__icontains=q)
+            | Q(origen__icontains=q)
+            | Q(estado__icontains=q)
+            | Q(expediente__numero_expediente__icontains=q)
+            | Q(expediente__numero_compra__icontains=q)
+        )
+
     ctx = {
         "bienes": bienes,
         "notifs": notifs,
         "rango_desc": rango_desc,
         "generado_en": now,
         "usuario": request.user,
+        "servicios_seleccionados": servicios_seleccionados,
         **permisos_context(request.user),
     }
 
@@ -750,6 +813,8 @@ def reportes_pdf(request):
         elems = []
         title = f"Reporte de Bienes Patrimoniales – {rango_desc}"
         meta = f"Generado: {timezone.localtime(now).strftime('%d/%m/%Y %H:%M')} · Usuario: {request.user.username}"
+        if servicios_seleccionados:
+            meta += f" · Servicios: {', '.join(servicios_seleccionados)}"
         elems.append(Paragraph(title, title_style))
         elems.append(Paragraph(meta, meta_style))
         elems.append(Spacer(1, 8))
@@ -840,17 +905,34 @@ def agregar_servicio(request):
     if request.method == "POST":
         nombre = (request.POST.get("nombre") or "").strip().title()
         SERVICIOS_FIJOS = [
-            "Direccion Asociada Area Tecnica", "SAP (Servicio de Area Programatica y Redes de Salud)",
-            "Departamento Sistema de Informacion - SAMO Turnos y Estadistica", "Epidemiologia",
-            "Jardin Maternal", "Recuperacion Clinica", "Farmacia", "Direccion Asociada Medico Quirurgica",
-            "Percial", "Cirugia", "Hemoterapia", "Clinica", "Patologia", "Toxicologia",
-            "Esterilizacion", "Neuropsicologia", "Seguridad e Higiene", "U.T.I.",
-            "Area Limpieza Hospitalaria", "Emergencia", "Podologia y Peluqueria", "Infectologia",
-            "Odontologia", "Consultorios", "Cardiologia", "Gerenciamiento de Camas", "Neurologia",
-            "Gastroenterologia", "Rehabilitacion Fisica y Kinesiologia", "Neonatologia", "Laboratorio",
-            "Sala Gestion de Usuarios", "Diagnostico por Imagenes", "Reumatologia y Oftalmologia",
-            "Costurero", "CAPER", "Quirofano", "Consejeria", "Traumatologia", "Vacunacion",
-            "Pediatria y Neonatologia", "Dermatologia", "Tocoginecologia", "Oncologia",
+            "Apoyo A La Comunidad", "Area Guardia", "Area Limpieza Hospitalaria",
+            "Area Parque Cultural", "Arquitectura", "CAPER", "Camilleros", "Cardiologia",
+            "Charcot", "Cirugia", "Clinica", "Cocina", "Compras", "Conmutador", "Consejeria",
+            "Consultorio De Gastroenterologia", "Consultorio Externo Salud Mental",
+            "Consultorios Externos Pab V", "Contable", "Costurero",
+            "Cud Y Servicios De Consumos Problematicos", "Departamento De Enfermerias Supervision",
+            "Departamento Sistema De Informacion - Samo Turnos Y Estadistica",
+            "Deposito Descartable", "Deposito General", "Dermatologia", "Diagnostico Por Imagenes",
+            "Dira", "Direccion Administrativa", "Direccion Asociada Area Tecnica",
+            "Direccion Asociada Medico Quirurgica", "Direccion Ejecutiva", "Direccion Salud Mental",
+            "Dispositivo Artistico Cultural", "Docencia E Investigacion",
+            "Donacion Fundacion Florencio Perez", "Emergencia", "En Guarda Patrimoniales",
+            "Enfermeria", "Epidemiologia", "Estadistica", "Estadistica Central",
+            "Estadistica Pabellon V", "Esterilizacion", "Farmacia", "Gastroenterologia",
+            "Gerenciamiento De Camas", "Hemoterapia", "Infancias Y Juventudes", "Infectologia",
+            "Informatica", "Infraestructura Y Mantenimiento", "Intendencia", "Jardin Maternal",
+            "Laboratorio", "Lasegue", "Legales", "Limpieza", "Mesa De Entrada",
+            "Neumonologia Y Oftalmologia", "Neurocirugia", "Neuropsicologia", "Odontologia",
+            "Oncologia", "Patologia", "Patrimoniales", "Pediatria Y Neonatologia", "Penfield",
+            "Percial", "Podologia Y Peluqueria", "Polo Educativo", "Pre Alta", "Quirofano",
+            "RRHH", "Recuperacion Clinica", "Registro Civil", "Rehabilitacion Fisica Y Kinesiologia",
+            "Rehabilitacion Salud Mental Direccion", "Reumatologia Y Oftalmologia",
+            "SAC", "SAM", "SAMO Contable", "SAMO Facturacion",
+            "SAP (Servicio De Area Programatica Y Redes De Salud)", "SGU", "Sala De Endoscopia",
+            "Sala F", "Sala G", "Seguridad E Higiene", "Servicio De Psicologia",
+            "Servicio Rehabilitacion Larga Distancia", "Servicio Social", "Sumar",
+            "Tocoginecologia", "Toxicologia", "Traumatologia", "U.T.I.", "UCAC",
+            "Vacunacion", "Vigilancia",
         ]
         ya_existe_fijo = any(nombre.lower() == s.lower() for s in SERVICIOS_FIJOS)
         ya_existe_extra = ServicioExtra.objects.filter(nombre__iexact=nombre).exists()
@@ -919,7 +1001,42 @@ def reportes_view(request):
 
     servicios_seleccionados = request.GET.getlist("servicio")
     if servicios_seleccionados:
-        bienes = bienes.filter(servicios__in=servicios_seleccionados)
+        q_services = Q()
+        for s in servicios_seleccionados:
+            val = s.strip()
+            if "samo" in val.lower():
+                q_services |= Q(servicios__icontains="SAMO") | Q(servicios__icontains="Samo")
+            else:
+                import unicodedata
+                def clean_word(w):
+                    nfkd = unicodedata.normalize('NFKD', w)
+                    return "".join([c for c in nfkd if not unicodedata.combining(c)]).lower()
+                words = [clean_word(w) for w in val.split() if len(w) > 2 and w.lower() not in ["de", "la", "el", "los", "las", "del"]]
+                if words:
+                    q_words = Q()
+                    for w in words:
+                        q_words |= Q(servicios__icontains=w)
+                    q_services |= q_words
+                else:
+                    q_services |= Q(servicios__icontains=val)
+        bienes = bienes.filter(q_services)
+
+    q = (request.GET.get("q") or "").strip()
+    if q:
+        bienes = bienes.filter(
+            Q(clave_unica__icontains=q)
+            | Q(descripcion__icontains=q)
+            | Q(observaciones__icontains=q)
+            | Q(numero_identificacion__icontains=q)
+            | Q(servicios__icontains=q)
+            | Q(cuenta_codigo__icontains=q)
+            | Q(nomenclatura_bienes__icontains=q)
+            | Q(numero_serie__icontains=q)
+            | Q(origen__icontains=q)
+            | Q(estado__icontains=q)
+            | Q(expediente__numero_expediente__icontains=q)
+            | Q(expediente__numero_compra__icontains=q)
+        )
 
     try:
         per_page = int(request.GET.get("per_page") or 15)
@@ -966,17 +1083,34 @@ def reportes_view(request):
 
     from core.models.servicio_extra import ServicioExtra
     SERVICIOS_FIJOS = [
-        'Area Limpieza Hospitalaria', 'CAPER', 'Cardiologia', 'Cirugia', 'Clinica',
-        'Consejeria', 'Consultorios', 'Departamento Sistema De Informacion - Samo Turnos Y Estadistica',
-        'Dermatologia', 'Diagnostico Por Imagenes', 'Direccion Asociada Area Tecnica',
-        'Direccion Asociada Medico Quirurgica', 'Emergencia', 'Epidemiologia', 'Esterilizacion',
-        'Farmacia', 'Gastroenterologia', 'Gerenciamiento De Camas', 'Hemoterapia', 'Infectologia',
-        'Jardin Maternal', 'Laboratorio', 'Neonatologia', 'Neurologia', 'Neuropsicologia',
-        'Odontologia', 'Oncologia', 'Patologia', 'Pediatria Y Neonatologia', 'Percial',
-        'Podologia Y Peluqueria', 'Quirofano', 'Recuperacion Clinica',
-        'Rehabilitacion Fisica Y Kinesiologia', 'Reumatologia Y Oftalmologia',
-        'SAP (Servicio De Area Programatica Y Redes De Salud)', 'Sala Gestion De Usuarios',
-        'Seguridad E Higiene', 'Tocoginecologia', 'Toxicologia', 'Traumatologia', 'U.T.I.', 'Vacunacion',
+        "Apoyo A La Comunidad", "Area Guardia", "Area Limpieza Hospitalaria",
+        "Area Parque Cultural", "Arquitectura", "CAPER", "Camilleros", "Cardiologia",
+        "Charcot", "Cirugia", "Clinica", "Cocina", "Compras", "Conmutador", "Consejeria",
+        "Consultorio De Gastroenterologia", "Consultorio Externo Salud Mental",
+        "Consultorios Externos Pab V", "Contable", "Costurero",
+        "Cud Y Servicios De Consumos Problematicos", "Departamento De Enfermerias Supervision",
+        "Departamento Sistema De Informacion - Samo Turnos Y Estadistica",
+        "Deposito Descartable", "Deposito General", "Dermatologia", "Diagnostico Por Imagenes",
+        "Dira", "Direccion Administrativa", "Direccion Asociada Area Tecnica",
+        "Direccion Asociada Medico Quirurgica", "Direccion Ejecutiva", "Direccion Salud Mental",
+        "Dispositivo Artistico Cultural", "Docencia E Investigacion",
+        "Donacion Fundacion Florencio Perez", "Emergencia", "En Guarda Patrimoniales",
+        "Enfermeria", "Epidemiologia", "Estadistica", "Estadistica Central",
+        "Estadistica Pabellon V", "Esterilizacion", "Farmacia", "Gastroenterologia",
+        "Gerenciamiento De Camas", "Hemoterapia", "Infancias Y Juventudes", "Infectologia",
+        "Informatica", "Infraestructura Y Mantenimiento", "Intendencia", "Jardin Maternal",
+        "Laboratorio", "Lasegue", "Legales", "Limpieza", "Mesa De Entrada",
+        "Neumonologia Y Oftalmologia", "Neurocirugia", "Neuropsicologia", "Odontologia",
+        "Oncologia", "Patologia", "Patrimoniales", "Pediatria Y Neonatologia", "Penfield",
+        "Percial", "Podologia Y Peluqueria", "Polo Educativo", "Pre Alta", "Quirofano",
+        "RRHH", "Recuperacion Clinica", "Registro Civil", "Rehabilitacion Fisica Y Kinesiologia",
+        "Rehabilitacion Salud Mental Direccion", "Reumatologia Y Oftalmologia",
+        "SAC", "SAM", "SAMO Contable", "SAMO Facturacion",
+        "SAP (Servicio De Area Programatica Y Redes De Salud)", "SGU", "Sala De Endoscopia",
+        "Sala F", "Sala G", "Seguridad E Higiene", "Servicio De Psicologia",
+        "Servicio Rehabilitacion Larga Distancia", "Servicio Social", "Sumar",
+        "Tocoginecologia", "Toxicologia", "Traumatologia", "U.T.I.", "UCAC",
+        "Vacunacion", "Vigilancia",
     ]
     extras = list(ServicioExtra.objects.values_list('nombre', flat=True))
     todos_servicios = sorted(set(SERVICIOS_FIJOS + extras))
@@ -985,6 +1119,7 @@ def reportes_view(request):
     ctx.update({
         "bienes": page_obj.object_list,
         "scope": scope,
+        "q": q,
         "servicios_seleccionados": servicios_seleccionados,
         "todos_servicios": todos_servicios,
         "paginator": paginator,
@@ -1155,7 +1290,21 @@ def _filtrar_bienes(request, base_qs):
         if h:
             base_qs = base_qs.filter(fecha_adquisicion__lte=h)
 
-    base_qs = base_qs.order_by(*_build_ordering(orden))
+    if orden == "servicios":
+        from django.db.models import Case, When, Value, IntegerField
+        from django.db.models.functions import Upper, Substr
+        base_qs = base_qs.annotate(
+            first_char=Upper(Substr('servicios', 1, 1))
+        ).annotate(
+            starts_with_letter=Case(
+                When(first_char__gte='A', first_char__lte='Z', then=Value(0)),
+                default=Value(1),
+                output_field=IntegerField()
+            )
+        )
+        base_qs = base_qs.order_by('starts_with_letter', 'servicios', 'pk')
+    else:
+        base_qs = base_qs.order_by(*_build_ordering(orden))
     return base_qs, q
 
 
@@ -1271,43 +1420,39 @@ def carga_masiva_bienes(request):
     if not form.is_valid():
         context = permisos_context(request.user)
         context.update({"form": form})
-        return render(request, "carga_masiva.html", context)
+        return render(request, "carga_masiva.html", {"form": form})
 
     try:
-        from core.models import Expediente
-        import unicodedata
-        import os
-
         archivos = request.FILES.getlist("archivo_excel")
         sector_form = (form.cleaned_data.get("servicio") or "").strip()
+        hashes_esta_carga = set()
+        hashes_contenido_esta_carga = set()
+
+        creados, actualizados, sin_cambios, duplicados_omitidos, errores = 0, 0, 0, 0, []
+        from core.models import Expediente, BienPatrimonial, Notificacion, ArchivoCargaMasiva
+        import unicodedata
+        import os
+        from datetime import date
+        from decimal import Decimal, InvalidOperation
 
         def normalizar(texto: str) -> str:
-            texto = texto.replace('\u00b0', '').replace('\u00ba', '')
+            """Normaliza un nombre de columna: minúsculas, sin acentos, sin caracteres especiales."""
+            if not texto: return ""
+            texto = str(texto).replace('\u00b0', '').replace('\u00ba', '')  # °, º
             texto = unicodedata.normalize('NFKD', texto)
             texto = ''.join(c for c in texto if not unicodedata.combining(c))
             texto = ''.join(c if c.isalnum() or c == ' ' else ' ' for c in texto)
             return ' '.join(texto.lower().split())
 
         def s(v: object) -> str:
-            if v is None:
-                return ""
+            """Limpia el valor; devuelve '' si es vacío/nan."""
+            if v is None: return ""
             txt = str(v).strip()
             return "" if txt.lower() in ("nan", "none") else txt
 
-        def to_int1(v) -> int:
-            txt = s(v)
-            if not txt:
-                return 1
-            try:
-                val = int(float(txt))
-                return max(val, 1)
-            except (ValueError, TypeError):
-                return 1
-
         def parse_money(v):
             txt = s(v)
-            if not txt:
-                return None
+            if not txt: return None
             txt = txt.replace("$", "").replace(" ", "")
             if "," in txt and txt.rfind(",") > txt.rfind("."):
                 txt = txt.replace(".", "").replace(",", ".")
@@ -1320,203 +1465,307 @@ def carga_masiva_bienes(request):
 
         def parse_date_any(v):
             txt = s(v)
-            if not txt:
-                return None
+            if not txt: return None
             try:
                 dt = pd.to_datetime(txt, errors="coerce", dayfirst=True)
-                if pd.isna(dt):
-                    return None
+                if pd.isna(dt): return None
                 return dt.date()
             except (ValueError, TypeError):
                 return None
 
         def map_origen(v):
             t = s(v).lower()
-            if not t:
-                return None
-            if "compra" in t or "minister" in t:
-                return "COMPRA"
-            if "donac" in t:
-                return "DONACION"
-            if "omisi" in t:
-                return "OMISION"
-            if "transfer" in t or "traslad" in t:
-                return "TRANSFERENCIA"
+            if not t: return None
+            if "compra" in t or "minister" in t: return "COMPRA"
+            if "donac" in t: return "DONACION"
+            if "omisi" in t: return "OMISION"
+            if "transfer" in t or "traslad" in t: return "TRANSFERENCIA"
             return None
 
         def map_estado(v):
             t = s(v).lower()
-            if not t:
-                return None
-            if "manten" in t:
-                return "MANTENIMIENTO"
-            if "baja" in t:
-                return "BAJA"
-            if "inac" in t:
-                return "INACTIVO"
-            if "activ" in t:
-                return "ACTIVO"
+            if not t: return None
+            if "manten" in t: return "MANTENIMIENTO"
+            if "baja" in t: return "BAJA"
+            if "inac" in t: return "INACTIVO"
+            if "activ" in t: return "ACTIVO"
             return None
 
-        creados, actualizados, errores = 0, 0, []
+        def hash_archivo_subido(archivo) -> str:
+            hasher = hashlib.sha256()
+            for chunk in archivo.chunks():
+                hasher.update(chunk)
+            archivo.seek(0)
+            return hasher.hexdigest()
+
+        def hash_contenido_dataframe(df: pd.DataFrame) -> str:
+            df_normalizado = df.copy()
+            df_normalizado.columns = [normalizar(str(c)) for c in df_normalizado.columns]
+
+            for columna in df_normalizado.columns:
+                df_normalizado[columna] = df_normalizado[columna].map(s)
+
+            # Quita filas completamente vacías para no depender de relleno accidental del Excel.
+            df_normalizado = df_normalizado.loc[
+                ~(df_normalizado.apply(lambda fila: all(not valor for valor in fila), axis=1))
+            ].reset_index(drop=True)
+
+            columnas_ordenadas = sorted(df_normalizado.columns)
+            registros = []
+            for _, row in df_normalizado[columnas_ordenadas].iterrows():
+                registros.append("||".join(row[col] for col in columnas_ordenadas))
+
+            contenido_canonico = "\n".join(
+                [f"cols:{'||'.join(columnas_ordenadas)}", *registros]
+            )
+            return hashlib.sha256(contenido_canonico.encode("utf-8")).hexdigest()
+
+        def clave_fila_canonica(numero_id_val, nro_serie, descripcion, cuenta_cod, nomencl, servicios):
+            if numero_id_val:
+                return f"id:{normalizar(numero_id_val)}"
+            if nro_serie != "NO" and descripcion:
+                return f"serie_desc:{normalizar(nro_serie)}|{normalizar(descripcion)}"
+            partes = [
+                normalizar(descripcion or ""),
+                normalizar(nro_serie if nro_serie != "NO" else ""),
+                normalizar(cuenta_cod if cuenta_cod != "NO" else ""),
+                normalizar(nomencl if nomencl != "NO" else ""),
+                normalizar(servicios if servicios != "NO" else ""),
+            ]
+            return f"fila:{'|'.join(partes)}"
+
+        def valores_distintos(valor_actual, valor_nuevo):
+            if hasattr(valor_actual, "pk") or hasattr(valor_nuevo, "pk"):
+                actual_pk = getattr(valor_actual, "pk", None) if valor_actual else None
+                nuevo_pk = getattr(valor_nuevo, "pk", None) if valor_nuevo else None
+                return actual_pk != nuevo_pk
+            return valor_actual != valor_nuevo
+
+        claves_filas_esta_carga = set()
 
         for archivo in archivos:
-            nombre_archivo = getattr(archivo, 'name', '').lower()
-            if nombre_archivo.endswith('.xls'):
-                engine = 'xlrd'
-            elif nombre_archivo.endswith('.xlsb'):
-                engine = 'pyxlsb'
-            elif nombre_archivo.endswith(('.ods', '.odf', '.odt')):
-                engine = 'odf'
-            else:
-                engine = 'openpyxl'
+            nombre_archivo_completo = getattr(archivo, 'name', 'Archivo')
+            try:
+                hash_archivo = hash_archivo_subido(archivo)
 
-            df = pd.read_excel(archivo, dtype=str, engine=engine)
-            df.columns = [normalizar(str(c)) for c in df.columns]
+                nombre_archivo_lower = nombre_archivo_completo.lower()
+                
+                # Nombre del servicio basado en el archivo
+                servicio_archivo = os.path.splitext(nombre_archivo_completo)[0].upper()
+                if sector_form:
+                    servicio_archivo = f"{sector_form} - {servicio_archivo}"
 
-            servicio_archivo = sector_form
-            if not servicio_archivo:
-                servicio_archivo = os.path.splitext(getattr(archivo, 'name', ''))[0].upper()
+                if nombre_archivo_lower.endswith('.xls') or nombre_archivo_lower.endswith('.xlt'):
+                    engine = 'xlrd'
+                elif nombre_archivo_lower.endswith('.xlsb'):
+                    engine = 'pyxlsb'
+                elif nombre_archivo_lower.endswith(('.ods', '.odf', '.odt')):
+                    engine = 'odf'
+                else:
+                    engine = 'openpyxl'
 
-            def get_first(row, names) -> str:
-                for n in names:
-                    key = normalizar(n)
-                    if key in df.columns:
-                        return s(row.get(key))
-                return ""
-
-            def get_first_no(row, names) -> str:
-                val = get_first(row, names)
-                return val if val else "NO"
-
-            for i, row in df.iterrows():
                 try:
-                    with transaction.atomic():
-                        numero_id = get_first(row, [
-                            "n° id", "nº id", "n° de id", "nº de id",
-                            "n de id", "n_de_id", "numero_identificacion",
-                            "id_patrimonial", "no de id", "n id",
-                        ])
-                        nro_exp = get_first(row, [
-                            "n° expediente", "nº expediente", "n° de expediente",
-                            "n de expediente", "n_de_expediente", "numero_expediente",
-                            "nº de expediente", "no de expediente", "expediente",
-                        ])
-                        nro_compra = get_first(row, [
-                            "n° compra", "nº compra", "n° de compra",
-                            "n de compra", "n_de_compra", "numero_compra",
-                            "nº de compra", "no de compra",
-                        ])
-                        nro_serie = get_first_no(row, [
-                            "n° serie", "nº serie", "n° de serie",
-                            "n de serie", "n_de_serie", "numero_serie",
-                            "nº de serie", "no de serie",
-                        ])
-                        descripcion = get_first(row, [
-                            "descripcion", "descripción", "descripcion_del_bien",
-                        ])
-                        cuenta_cod = get_first_no(row, [
-                            "cuenta código", "cuenta codigo", "cuenta_código", "cuenta_codigo",
-                        ])
-                        nomencl = get_first_no(row, [
-                            "nomenclatura", "nomenclatura de bienes",
-                            "nomenclatura_de_bienes", "nomenclatura_bienes",
-                        ])
-                        observ = get_first_no(row, ["observaciones", "obs"])
-                        origen_txt = get_first(row, ["origen"])
-                        estado_txt = get_first(row, ["estado"])
-                        precio_raw = get_first(row, ["precio", "valor", "importe"])
-                        cantidad = to_int1(get_first(row, ["cantidad"]))
-                        servicios_raw = s(get_first(row, ["servicios", "servicio", "sector"]) or servicio_archivo)
-                        servicios = servicios_raw if servicios_raw else "NO"
-                        fecha_alta = parse_date_any(get_first(row, [
-                            "fecha alta", "fecha de alta", "fecha_de_alta", "fecha_alta",
-                        ]))
-                        fecha_baja = parse_date_any(get_first(row, [
-                            "fecha de baja", "fecha_de_baja", "fecha_baja",
-                        ]))
-                        origen_val = map_origen(origen_txt)
-                        estado_val = map_estado(estado_txt)
-                        precio = parse_money(precio_raw)
-                        if origen_val != "COMPRA":
-                            precio = None
-                        if not fecha_alta:
-                            fecha_alta = date.today()
+                    df = pd.read_excel(archivo, dtype=str, engine=engine)
+                except Exception:
+                    df = pd.read_excel(archivo, dtype=str)
 
-                        expediente_obj = None
-                        if nro_exp and nro_exp.upper() != "NO":
-                            expediente_obj, _ = Expediente.objects.get_or_create(
-                                numero_expediente=nro_exp
+                # Detección de cabeceras
+                df.columns = [normalizar(str(c)) for c in df.columns]
+                keywords = ["descripcion", "cantidad", "expediente", "compra", "clave", "id", "serie", "nomenclatura"]
+                cols_combined = " ".join(df.columns)
+                
+                if sum(1 for k in keywords if k in cols_combined) < 2:
+                    header_found = False
+                    for idx, row in df.head(25).iterrows():
+                        row_values = [normalizar(str(v)) for v in row.values if v and str(v).lower() != 'nan']
+                        row_combined = " ".join(row_values)
+                        if sum(1 for k in keywords if k in row_combined) >= 2:
+                            new_cols = []
+                            for i, val in enumerate(row.values):
+                                val_str = normalizar(str(val)) if val and str(val).lower() != 'nan' else f"columna_{i}"
+                                new_cols.append(val_str)
+                            df.columns = new_cols
+                            df = df.iloc[idx+1:].reset_index(drop=True)
+                            header_found = True
+                            break
+                    if not header_found:
+                        errores.append(f"No se detectaron cabeceras válidas en '{nombre_archivo_completo}'")
+                        continue
+
+                hash_contenido = hash_contenido_dataframe(df)
+                if (
+                    hash_archivo in hashes_esta_carga
+                    or hash_contenido in hashes_contenido_esta_carga
+                    or ArchivoCargaMasiva.objects.filter(hash_archivo=hash_archivo).exists()
+                    or ArchivoCargaMasiva.objects.filter(hash_contenido=hash_contenido).exists()
+                ):
+                    errores.append(f"Excel ya cargado: '{nombre_archivo_completo}'")
+                    continue
+
+                # Helpers de búsqueda de columnas (definidos por archivo porque dependen de df.columns)
+                def get_first(row_data, names):
+                    # 1. Match exacto
+                    for n in names:
+                        key = normalizar(n)
+                        if key in df.columns:
+                            return s(row_data.get(key))
+                    # 2. Match difuso
+                    for n in names:
+                        key = normalizar(n)
+                        if len(key) < 3: continue
+                        for col in df.columns:
+                            if key in col:
+                                return s(row_data.get(col))
+                    return ""
+
+                def get_first_no(row_data, names):
+                    val = get_first(row_data, names)
+                    return val if val else "NO"
+
+                def to_int1(v):
+                    txt = s(v)
+                    if not txt: return 1
+                    try:
+                        return max(int(float(txt)), 1)
+                    except (ValueError, TypeError):
+                        return 1
+
+                # Procesamiento de filas
+                errores_previos = len(errores)
+                for i, row in df.iterrows():
+                    try:
+                        with transaction.atomic():
+                            numero_id = get_first(row, ["n id", "numero identificacion", "id patrimonial", "id", "identificacion"])
+                            nro_exp = get_first(row, ["n expediente", "numero expediente", "expediente", "exp", "nro exp"])
+                            nro_compra = get_first(row, ["n compra", "numero compra", "compra", "nro compra", "orden de compra", "oc"])
+                            nro_serie = get_first_no(row, ["n serie", "numero serie", "serie", "nro serie"])
+                            descripcion = get_first(row, ["descripcion", "descripción", "detalle", "nombre", "bien"])
+                            cuenta_cod = get_first_no(row, ["cuenta codigo", "cuenta", "cod cuenta"])
+                            nomencl = get_first_no(row, ["nomenclatura", "nomenclatura bienes", "cod nomenclatura"])
+                            observ = get_first_no(row, ["observaciones", "obs", "comentarios"])
+                            origen_txt = get_first(row, ["origen"])
+                            estado_txt = get_first(row, ["estado"])
+                            precio_raw = get_first(row, ["precio", "valor", "importe", "costo", "valor adquisicion"])
+                            cantidad = to_int1(get_first(row, ["cantidad"]))
+                            
+                            serv_raw = s(get_first(row, ["servicios", "servicio", "sector"]) or servicio_archivo)
+                            servicios = (serv_raw if serv_raw else "NO")[:200]
+
+                            fecha_alta = parse_date_any(get_first(row, ["fecha alta", "fecha de alta"])) or date.today()
+                            fecha_baja = parse_date_any(get_first(row, ["fecha de baja"]))
+                            
+                            origen_val = map_origen(origen_txt)
+                            estado_val = map_estado(estado_txt)
+                            precio = parse_money(precio_raw) if origen_val == "COMPRA" else None
+
+                            expediente_obj = None
+                            if nro_exp and nro_exp.upper() != "NO":
+                                expediente_obj, _ = Expediente.objects.get_or_create(numero_expediente=nro_exp[:50])
+                                if nro_compra and nro_compra.upper() != "NO":
+                                    expediente_obj.numero_compra = nro_compra[:50]
+                                    expediente_obj.save(update_fields=["numero_compra"])
+
+                            nombre_bien = (descripcion[:200] if descripcion else (nro_serie[:200] if nro_serie != "NO" else "NO"))
+                            numero_id_val = ((numero_id or "").strip() or None)
+                            if numero_id_val:
+                                numero_id_val = numero_id_val[:50]
+
+                            defaults = {
+                                "nombre": nombre_bien,
+                                "descripcion": descripcion or "NO",
+                                "cantidad": cantidad,
+                                "servicios": servicios,
+                                "numero_serie": nro_serie[:100],
+                                "numero_identificacion": numero_id_val,
+                                "cuenta_codigo": cuenta_cod[:20],
+                                "nomenclatura_bienes": nomencl[:200],
+                                "observaciones": observ,
+                                "valor_adquisicion": precio,
+                                "fecha_adquisicion": fecha_alta,
+                                "fecha_baja": fecha_baja,
+                                "expediente": expediente_obj,
+                                "numero_compra": (nro_compra if nro_compra and nro_compra.upper() != "NO" else "NO")[:50],
+                            }
+                            if origen_val: defaults["origen"] = origen_val
+                            if estado_val: defaults["estado"] = estado_val
+
+                            clave_fila = clave_fila_canonica(
+                                numero_id_val,
+                                nro_serie,
+                                descripcion,
+                                cuenta_cod,
+                                nomencl,
+                                servicios,
                             )
-                            if nro_compra and nro_compra.upper() != "NO":
-                                expediente_obj.numero_compra = nro_compra
-                                expediente_obj.save(update_fields=["numero_compra"])
+                            if clave_fila in claves_filas_esta_carga:
+                                duplicados_omitidos += 1
+                                continue
 
-                        nombre = descripcion[:200] if descripcion else (nro_serie if nro_serie != "NO" else "SIN NOMBRE")
+                            bien_existente = None
+                            if numero_id_val:
+                                bien_existente = BienPatrimonial.objects.filter(
+                                    numero_identificacion=numero_id_val
+                                ).first()
+                            elif nro_serie != "NO" and descripcion:
+                                bien_existente = BienPatrimonial.objects.filter(
+                                    numero_serie=nro_serie,
+                                    descripcion=descripcion,
+                                ).first()
 
-                        defaults = {
-                            "nombre": nombre,
-                            "descripcion": descripcion or "",
-                            "cantidad": cantidad,
-                            "servicios": servicios,
-                            "numero_serie": nro_serie,
-                            "cuenta_codigo": cuenta_cod,
-                            "nomenclatura_bienes": nomencl,
-                            "observaciones": observ,
-                            "valor_adquisicion": precio,
-                            "fecha_adquisicion": fecha_alta,
-                            "fecha_baja": fecha_baja,
-                            "expediente": expediente_obj,
-                        }
-                        if origen_val is not None:
-                            defaults["origen"] = origen_val
-                        if estado_val is not None:
-                            defaults["estado"] = estado_val
+                            if bien_existente is None:
+                                BienPatrimonial.objects.create(**defaults)
+                                creados += 1
+                            else:
+                                campos_a_actualizar = []
+                                for campo, valor_nuevo in defaults.items():
+                                    if valores_distintos(getattr(bien_existente, campo), valor_nuevo):
+                                        setattr(bien_existente, campo, valor_nuevo)
+                                        campos_a_actualizar.append(campo)
 
-                        numero_id_val = (numero_id or "").strip() or None
-                        if numero_id_val is not None:
-                            _, created = BienPatrimonial.objects.update_or_create(
-                                numero_identificacion=numero_id_val,
-                                defaults=defaults,
-                            )
-                        elif nro_serie and nro_serie != "NO" and descripcion:
-                            _, created = BienPatrimonial.objects.update_or_create(
-                                numero_serie=nro_serie,
-                                descripcion=descripcion or "",
-                                defaults=defaults,
-                            )
-                        else:
-                            BienPatrimonial.objects.create(**defaults)
-                            created = True
+                                if campos_a_actualizar:
+                                    bien_existente.save(update_fields=campos_a_actualizar)
+                                    actualizados += 1
+                                else:
+                                    sin_cambios += 1
 
-                        if created:
-                            creados += 1
-                        else:
-                            actualizados += 1
-
-                except Exception as e:
-                    errores.append(f"Fila {i + 1} en '{getattr(archivo, 'name', 'Excel')}': {str(e)}")
+                            claves_filas_esta_carga.add(clave_fila)
+                    except Exception as e:
+                        errores.append(f"Error en {nombre_archivo_completo} (fila {i+1}): {str(e)}")
+                if len(errores) == errores_previos:
+                    ArchivoCargaMasiva.objects.create(
+                        nombre_archivo=nombre_archivo_completo,
+                        hash_archivo=hash_archivo,
+                        hash_contenido=hash_contenido,
+                        usuario=request.user,
+                    )
+                    hashes_esta_carga.add(hash_archivo)
+                    hashes_contenido_esta_carga.add(hash_contenido)
+            except Exception as e:
+                errores.append(f"Error crítico procesando '{nombre_archivo_completo}': {str(e)}")
 
         if creados or actualizados:
             messages.success(
                 request,
-                f"✅ Creados: {creados}, Actualizados: {actualizados}. Errores: {len(errores)}",
+                f"✅ Creados: {creados}, Actualizados: {actualizados}, Sin cambios: {sin_cambios}, Duplicados omitidos: {duplicados_omitidos}. Archivos: {len(archivos)}. Errores: {len(errores)}"
             )
         else:
-            messages.warning(request, "No se crearon ni actualizaron bienes.")
-
+            messages.warning(
+                request,
+                f"No se procesaron registros nuevos. Sin cambios: {sin_cambios}. Duplicados omitidos: {duplicados_omitidos}."
+            )
+        
         if errores:
-            messages.error(request, "Algunas filas fallaron: " + " | ".join(errores[:8]))
+            messages.error(request, "Resumen de errores: " + " | ".join(errores[:5]))
 
         Notificacion.objects.create(
             usuario=request.user,
-            mensaje=f"Se realizó una carga masiva: {creados} bienes registrados. Errores: {len(errores)}.",
-            leida=False,
+            mensaje=f"Carga masiva finalizada: {creados} nuevos, {actualizados} actualizados, {sin_cambios} sin cambios, {duplicados_omitidos} duplicados omitidos. {len(errores)} errores.",
+            leida=False
         )
         return redirect("lista_bienes")
 
-    except (FileNotFoundError, pd.errors.EmptyDataError, KeyError) as e:
-        messages.error(request, f"Error al procesar el archivo: {e}")
+    except Exception as e:
+        messages.error(request, f"Error general en la carga: {str(e)}")
         return redirect("lista_bienes")
 
 
@@ -1876,17 +2125,34 @@ def agregar_servicio_ajax(request):
         return JsonResponse({"ok": False, "error": "El nombre no puede estar vacío."})
 
     SERVICIOS_FIJOS = [
-        "Direccion Asociada Area Tecnica", "SAP (Servicio De Area Programatica Y Redes De Salud)",
-        "Departamento Sistema De Informacion - Samo Turnos Y Estadistica", "Epidemiologia",
-        "Jardin Maternal", "Recuperacion Clinica", "Farmacia", "Direccion Asociada Medico Quirurgica",
-        "Percial", "Cirugia", "Hemoterapia", "Clinica", "Patologia", "Toxicologia",
-        "Esterilizacion", "Neuropsicologia", "Seguridad E Higiene", "U.T.I.",
-        "Area Limpieza Hospitalaria", "Emergencia", "Podologia Y Peluqueria", "Infectologia",
-        "Odontologia", "Consultorios", "Cardiologia", "Gerenciamiento De Camas", "Neurologia",
-        "Gastroenterologia", "Rehabilitacion Fisica Y Kinesiologia", "Neonatologia", "Laboratorio",
-        "Sala Gestion De Usuarios", "Diagnostico Por Imagenes", "Reumatologia Y Oftalmologia",
-        "Costurero", "CAPER", "Quirofano", "Consejeria", "Traumatologia", "Vacunacion",
-        "Pediatria Y Neonatologia", "Dermatologia", "Tocoginecologia", "Oncologia",
+        "Apoyo A La Comunidad", "Area Guardia", "Area Limpieza Hospitalaria",
+        "Area Parque Cultural", "Arquitectura", "CAPER", "Camilleros", "Cardiologia",
+        "Charcot", "Cirugia", "Clinica", "Cocina", "Compras", "Conmutador", "Consejeria",
+        "Consultorio De Gastroenterologia", "Consultorio Externo Salud Mental",
+        "Consultorios Externos Pab V", "Contable", "Costurero",
+        "Cud Y Servicios De Consumos Problematicos", "Departamento De Enfermerias Supervision",
+        "Departamento Sistema De Informacion - Samo Turnos Y Estadistica",
+        "Deposito Descartable", "Deposito General", "Dermatologia", "Diagnostico Por Imagenes",
+        "Dira", "Direccion Administrativa", "Direccion Asociada Area Tecnica",
+        "Direccion Asociada Medico Quirurgica", "Direccion Ejecutiva", "Direccion Salud Mental",
+        "Dispositivo Artistico Cultural", "Docencia E Investigacion",
+        "Donacion Fundacion Florencio Perez", "Emergencia", "En Guarda Patrimoniales",
+        "Enfermeria", "Epidemiologia", "Estadistica", "Estadistica Central",
+        "Estadistica Pabellon V", "Esterilizacion", "Farmacia", "Gastroenterologia",
+        "Gerenciamiento De Camas", "Hemoterapia", "Infancias Y Juventudes", "Infectologia",
+        "Informatica", "Infraestructura Y Mantenimiento", "Intendencia", "Jardin Maternal",
+        "Laboratorio", "Lasegue", "Legales", "Limpieza", "Mesa De Entrada",
+        "Neumonologia Y Oftalmologia", "Neurocirugia", "Neuropsicologia", "Odontologia",
+        "Oncologia", "Patologia", "Patrimoniales", "Pediatria Y Neonatologia", "Penfield",
+        "Percial", "Podologia Y Peluqueria", "Polo Educativo", "Pre Alta", "Quirofano",
+        "RRHH", "Recuperacion Clinica", "Registro Civil", "Rehabilitacion Fisica Y Kinesiologia",
+        "Rehabilitacion Salud Mental Direccion", "Reumatologia Y Oftalmologia",
+        "SAC", "SAM", "SAMO Contable", "SAMO Facturacion",
+        "SAP (Servicio De Area Programatica Y Redes De Salud)", "SGU", "Sala De Endoscopia",
+        "Sala F", "Sala G", "Seguridad E Higiene", "Servicio De Psicologia",
+        "Servicio Rehabilitacion Larga Distancia", "Servicio Social", "Sumar",
+        "Tocoginecologia", "Toxicologia", "Traumatologia", "U.T.I.", "UCAC",
+        "Vacunacion", "Vigilancia",
     ]
 
     ya_existe_fijo = any(nombre.lower() == s.lower() for s in SERVICIOS_FIJOS)
@@ -1908,17 +2174,34 @@ def agregar_servicio(request):
     if request.method == "POST":
         nombre = (request.POST.get("nombre") or "").strip().title()
         SERVICIOS_FIJOS = [
-            "Direccion Asociada Area Tecnica", "SAP (Servicio de Area Programatica y Redes de Salud)",
-            "Departamento Sistema de Informacion - SAMO Turnos y Estadistica", "Epidemiologia",
-            "Jardin Maternal", "Recuperacion Clinica", "Farmacia", "Direccion Asociada Medico Quirurgica",
-            "Percial", "Cirugia", "Hemoterapia", "Clinica", "Patologia", "Toxicologia",
-            "Esterilizacion", "Neuropsicologia", "Seguridad e Higiene", "U.T.I.",
-            "Area Limpieza Hospitalaria", "Emergencia", "Podologia y Peluqueria", "Infectologia",
-            "Odontologia", "Consultorios", "Cardiologia", "Gerenciamiento de Camas", "Neurologia",
-            "Gastroenterologia", "Rehabilitacion Fisica y Kinesiologia", "Neonatologia", "Laboratorio",
-            "Sala Gestion de Usuarios", "Diagnostico por Imagenes", "Reumatologia y Oftalmologia",
-            "Costurero", "CAPER", "Quirofano", "Consejeria", "Traumatologia", "Vacunacion",
-            "Pediatria y Neonatologia", "Dermatologia", "Tocoginecologia", "Oncologia",
+            "Apoyo A La Comunidad", "Area Guardia", "Area Limpieza Hospitalaria",
+            "Area Parque Cultural", "Arquitectura", "CAPER", "Camilleros", "Cardiologia",
+            "Charcot", "Cirugia", "Clinica", "Cocina", "Compras", "Conmutador", "Consejeria",
+            "Consultorio De Gastroenterologia", "Consultorio Externo Salud Mental",
+            "Consultorios Externos Pab V", "Contable", "Costurero",
+            "Cud Y Servicios De Consumos Problemacion", "Departamento De Enfermerias Supervision",
+            "Departamento Sistema De Informacion - Samo Turnos Y Estadistica",
+            "Deposito Descartable", "Deposito General", "Dermatologia", "Diagnostico Por Imagenes",
+            "Dira", "Direccion Administrativa", "Direccion Asociada Area Tecnica",
+            "Direccion Asociada Medico Quirurgica", "Direccion Ejecutiva", "Direccion Salud Mental",
+            "Dispositivo Artistico Cultural", "Docencia E Investigacion",
+            "Donacion Fundacion Florencio Perez", "Emergencia", "En Guarda Patrimoniales",
+            "Enfermeria", "Epidemiologia", "Estadistica", "Estadistica Central",
+            "Estadistica Pabellon V", "Esterilizacion", "Farmacia", "Gastroenterologia",
+            "Gerenciamiento De Camas", "Hemoterapia", "Infancias Y Juventudes", "Infectologia",
+            "Informatica", "Infraestructura Y Mantenimiento", "Intendencia", "Jardin Maternal",
+            "Laboratorio", "Lasegue", "Legales", "Limpieza", "Mesa De Entrada",
+            "Neumonologia Y Oftalmologia", "Neurocirugia", "Neuropsicologia", "Odontologia",
+            "Oncologia", "Patologia", "Patrimoniales", "Pediatria Y Neonatologia", "Penfield",
+            "Percial", "Podologia Y Peluqueria", "Polo Educativo", "Pre Alta", "Quirofano",
+            "RRHH", "Recuperacion Clinica", "Registro Civil", "Rehabilitacion Fisica Y Kinesiologia",
+            "Rehabilitacion Salud Mental Direccion", "Reumatologia Y Oftalmologia",
+            "SAC", "SAM", "SAMO Contable", "SAMO Facturacion",
+            "SAP (Servicio De Area Programatica Y Redes De Salud)", "SGU", "Sala De Endoscopia",
+            "Sala F", "Sala G", "Seguridad E Higiene", "Servicio De Psicologia",
+            "Servicio Rehabilitacion Larga Distancia", "Servicio Social", "Sumar",
+            "Tocoginecologia", "Toxicologia", "Traumatologia", "U.T.I.", "UCAC",
+            "Vacunacion", "Vigilancia",
         ]
         ya_existe_fijo = any(nombre.lower() == s.lower() for s in SERVICIOS_FIJOS)
         ya_existe_extra = ServicioExtra.objects.filter(nombre__iexact=nombre).exists()

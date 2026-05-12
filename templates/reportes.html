@@ -4,19 +4,27 @@
 
 {% block content %}
 <div class="container py-4">
-  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+  <div class="d-flex flex-column gap-3 mb-4">
     <h2 class="m-0">Reportes de Bienes Patrimoniales</h2>
-    <form method="get" class="d-flex flex-wrap align-items-center gap-2">
+    <form method="get" class="d-flex align-items-start gap-2 w-100" style="min-height: 38px; height: auto;">
+      <!-- Buscador de texto dinámico -->
+      <div style="width: 25%; height: 38px;">
+        <input type="search" name="q" value="{{ q|default:'' }}" class="form-control auto-submit"
+               placeholder="Descripción, ID, servicio..." style="height: 38px; font-family: var(--font-roboto); font-size: 14px;">
+      </div>
+
       <!-- Desplegable de horas - Tamaño más chico -->
-      <select name="scope" class="form-select form-select-sm" style="width: 130px; height: 38px;">
-        <option value="24h" {% if scope == '24h' %}selected{% endif %}>Últimas 24 h</option>
-        <option value="12h" {% if scope == '12h' %}selected{% endif %}>Últimas 12 h</option>
-        <option value="6h"  {% if scope == '6h'  %}selected{% endif %}>Últimas 6 h</option>
-        <option value="all" {% if scope == 'all' %}selected{% endif %}>Historial</option>
-      </select>
+      <div style="width: 15%; height: 38px;">
+        <select name="scope" class="form-select form-select-sm" style="width: 100%; height: 38px; font-family: var(--font-roboto); font-size: 14px;">
+          <option value="24h" {% if scope == '24h' %}selected{% endif %}>Últimas 24 h</option>
+          <option value="12h" {% if scope == '12h' %}selected{% endif %}>Últimas 12 h</option>
+          <option value="6h"  {% if scope == '6h'  %}selected{% endif %}>Últimas 6 h</option>
+          <option value="all" {% if scope == 'all' %}selected{% endif %}>Historial</option>
+        </select>
+      </div>
 
       <!-- Desplegable de servicios con Select2 -->
-      <div style="min-width: 220px;">
+      <div style="width: 25%; min-height: 38px; height: auto;">
         <select name="servicio" id="filtro-servicio" class="form-select" multiple>
           {% for s in todos_servicios %}
           <option value="{{ s }}" {% if s in servicios_seleccionados %}selected{% endif %}>{{ s }}</option>
@@ -25,30 +33,15 @@
       </div>
 
       <!-- Botones Institucionales -->
-      <div class="btn-inst-group">
-        <button class="btn-inst-filter" type="submit">
-          <i class="fa-solid fa-rotate"></i> Buscar
-        </button>
-        <a class="btn-inst-primary"
-           href="{% url 'reportes_pdf' %}?scope={{ scope|default:'24h' }}{% for s in servicios_seleccionados %}&servicio={{ s }}{% endfor %}">
+      <div class="btn-inst-group" style="height: 38px;">
+        <a class="btn-inst-primary" style="height: 38px; display: inline-flex; align-items: center; justify-content: center;"
+           href="{% url 'reportes_pdf' %}?scope={{ scope|default:'24h' }}&q={{ q|default:'' }}{% for s in servicios_seleccionados %}&servicio={{ s }}{% endfor %}">
           <i class="fa-solid fa-file-pdf"></i>
           <span>Exportar PDF</span>
         </a>
       </div>
     </form>
   </div>
-
-
-
-  <!-- Cuadro de servicios seleccionados -->
-  {% if servicios_seleccionados %}
-  <div id="cuadro-servicios" class="border rounded p-2 mb-3 bg-light" style="min-height: 36px; overflow-y: auto;">
-    <small class="text-muted me-2">Servicios seleccionados:</small>
-    {% for s in servicios_seleccionados %}
-      <span class="badge bg-primary me-1 mb-1">{{ s }}</span>
-    {% endfor %}
-  </div>
-  {% endif %}
 
   <p class="text-muted">Rango: <strong>{{ rango_desc }}</strong></p>
 
@@ -61,8 +54,8 @@
           <th>Descripción</th>
           <th>Servicios</th>
           <th>Estado</th>
-          <th>Fecha Alta</th>
-          <th>Fecha Baja</th>
+          <th style="width: 120px; text-align: center;">Fecha Alta</th>
+          <th style="width: 120px; text-align: center;">Fecha Baja</th>
           <th class="text-end">Valor</th>
         </tr>
       </thead>
@@ -73,10 +66,10 @@
           <td style="min-width:240px">{{ b.descripcion|default:"—" }}</td>
           <td class="text-nowrap">{{ b.servicios|default:"—" }}</td>
           <td class="text-nowrap">{{ b.get_estado_display|default:b.estado|default:"—" }}</td>
-          <td class="text-nowrap">
+          <td class="text-nowrap" style="width: 120px; text-align: center;">
             {% if b.fecha_adquisicion %}{{ b.fecha_adquisicion|date:"d/m/Y" }}{% else %}—{% endif %}
           </td>
-          <td class="text-nowrap">
+          <td class="text-nowrap" style="width: 120px; text-align: center;">
             {% if b.fecha_baja %}{{ b.fecha_baja|date:"d/m/Y" }}{% else %}—{% endif %}
           </td>
           <td class="text-end">
@@ -160,21 +153,27 @@
       border: 1px solid var(--border-color) !important;
       border-radius: 6px !important;
       min-height: 38px !important;
+      height: auto !important;
       display: flex !important;
       align-items: center !important;
       background-color: var(--input-bg) !important;
+      padding: 2px 4px !important;
     }
     .select2-container--default.select2-container--focus .select2-selection--multiple {
       border-color: var(--primary-turquesa) !important;
       box-shadow: 0 0 0 2px rgba(0, 174, 195, 0.25) !important;
     }
     .select2-container--default .select2-selection--multiple .select2-selection__choice {
-      background-color: var(--primary-turquesa) !important;
+      background-color: #00aec3 !important;
       border: none !important;
       color: #fff !important;
       border-radius: 4px !important;
-      padding: 2px 8px !important;
-      margin-top: 2px !important;
+      padding: 2px 6px !important;
+      font-family: 'Roboto', sans-serif !important;
+      font-size: 12px !important;
+      margin: 2px !important;
+      display: inline-flex !important;
+      align-items: center !important;
     }
     .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
       color: #fff !important;
@@ -182,9 +181,9 @@
     }
     .select2-container--default .select2-search--inline .select2-search__field {
       margin-top: 0 !important;
-      height: 34px !important;
+      height: 28px !important;
       font-family: var(--font-roboto) !important;
-      font-size: 14px !important;
+      font-size: 13px !important;
       color: var(--input-text) !important;
     }
     .select2-container--default .select2-selection--multiple .select2-selection__rendered {
@@ -201,10 +200,51 @@
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
   <script>
     $(document).ready(function() {
+      const form = document.querySelector('form');
+      if (!form) return;
+
+      const requestSubmit = () => (form.requestSubmit ? form.requestSubmit() : form.submit());
+
+      // Debounce para texto/búsqueda
+      const debounce = (fn, ms) => {
+        let t;
+        return (...args) => {
+          clearTimeout(t);
+          t = setTimeout(() => fn.apply(null, args), ms);
+        };
+      };
+      const debouncedSubmit = debounce(requestSubmit, 400);
+
+      // Inicializar Select2
       $('#filtro-servicio').select2({
         placeholder: "Buscar servicio...",
         allowClear: true,
-        width: '100%'
+        width: '100%',
+        maximumSelectionLength: 4,
+        language: {
+          maximumSelected: function (args) {
+            return 'Límite alcanzado: máximo 4 servicios por reporte';
+          }
+        }
+      });
+
+      // Submit inmediato ante cambios en selects comunes (como scope)
+      form.querySelectorAll('select:not(#filtro-servicio)').forEach(select => {
+        select.addEventListener('change', () => {
+          requestSubmit();
+        });
+      });
+
+      // Submit con debounce para búsqueda de texto
+      form.querySelectorAll('input[type="search"]').forEach(input => {
+        input.addEventListener('input', () => {
+          debouncedSubmit();
+        });
+      });
+
+      // Submit inmediato al cambiar Select2
+      $('#filtro-servicio').on('change', function() {
+        requestSubmit();
       });
     });
   </script>

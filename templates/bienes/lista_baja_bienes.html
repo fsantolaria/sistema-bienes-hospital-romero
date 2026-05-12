@@ -4,6 +4,22 @@
 
 {% block title %}Bienes Dados de Baja{% endblock %}
 
+{% block extra_css %}
+<style>
+  tr.seleccionado-restaurar td {
+    background-color: #e8f5e9 !important;
+    border-top: 1.5px solid #198754 !important;
+    border-bottom: 1.5px solid #198754 !important;
+  }
+  tr.seleccionado-restaurar td:first-child {
+    border-left: 1.5px solid #198754 !important;
+  }
+  tr.seleccionado-restaurar td:last-child {
+    border-right: 1.5px solid #198754 !important;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-3">
   <div class="d-flex justify-content-between align-items-center mb-3">
@@ -365,8 +381,7 @@
         if (bienesParaRestaurar.has(pk)) {
           const tr = btn.closest('tr');
           if (tr) {
-            tr.style.backgroundColor = '#e8f5e9'; // verde suave
-            tr.style.border = '2px solid #198754'; // verde borde
+            tr.classList.add('seleccionado-restaurar');
           }
         }
       });
@@ -441,8 +456,7 @@
           // Deseleccionar
           bienesParaRestaurar.delete(pk);
           if (tr) {
-            tr.style.backgroundColor = '';
-            tr.style.border = '';
+            tr.classList.remove('seleccionado-restaurar');
           }
         } else {
           if (bienesParaRestaurar.size >= 20) {
@@ -452,8 +466,7 @@
           // Seleccionar
           bienesParaRestaurar.set(pk, true);
           if (tr) {
-            tr.style.backgroundColor = '#e8f5e9';
-            tr.style.border = '2px solid #198754';
+            tr.classList.add('seleccionado-restaurar');
           }
         }
         saveRestaurarState();
