@@ -79,7 +79,7 @@
           <input type="password" id="password" name="password" placeholder="....." required
                  value="{{ form.password.value|default:'' }}">
           <button type="button" class="toggle-password" id="toggle-password" tabindex="-1" aria-label="Mostrar/ocultar contraseña">
-            <i class="fas fa-eye" id="toggle-password-icon"></i>
+            <i class="fas fa-eye-slash" id="toggle-password-icon"></i>
           </button>
         </div>
         <small class="form-text text-muted" style="display: block; margin-top: 5px; font-size: 12px; color: #6c757d;">Mínimo 8 caracteres, mayúscula, minúscula, número y carácter especial (Ej: Lm9!abcd).</small>
@@ -192,12 +192,12 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleBtn.addEventListener('click', function() {
         if (passwordInput.type === 'password') {
             passwordInput.type = 'text';
-            toggleIcon.classList.remove('fa-eye');
-            toggleIcon.classList.add('fa-eye-slash');
-        } else {
-            passwordInput.type = 'password';
             toggleIcon.classList.remove('fa-eye-slash');
             toggleIcon.classList.add('fa-eye');
+        } else {
+            passwordInput.type = 'password';
+            toggleIcon.classList.remove('fa-eye');
+            toggleIcon.classList.add('fa-eye-slash');
         }
     });
 });
