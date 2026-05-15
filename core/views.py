@@ -474,14 +474,13 @@ def alta_operadores(request):
             )
  
         numero_doc = form.cleaned_data["dni"]
- 
-        nombre     = (request.POST.get("nombre") or "").strip()
-        apellido   = (request.POST.get("apellido") or "").strip()
-        pais       = (request.POST.get("pais") or "").strip()
-        numero_doc = (request.POST.get("numero_doc") or "").strip()
-        email      = (request.POST.get("email") or "").strip()
-        estado     = (request.POST.get("estado") or "habilitado").strip()
-        password   = (request.POST.get("password") or "").strip()
+
+        nombre   = (request.POST.get("nombre") or "").strip()
+        apellido = (request.POST.get("apellido") or "").strip()
+        pais     = (request.POST.get("pais") or "").strip()
+        email    = (request.POST.get("email") or "").strip()
+        estado   = (request.POST.get("estado") or "habilitado").strip()
+        password = (request.POST.get("password") or "").strip()
  
         # Validación DNI duplicado
         if numero_doc and Usuario.objects.filter(numero_doc=numero_doc).exists():
@@ -525,7 +524,7 @@ def alta_operadores(request):
         if hasattr(operador, "pais"):
             operador.pais = pais
         if hasattr(operador, "numero_doc"):
-            operador.numero_doc = numero_doc
+            operador.numero_doc = numero_doc or None
         if hasattr(operador, "estado"):
             operador.estado = estado
  

@@ -286,6 +286,7 @@ class OperadorForm(forms.Form):
     estado = forms.ChoiceField(
         choices=[('habilitado', 'Habilitado'), ('no-habilitado', 'No Habilitado')],
         initial='habilitado',
+        required=False,
         label='Estado'
     )
     password = forms.CharField(required=False, widget=forms.PasswordInput, label='Contraseña')
