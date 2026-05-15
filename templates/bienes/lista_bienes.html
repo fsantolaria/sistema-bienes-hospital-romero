@@ -222,7 +222,7 @@
             <td class="text-nowrap">{{ b.servicios|default:"—" }}</td>
             <td style="min-width:220px;">{{ b.observaciones|default:"—" }}</td>
             <td class="text-nowrap">
-              {% if b.siem %}{{ b.siem|date:"d/m/Y" }}{% else %}—{% endif %}
+              {% if b.siem %}Si{% else %}No{% endif %}
             </td>
             <td class="text-end">
               {% if b.valor_adquisicion %}
