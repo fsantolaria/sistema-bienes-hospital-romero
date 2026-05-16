@@ -1,12 +1,11 @@
 from django.contrib.auth import authenticate, login, logout, get_user_model
 import pandas as pd
-import hashlib
 from datetime import date, timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from core.forms import CargaMasivaForm, BienPatrimonialForm, OperadorForm
-from core.models import BienPatrimonial, ServicioExtra
+from core.models import BienPatrimonial, ArchivoCargaMasiva, ServicioExtra
 from django.db.models import Q, F
 from django.views.decorators.http import require_POST
 from django.db import transaction, IntegrityError
@@ -17,6 +16,7 @@ from django.contrib.messages import get_messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.utils.text import slugify
 from core.models.notificacion import Notificacion
+from core.models.log_actividad import LogActividad
 from core.constants import MAX_NOTIFICACIONES
 from django.http import JsonResponse, HttpResponse
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -28,23 +28,27 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.units import cm
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 import io
+import hashlib
 from xml.sax.saxutils import escape
 from core.models import Usuario
 
 
 def _role_route_name(user) -> str:
+    """Devuelve el nombre de la ruta según el rol del usuario."""
     if user.is_superuser:
         return "home_admin"
     if hasattr(user, "tipo_usuario"):
         if user.tipo_usuario == "admin":
             return "home_admin"
-        if user.tipo_usuario == "supervisor":
+        elif user.tipo_usuario == "supervisor":
             return "home_supervisor"
-        return "home_operador"
+        else:
+            return "home_operador"
     return "home_operador"
 
 
 def permisos_context(user):
+    """Booleans útiles para templates y lógica."""
     if not getattr(user, "is_authenticated", False):
         return {
             "es_admin": False,
@@ -54,9 +58,13 @@ def permisos_context(user):
             "notificaciones": [],
             "notificaciones_count": 0,
         }
-    tipo = getattr(user, "tipo_usuario", None)
-    es_admin = tipo == "admin" or user.is_superuser
-    es_supervisor = tipo == "supervisor"
+
+    if hasattr(user, "tipo_usuario"):
+        es_admin = user.tipo_usuario == "admin" or user.is_superuser
+        es_supervisor = user.tipo_usuario == "supervisor"
+    else:
+        es_admin = user.is_superuser
+        es_supervisor = False
 
     notificaciones = list(
         Notificacion.objects
@@ -67,6 +75,7 @@ def permisos_context(user):
     notificaciones_count = Notificacion.objects.filter(
         usuario=user, leida=False, eliminada=False
     ).count()
+
     return {
         "es_admin": es_admin,
         "es_supervisor": es_supervisor,
@@ -74,31 +83,7 @@ def permisos_context(user):
         "puede_gestionar_operadores": es_admin,
         "notificaciones": notificaciones,
         "notificaciones_count": notificaciones_count,
-        "tema_oscuro": getattr(user, "tema_oscuro", False),
     }
-
-
-# ============================
-# TEMA / PREFERENCIAS
-# ============================
-
-@login_required
-@require_POST
-def actualizar_tema(request):
-    try:
-        import json
-        data = json.loads(request.body)
-        tema_oscuro = data.get("tema_oscuro", False)
-        
-        user = request.user
-        user.tema_oscuro = tema_oscuro
-        user.save(update_fields=["tema_oscuro"])
-        
-        return JsonResponse({"status": "ok", "tema_oscuro": user.tema_oscuro})
-    except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)}, status=400)
-
-
 # ============================
 # AUTENTICACIÓN / INICIO
 # ============================
@@ -121,7 +106,18 @@ def login_view(request):
         usuario = request.POST.get("usuario", "").strip()
         contrasena = request.POST.get("contrasena", "")
         tipo_usuario = (request.POST.get("tipo_usuario") or tipo_default or "").strip()
+
         user = authenticate(request, username=usuario, password=contrasena)
+
+        # Si falla con username, intentar con email
+        if user is None and "@" in usuario:
+            from django.contrib.auth import get_user_model
+            UserModel = get_user_model()
+            try:
+                u = UserModel.objects.get(email__iexact=usuario)
+                user = authenticate(request, username=u.username, password=contrasena)
+            except (UserModel.DoesNotExist, UserModel.MultipleObjectsReturned):
+                user = None
 
         def _rerender_error(msg):
             messages.error(request, msg)
@@ -136,7 +132,7 @@ def login_view(request):
             return render(request, "login.html", ctx, status=401)
 
         if user is None:
-            return _rerender_error("Usuario o contraseña incorrectos. Formato requerido (Ej: Hospit@l1)")
+            return _rerender_error("Usuario o contraseña incorrectos")
 
         if not tipo_usuario:
             if getattr(user, "is_superuser", False):
@@ -168,10 +164,11 @@ def login_view(request):
         else:
             return _rerender_error("Tipo de usuario no válido.")
 
+        # Notificar a admins del inicio de sesión
         tipo_label = {"admin": "Administrador", "supervisor": "Supervisor", "operador": "Operador"}.get(tipo_usuario, tipo_usuario.capitalize())
-        crear_notificacion_admins(
-            f"{tipo_label} '{user.username}' inició sesión"
-        )
+        msg_login = f"{tipo_label} '{user.username}' inició sesión"
+        crear_notificacion_admins(msg_login)
+        registrar_log(user, 'LOGIN', msg_login)
 
         if next_url and url_has_allowed_host_and_scheme(
             next_url,
@@ -180,6 +177,7 @@ def login_view(request):
         ):
             return redirect(next_url)
         return redirect(_role_route_name(user))
+
 
     return render(
         request,
@@ -218,13 +216,15 @@ def bienes(request):
         if form.is_valid():
             bien = form.save()
             nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
-            crear_notificacion_admins(
-                f"Se registró el bien '{nombre_bien}' (Clave: {bien.clave_unica}) correctamente."
-            )
+            msg_carga = f"Se registró el bien '{nombre_bien}' (Clave: {bien.clave_unica}) correctamente."
+            crear_notificacion_admins(msg_carga)
+            registrar_log(request.user, 'CARGA', msg_carga)
+            
             messages.success(request, f"Bien '{nombre_bien}' registrado correctamente.")
             if perms.get("es_admin", False):
                 return redirect("lista_bienes")
             return redirect("lista_bienes_operador")
+        # Mensaje de error
         else:
             messages.error(request, "Error al ejecutar la carga")
     else:
@@ -241,7 +241,7 @@ def bienes(request):
 def logout_view(request):
     logout(request)
     messages.success(request, "Sesión cerrada exitosamente")
-    return redirect("inicio")
+    return redirect("login")
 
 
 # ============================
@@ -260,24 +260,12 @@ def home_admin(request):
 
 @login_required
 def home_supervisor(request):
-    tipo = getattr(request.user, "tipo_usuario", None)
-    if not (request.user.is_superuser or tipo in ("admin", "supervisor")):
-        messages.error(request, "No tenés permisos para acceder a esta página.")
+    perms = permisos_context(request.user)
+    if not perms["es_supervisor"]:
+        messages.error(request, "No tienes permisos para acceder a esta página")
         return redirect("home_operador")
+    return render(request, "home_supervisor.html", perms)
 
-    total_bienes = BienPatrimonial.objects.count()
-    bienes_activos = BienPatrimonial.objects.filter(estado="ACTIVO").count()
-    bienes_baja = BienPatrimonial.objects.filter(estado="BAJA").count()
-
-    context = permisos_context(request.user)
-    context.update({
-        "total_bienes": total_bienes,
-        "bienes_activos": bienes_activos,
-        "bienes_baja": bienes_baja,
-        "es_supervisor": True,
-        "logout_on_back": True,
-    })
-    return render(request, "home_supervisor.html", context)
 
 
 # ============================
@@ -301,22 +289,149 @@ def operadores(request):
 
 
 def recuperar_password(request):
+    """Recuperación de contraseña según el rol."""
+    from django.core.mail import send_mail
+    from django.contrib.auth import get_user_model
+    from core.models.password_reset_token import PasswordResetToken
+    
+    User = get_user_model()
+    
     if request.method == "POST":
         identificador = (request.POST.get("usuario_o_email") or "").strip()
+        tipo_usuario = (request.POST.get("tipo_usuario") or "").strip().lower()
+
+        if not tipo_usuario:
+            messages.error(request, "Seleccioná tu rol para continuar.")
+            return render(
+                request,
+                "recuperar_password.html",
+                {"usuario_o_email": identificador, "tipo_usuario": tipo_usuario},
+                status=400,
+            )
+
+        if tipo_usuario == "admin":
+            if not identificador:
+                messages.error(request, "Ingresá tu usuario o email para recuperar tu contraseña de administrador.")
+                return render(
+                    request,
+                    "recuperar_password.html",
+                    {"usuario_o_email": identificador, "tipo_usuario": tipo_usuario},
+                    status=400,
+                )
+            
+            # Buscar admin por username o email
+            try:
+                admin = User.objects.get(
+                    Q(username=identificador) | Q(email=identificador),
+                    Q(is_superuser=True) | Q(tipo_usuario="admin")
+                )
+            except User.DoesNotExist:
+                messages.warning(request, "Si este administrador existe, recibirá un email de recuperación.")
+                return render(request, "recuperar_password.html")
+            
+            # Generar token
+            token = PasswordResetToken.generate_token()
+            PasswordResetToken.objects.create(user=admin, token=token)
+            
+            # Enviar email
+            reset_link = request.build_absolute_uri(f"/resetear-contraseña/{token}/")
+            email_subject = "Recupera tu contraseña - Sistema Patrimonio Hospital"
+            email_body = f"""
+Hola {admin.username},
+
+Recibimos una solicitud para recuperar tu contraseña de administrador.
+
+Haz clic en el siguiente enlace para resetearla (válido por 24 horas):
+{reset_link}
+
+Si no solicitaste este cambio, ignora este email.
+
+Saludos,
+Sistema de Patrimonio Hospital Romero
+"""
+            
+            try:
+                send_mail(
+                    email_subject,
+                    email_body,
+                    'desposfrancisco@gmail.com',
+                    [admin.email],
+                    fail_silently=False,
+                )
+                messages.success(request, f"Email de recuperación enviado a {admin.email}.")
+            except Exception as e:
+                messages.error(request, f"Error al enviar email: {str(e)}")
+                return render(request, "recuperar_password.html")
+            
+            return redirect("recuperar_password")
+
         if not identificador:
             messages.error(request, "Ingresá tu usuario o email para enviar la solicitud.")
             return render(
                 request,
                 "recuperar_password.html",
-                {"usuario_o_email": identificador},
+                {"usuario_o_email": identificador, "tipo_usuario": tipo_usuario},
                 status=400,
             )
+
+        if tipo_usuario not in ["operador", "supervisor"]:
+            messages.error(request, "Rol no válido. Seleccioná Operador o Supervisor.")
+            return render(
+                request,
+                "recuperar_password.html",
+                {"usuario_o_email": identificador, "tipo_usuario": tipo_usuario},
+                status=400,
+            )
+
         crear_notificacion_admins(
-            f"El operador '{identificador}' solicitó recuperación de contraseña."
+            f"El {tipo_usuario} '{identificador}' solicitó recuperación de contraseña."
         )
-        messages.success(request, "Solicitud enviada correctamente.")
+        messages.success(request, "Solicitud enviada correctamente. Un administrador revisará tu pedido.")
         return redirect("recuperar_password")
     return render(request, "recuperar_password.html")
+
+
+def resetear_password(request, token):
+    """Vista para resetear contraseña usando token."""
+    from core.models.password_reset_token import PasswordResetToken
+
+    try:
+        reset_token = PasswordResetToken.objects.get(token=token)
+    except PasswordResetToken.DoesNotExist:
+        messages.error(request, "Token inválido o expirado.")
+        return redirect("recuperar_password")
+
+    if not reset_token.is_valid():
+        messages.error(request, "Token expirado. Solicitá una nueva recuperación.")
+        return redirect("recuperar_password")
+
+    if request.method == "POST":
+        nueva_password = (request.POST.get("nueva_password") or "").strip()
+        confirmar_password = (request.POST.get("confirmar_password") or "").strip()
+
+        if not nueva_password:
+            messages.error(request, "Ingresá una nueva contraseña.")
+            return render(request, "resetear_password.html", {"token": token})
+
+        if nueva_password != confirmar_password:
+            messages.error(request, "Las contraseñas no coinciden.")
+            return render(request, "resetear_password.html", {"token": token})
+
+        if len(nueva_password) < 8:
+            messages.error(request, "La contraseña debe tener al menos 8 caracteres.")
+            return render(request, "resetear_password.html", {"token": token})
+
+        user = reset_token.user
+        user.set_password(nueva_password)
+        user.save()
+
+        reset_token.is_used = True
+        reset_token.save()
+
+        messages.success(request, "Contraseña actualizada correctamente. Ya podés iniciar sesión.")
+        return redirect("login")
+
+    return render(request, "resetear_password.html", {"token": token})
 
 
 @login_required
@@ -325,24 +440,23 @@ def alta_operadores(request):
     if not perms["es_admin"]:
         messages.error(request, "No tienes permisos para acceder a esta página")
         return redirect("home_operador")
-
     if request.method == "POST":
         nombre = " ".join((request.POST.get("nombre") or "").strip().split())
         apellido = " ".join((request.POST.get("apellido") or "").strip().split())
         pais = (request.POST.get("pais") or "").strip()
+        dni = (request.POST.get("dni") or "").strip()
         email = (request.POST.get("email") or "").strip()
         estado = (request.POST.get("estado") or "habilitado").strip()
         password = (request.POST.get("password") or "").strip()
-
+ 
         form = OperadorForm(request.POST)
         if not form.is_valid():
-            messages.error(request, "Por favor, revisá los errores en el formulario.")
             return render(
                 request,
                 "alta_operadores.html",
                 {"usar_operador_model": False, "form": form},
             )
-
+ 
         if not nombre or not apellido:
             messages.error(request, "Debés completar nombre y apellido.")
             return render(
@@ -350,23 +464,22 @@ def alta_operadores(request):
                 "alta_operadores.html",
                 {"usar_operador_model": False, "form": form},
             )
-
+ 
         numero_doc = form.cleaned_data["dni"]
  
-        # Usamos los datos validados del form en su lugar
-        numero_doc = form.cleaned_data.get("dni")
-        email      = form.cleaned_data.get("email")
-        nombre     = form.cleaned_data.get("nombre")
-        apellido   = form.cleaned_data.get("apellido")
-        pais       = form.cleaned_data.get("pais")
+        nombre     = (request.POST.get("nombre") or "").strip()
+        apellido   = (request.POST.get("apellido") or "").strip()
+        pais       = (request.POST.get("pais") or "").strip()
+        numero_doc = (request.POST.get("numero_doc") or "").strip()
+        email      = (request.POST.get("email") or "").strip()
         estado     = (request.POST.get("estado") or "habilitado").strip()
-        password   = form.cleaned_data.get("password")
+        password   = (request.POST.get("password") or "").strip()
  
         # Validación DNI duplicado
         if numero_doc and Usuario.objects.filter(numero_doc=numero_doc).exists():
             messages.error(request, f"Ya existe un operador con el DNI {numero_doc}.")
             return redirect("alta_operadores")
-
+ 
         base_username = slugify(f"{nombre}.{apellido}") or (email.split("@")[0] if email else "")
         if not base_username:
             messages.error(request, "No se pudo generar un usuario. Completá Nombre/Apellido o Email.")
@@ -375,14 +488,15 @@ def alta_operadores(request):
                 "alta_operadores.html",
                 {"usar_operador_model": False, "form": form},
             )
-
+ 
         username = base_username
         i = 1
         while Operador.objects.filter(username=username).exists():
             i += 1
             username = f"{base_username}{i}"
-
+ 
         is_active = estado == "habilitado"
+ 
         operador = Operador(
             username=username,
             email=email or None,
@@ -394,18 +508,19 @@ def alta_operadores(request):
         )
         operador.tipo_usuario = form.cleaned_data["tipo_usuario"]
 
+
         if password:
             operador.set_password(password)
         else:
             operador.set_password(username)
-
+ 
         if hasattr(operador, "pais"):
             operador.pais = pais
         if hasattr(operador, "numero_doc"):
             operador.numero_doc = numero_doc
         if hasattr(operador, "estado"):
             operador.estado = estado
-
+ 
         saved = False
         attempts = 0
         while not saved and attempts < 10:
@@ -417,7 +532,7 @@ def alta_operadores(request):
                 i += 1
                 username = f"{base_username}{i}"
                 operador.username = username
-
+ 
         if not saved:
             messages.error(
                 request,
@@ -429,17 +544,15 @@ def alta_operadores(request):
                 {"usar_operador_model": False, "form": form},
             )
  
-        rol_display = form.cleaned_data.get("tipo_usuario", "operador").capitalize()
-
         Notificacion.objects.create(
             usuario=request.user,
-            mensaje=f"Se creó el {rol_display.lower()} '{operador.username}'.",
+            mensaje=f"Se creó el operador '{operador.username}'.",
             leida=False,
         )
  
-        messages.success(request, f"{rol_display} {nombre} {apellido} creado. Usuario: {operador.username}")
+        messages.success(request, f"Operador {nombre} {apellido} creado. Usuario: {operador.username}")
         return redirect("operadores")
-
+ 
     form = OperadorForm(initial={
         'nombre': '',
         'apellido': '',
@@ -453,51 +566,63 @@ def alta_operadores(request):
     ctx = permisos_context(request.user)
     ctx.update({"usar_operador_model": False, "form": form})
     return render(request, "alta_operadores.html", ctx)
-
-
+ 
 @login_required
 def editar_operador(request, pk):
     operador = get_object_or_404(Operador, pk=pk, is_staff=False)
-
+ 
     if request.method == "POST":
         nombre = " ".join((request.POST.get("nombre") or "").strip().split())
         apellido = " ".join((request.POST.get("apellido") or "").strip().split())
         email = (request.POST.get("email") or "").strip()
-        # estado = (request.POST.get("estado") or "habilitado").strip()
+        estado = (request.POST.get("estado") or "habilitado").strip()
         pais = (request.POST.get("pais") or "").strip()
-        tipo_usuario = (request.POST.get("tipo_usuario") or "operador").strip()
+        dni = (request.POST.get("dni") or "").strip()
+        tipo_usuario = (request.POST.get("tipo_usuario") or "empleado").strip()
         password = (request.POST.get("password") or "").strip()
-
+ 
         form = OperadorForm(request.POST, operador_pk=operador.pk)
         if not form.is_valid():
             ctx = permisos_context(request.user)
             ctx.update({"operador": operador, "usar_operador_model": False, "form": form})
             return render(request, "editar_operadores.html", ctx)
-
+ 
         numero_doc = form.cleaned_data["dni"]
-
+ 
         if not nombre or not apellido:
             messages.error(request, "Debés completar nombre y apellido.")
             ctx = permisos_context(request.user)
             ctx.update({"operador": operador, "usar_operador_model": False, "form": form})
             return render(request, "editar_operadores.html", ctx)
-
+ 
         hubo_cambio = False
-
+ 
         if operador.first_name != nombre:
             operador.first_name = nombre
             hubo_cambio = True
+        else:
+            operador.first_name = nombre
+ 
         if operador.last_name != apellido:
             operador.last_name = apellido
             hubo_cambio = True
-
+        else:
+            operador.last_name = apellido
+ 
         email_normalizado = email or None
         if operador.email != email_normalizado:
             operador.email = email_normalizado
             hubo_cambio = True
         else:
             operador.email = email_normalizado
-  
+ 
+        is_active_nuevo = estado == "habilitado"
+        if operador.is_active != is_active_nuevo:
+            operador.is_active = is_active_nuevo
+            hubo_cambio = True
+        else:
+            operador.is_active = is_active_nuevo
+ 
         if hasattr(operador, "estado"):
             if operador.estado != estado:
                 operador.estado = estado
@@ -518,47 +643,31 @@ def editar_operador(request, pk):
                 hubo_cambio = True
             else:
                 operador.numero_doc = numero_doc
-
-        if hasattr(operador, "estado") and operador.estado != estado:
-            operador.estado = estado
-            hubo_cambio = True
-
-        if hasattr(operador, "pais") and operador.pais != pais:
-            operador.pais = pais
-            hubo_cambio = True
-
-        if hasattr(operador, "numero_doc") and operador.numero_doc != numero_doc:
-            operador.numero_doc = numero_doc
-            hubo_cambio = True
-
-        if hasattr(operador, "tipo_usuario") and operador.tipo_usuario != tipo_usuario:
-            operador.tipo_usuario = tipo_usuario
-            hubo_cambio = True
-
+ 
+        if hasattr(operador, "tipo_usuario"):
+            if operador.tipo_usuario != tipo_usuario:
+                operador.tipo_usuario = tipo_usuario
+                hubo_cambio = True
+            else:
+                operador.tipo_usuario = tipo_usuario
+ 
+ 
         if password:
             operador.set_password(password)
             hubo_cambio = True
-
+ 
         if hubo_cambio:
             operador.save()
-            rol_display = form.cleaned_data.get("tipo_usuario", getattr(operador, "tipo_usuario", "operador")).capitalize()
-            
+            # Mensaje de éxito
+            messages.success(request, f"✅ Operador '{operador.username}' actualizado correctamente.", extra_tags='editar')
             try:
-                # Usar Notificacion.objects.create para mantener consistencia
-                from core.models.notificacion import Notificacion
-                Notificacion.objects.create(
-                    usuario=request.user,
-                    mensaje=f"Se editó el {rol_display.lower()} '{operador.username}'.",
-                    leida=False,
-                )
+                crear_notificacion(request.user, f"Se editó el operador '{operador.username}'.")
             except Exception:
                 pass
-            
-            # Solo un mensaje de éxito para evitar duplicados
-            messages.success(request, f"{rol_display} '{operador.username}' actualizado correctamente.", extra_tags='editar')
+            messages.success(request, f"Operador '{operador.username}' editado correctamente.")
  
         return redirect("operadores")
-
+ 
     form = OperadorForm(initial={
         'nombre': operador.first_name,
         'apellido': operador.last_name,
@@ -568,7 +677,7 @@ def editar_operador(request, pk):
         'tipo_usuario': getattr(operador, 'tipo_usuario', 'operador') or 'operador',
         'estado': 'habilitado' if operador.is_active else 'no-habilitado',
     }, operador_pk=operador.pk)
-
+ 
     ctx = permisos_context(request.user)
     ctx.update({
         "operador": operador,
@@ -576,8 +685,8 @@ def editar_operador(request, pk):
         "form": form,
     })
     return render(request, "editar_operadores.html", ctx)
-
-
+ 
+ 
 @login_required
 @require_POST
 def eliminar_operador(request, pk):
@@ -585,31 +694,30 @@ def eliminar_operador(request, pk):
     if not perms.get("puede_gestionar_operadores", False):
         messages.error(request, "❌ No tienes permisos para eliminar operadores.")
         return redirect("operadores")
-
+ 
     operador = get_object_or_404(Operador, pk=pk, is_staff=False)
+ 
     if operador == request.user:
         messages.error(request, "❌ No podés eliminar tu propio usuario.")
         return redirect("operadores")
-
+ 
     identificador = operador.username
+    nombre_completo = f"{operador.first_name} {operador.last_name}".strip()
     operador.delete()
  
-    rol_display = getattr(operador, "tipo_usuario", "operador").capitalize()
-
     try:
-        from core.models.notificacion import Notificacion
         Notificacion.objects.create(
             usuario=request.user,
-            mensaje=f"Se eliminó el {rol_display.lower()} '{identificador}'.",
+            mensaje=f"Se eliminó el operador '{identificador}'.",
             leida=False,
         )
     except Exception:
         pass
  
-    messages.success(request, f"{rol_display} '{identificador}' eliminado correctamente.")
+    messages.success(request, f"Operador '{identificador}' eliminado correctamente.")
     return redirect("operadores")
-
-
+ 
+ 
 @login_required
 @require_POST
 def dar_baja_operador(request, pk):
@@ -617,138 +725,74 @@ def dar_baja_operador(request, pk):
     if not perms.get("puede_gestionar_operadores", False):
         messages.error(request, "No tienes permisos para dar de baja operadores.")
         return redirect("operadores")
-
+ 
     operador = get_object_or_404(Operador, pk=pk, is_staff=False)
+ 
     if operador == request.user:
         messages.error(request, "No podés darte de baja a vos mismo.")
         return redirect("operadores")
-
+ 
     operador.is_active = False
+ 
     if hasattr(operador, "estado"):
         try:
             operador.estado = "no-habilitado"
         except Exception:
             pass
+ 
     operador.save()
  
-    rol_display = getattr(operador, "tipo_usuario", "operador").capitalize()
-
     try:
-        from core.models.notificacion import Notificacion
         Notificacion.objects.create(
             usuario=request.user,
-            mensaje=f"Se dio de baja al {rol_display.lower()} '{operador.username}'.",
+            mensaje=f"Se dio de baja al operador '{operador.username}'.",
             leida=False,
         )
     except Exception:
         pass
  
-    messages.success(request, f"{rol_display} '{operador.username}' dado de baja correctamente.")
+    messages.success(request, f"Operador {operador.username} dado de baja correctamente.")
     return redirect("operadores")
-
-
+ 
+ 
 # ============================
 # REPORTES
 # ============================
-
+ 
 @login_required
 def reportes_pdf(request):
     scope = (request.GET.get("scope") or "24h").lower()
     now = timezone.now()
-
+ 
     if scope == "24h":
         since_dt = now - timedelta(hours=24)
-        since_date = since_dt.date()
+        # Filtramos por fecha_registro para que aparezca lo recién cargado
         bienes = (
             BienPatrimonial.objects
             .select_related("expediente")
-            .filter(Q(fecha_adquisicion__gte=since_date) | Q(fecha_baja__gte=since_date))
-            .order_by("-fecha_baja", "-fecha_adquisicion", "pk")
+            .filter(Q(fecha_registro__gte=since_dt) | Q(fecha_baja__gte=since_dt.date()))
+            .order_by("-fecha_registro", "pk")
         )
-        notifs = Notificacion.objects.filter(fecha__gte=since_dt).order_by("-fecha")
         rango_desc = "Últimas 24 horas"
-    elif scope == "12h":
-        since_dt = now - timedelta(hours=12)
-        since_date = since_dt.date()
-        bienes = (
-            BienPatrimonial.objects
-            .select_related("expediente")
-            .filter(Q(fecha_adquisicion__gte=since_date) | Q(fecha_baja__gte=since_date))
-            .order_by("-fecha_baja", "-fecha_adquisicion", "pk")
-        )
-        notifs = Notificacion.objects.filter(fecha__gte=since_dt).order_by("-fecha")
-        rango_desc = "Últimas 12 horas"
-    elif scope == "6h":
-        since_dt = now - timedelta(hours=6)
-        since_date = since_dt.date()
-        bienes = (
-            BienPatrimonial.objects
-            .select_related("expediente")
-            .filter(Q(fecha_adquisicion__gte=since_date) | Q(fecha_baja__gte=since_date))
-            .order_by("-fecha_baja", "-fecha_adquisicion", "pk")
-        )
-        notifs = Notificacion.objects.filter(fecha__gte=since_dt).order_by("-fecha")
-        rango_desc = "Últimas 6 horas"
     else:
         bienes = (
             BienPatrimonial.objects
             .select_related("expediente")
             .order_by("-fecha_adquisicion", "pk")
         )
-        notifs = Notificacion.objects.none()
         rango_desc = "Todos"
 
-    servicios_seleccionados = request.GET.getlist("servicio")
-    if servicios_seleccionados:
-        q_services = Q()
-        for s in servicios_seleccionados:
-            val = s.strip()
-            if "samo" in val.lower():
-                q_services |= Q(servicios__icontains="SAMO") | Q(servicios__icontains="Samo")
-            else:
-                import unicodedata
-                def clean_word(w):
-                    nfkd = unicodedata.normalize('NFKD', w)
-                    return "".join([c for c in nfkd if not unicodedata.combining(c)]).lower()
-                words = [clean_word(w) for w in val.split() if len(w) > 2 and w.lower() not in ["de", "la", "el", "los", "las", "del"]]
-                if words:
-                    q_words = Q()
-                    for w in words:
-                        q_words |= Q(servicios__icontains=w)
-                    q_services |= q_words
-                else:
-                    q_services |= Q(servicios__icontains=val)
-        bienes = bienes.filter(q_services)
-
-    q = (request.GET.get("q") or "").strip()
-    if q:
-        bienes = bienes.filter(
-            Q(clave_unica__icontains=q)
-            | Q(descripcion__icontains=q)
-            | Q(observaciones__icontains=q)
-            | Q(numero_identificacion__icontains=q)
-            | Q(servicios__icontains=q)
-            | Q(cuenta_codigo__icontains=q)
-            | Q(nomenclatura_bienes__icontains=q)
-            | Q(numero_serie__icontains=q)
-            | Q(origen__icontains=q)
-            | Q(estado__icontains=q)
-            | Q(expediente__numero_expediente__icontains=q)
-            | Q(expediente__numero_compra__icontains=q)
-        )
 
     ctx = {
         "bienes": bienes,
-        "notifs": notifs,
         "rango_desc": rango_desc,
         "generado_en": now,
-        "usuario": request.user,
-        "servicios_seleccionados": servicios_seleccionados,
         **permisos_context(request.user),
     }
-
+ 
     try:
         from weasyprint import HTML, CSS
+ 
         html_str = render_to_string("reportes_pdf.html", ctx, request=request)
         pdf_bytes = HTML(
             string=html_str,
@@ -771,15 +815,17 @@ def reportes_pdf(request):
         resp = HttpResponse(pdf_bytes, content_type="application/pdf")
         resp["Content-Disposition"] = f'inline; filename="reporte_{scope}.pdf"'
         return resp
+ 
     except Exception:
         def money(v):
             if not v:
                 return "—"
             return f"${int(round(float(v))):,}".replace(",", ".")
-
+ 
         styles = getSampleStyleSheet()
         title_style = styles["Title"]
         meta_style = styles["Normal"]
+ 
         p_cell = ParagraphStyle(
             "p_cell",
             parent=styles["Normal"],
@@ -794,13 +840,13 @@ def reportes_pdf(request):
             parent=p_cell,
             fontName="Helvetica-Bold",
         )
-
+ 
         def P(texto, head: bool = False):
             if texto is None or texto == "":
                 texto = "—"
             txt = escape(str(texto)).replace("\n", "<br/>")
             return Paragraph(txt, p_head if head else p_cell)
-
+ 
         bio = io.BytesIO()
         doc = SimpleDocTemplate(
             bio,
@@ -811,24 +857,24 @@ def reportes_pdf(request):
             bottomMargin=1.5 * cm,
         )
         elems = []
+ 
         title = f"Reporte de Bienes Patrimoniales – {rango_desc}"
         meta = f"Generado: {timezone.localtime(now).strftime('%d/%m/%Y %H:%M')} · Usuario: {request.user.username}"
-        if servicios_seleccionados:
-            meta += f" · Servicios: {', '.join(servicios_seleccionados)}"
         elems.append(Paragraph(title, title_style))
         elems.append(Paragraph(meta, meta_style))
         elems.append(Spacer(1, 8))
-
+ 
         data = [[
-            P("ID", True), P("Descripción", True), P("Servicios", True),
+            P("Clave", True), P("Descripción", True), P("Servicios", True),
             P("Estado", True), P("Alta", True), P("Baja", True), P("Valor", True),
         ]]
+
         for b in bienes:
             estado = b.get_estado_display() if hasattr(b, "get_estado_display") else (b.estado or "—")
             alta = b.fecha_adquisicion.strftime("%d/%m/%Y") if b.fecha_adquisicion else "—"
             baja = b.fecha_baja.strftime("%d/%m/%Y") if b.fecha_baja else "—"
             data.append([
-                P(b.pk or ""),
+                P(b.clave_unica or "—"),
                 P(b.descripcion or "—"),
                 P(b.servicios or "—"),
                 P(estado),
@@ -839,11 +885,11 @@ def reportes_pdf(request):
 
         page_w, _ = A4
         usable_w = page_w - (doc.leftMargin + doc.rightMargin)
-        base_col_cm = [1.2, 11.0, 2.2, 2.0, 2.0, 2.0, 1.6]
+        base_col_cm = [2.2, 9.0, 2.2, 2.0, 2.0, 2.0, 1.8]
         base_col_pts = [w * cm for w in base_col_cm]
         scale = float(usable_w) / float(sum(base_col_pts))
         col_widths = [w * scale for w in base_col_pts]
-
+ 
         table = Table(data, repeatRows=1, colWidths=col_widths)
         ts = TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f2f2f2")),
@@ -859,49 +905,164 @@ def reportes_pdf(request):
             ("ALIGN", (0, 1), (0, -1), "CENTER"),
             ("ALIGN", (-1, 1), (-1, -1), "RIGHT"),
         ])
+ 
+        for i in range(1, len(data)):
+            if i % 2 == 0:
+                ts.add("BACKGROUND", (0, i), (-1, i), colors.whitesmoke)
+ 
+        table.setStyle(ts)
+        elems.append(table)
+ 
+        doc.build(elems)
+        pdf_bytes = bio.getvalue()
+        bio.close()
+ 
+        resp = HttpResponse(pdf_bytes, content_type="application/pdf")
+        resp["Content-Disposition"] = f'inline; filename="reporte_{scope}_fallback.pdf"'
+        return resp
+ 
+ 
+@login_required
+def registro_pdf(request):
+    scope = (request.GET.get("scope") or "24h").lower()
+    now = timezone.now()
+ 
+    hours_map = {"24h": 24, "12h": 12, "6h": 6}
+    if scope in hours_map:
+        since_dt = now - timedelta(hours=hours_map[scope])
+        logs = LogActividad.objects.filter(fecha__gte=since_dt).order_by("-fecha")
+        rango_desc = f"Últimas {hours_map[scope]} horas"
+    else:
+        logs = LogActividad.objects.all().order_by("-fecha")
+        rango_desc = "Historial completo"
+ 
+    ctx = {
+        "logs": logs,
+        "rango_desc": rango_desc,
+        "generado_en": now,
+        **permisos_context(request.user),
+    }
+ 
+    try:
+        from weasyprint import HTML, CSS
+ 
+        html_str = render_to_string("registro_pdf.html", ctx, request=request)
+        pdf_bytes = HTML(
+            string=html_str,
+            base_url=request.build_absolute_uri("/"),
+        ).write_pdf(
+            stylesheets=[
+                CSS(
+                    string="""
+                @page { size: A4; margin: 1.5cm; }
+                body { font-family: sans-serif; font-size: 12px; }
+                h1,h2,h3 { margin: 0 0 .4rem 0; }
+                table { width: 100%; border-collapse: collapse; }
+                th, td { border: 1px solid #ddd; padding: 6px; vertical-align: top; }
+                thead th { background: #f2f2f2; }
+                .muted { color: #666; }
+            """
+                )
+            ]
+        )
+        resp = HttpResponse(pdf_bytes, content_type="application/pdf")
+        resp["Content-Disposition"] = f'inline; filename="registro_actividad_{scope}.pdf"'
+        return resp
+ 
+    except Exception:
+        styles = getSampleStyleSheet()
+        title_style = styles["Title"]
+        meta_style = styles["Normal"]
+ 
+        p_cell = ParagraphStyle(
+            "p_cell",
+            parent=styles["Normal"],
+            fontName="Helvetica",
+            fontSize=9,
+            leading=11,
+            wordWrap="CJK",
+            spaceAfter=0,
+        )
+        p_head = ParagraphStyle(
+            "p_head",
+            parent=p_cell,
+            fontName="Helvetica-Bold",
+        )
+ 
+        def P(texto, head: bool = False):
+            if texto is None or texto == "":
+                texto = "—"
+            txt = escape(str(texto)).replace("\n", "<br/>")
+            return Paragraph(txt, p_head if head else p_cell)
+ 
+        bio = io.BytesIO()
+        doc = SimpleDocTemplate(
+            bio,
+            pagesize=A4,
+            leftMargin=1.5 * cm,
+            rightMargin=1.5 * cm,
+            topMargin=1.5 * cm,
+            bottomMargin=1.5 * cm,
+        )
+        elems = []
+ 
+        title = f"Registro de Actividad – {rango_desc}"
+        meta = f"Generado: {timezone.localtime(now).strftime('%d/%m/%Y %H:%M')} · Usuario: {request.user.username}"
+        elems.append(Paragraph(title, title_style))
+        elems.append(Paragraph(meta, meta_style))
+        elems.append(Spacer(1, 8))
+ 
+        page_w, _ = A4
+        usable_w = page_w - (doc.leftMargin + doc.rightMargin)
+        col_fecha = 3.3 * cm
+        col_usuario = 2.5 * cm
+        col_accion = 3.2 * cm
+        col_mensaje = usable_w - col_fecha - col_usuario - col_accion
+ 
+        data = [[P("Fecha", True), P("Usuario", True), P("Acción", True), P("Mensaje", True)]]
+        for l in logs:
+            data.append([
+                P(timezone.localtime(l.fecha).strftime("%d/%m/%Y %H:%M")),
+                P(l.usuario.username if l.usuario else "Sistema"),
+                P(l.get_accion_display()),
+                P(l.mensaje),
+            ])
+ 
+        table = Table(data, repeatRows=1, colWidths=[col_fecha, col_usuario, col_accion, col_mensaje])
+        ts = TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f2f2f2")),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, 0), 10),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cccccc")),
+            ("LEFTPADDING", (0, 0), (-1, -1), 4),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+            ("TOPPADDING", (0, 0), (-1, -1), 3),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ])
         for i in range(1, len(data)):
             if i % 2 == 0:
                 ts.add("BACKGROUND", (0, i), (-1, i), colors.whitesmoke)
         table.setStyle(ts)
         elems.append(table)
-
-        if notifs:
-            elems.append(Spacer(1, 10))
-            elems.append(Paragraph("Acciones registradas", styles["Heading3"]))
-            notif_data = [[P("Fecha", True), P("Mensaje", True)]]
-            for n in notifs:
-                notif_data.append([
-                    P(timezone.localtime(n.fecha).strftime("%d/%m/%Y %H:%M")),
-                    P(n.mensaje),
-                ])
-            nt_col_w = [3.2 * cm, usable_w - 3.2 * cm]
-            nt = Table(notif_data, repeatRows=1, colWidths=nt_col_w)
-            nt.setStyle(TableStyle([
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f2f2f2")),
-                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cccccc")),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 4),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-                ("TOPPADDING", (0, 0), (-1, -1), 3),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-            ]))
-            elems.append(nt)
-
+ 
         doc.build(elems)
         pdf_bytes = bio.getvalue()
         bio.close()
+ 
         resp = HttpResponse(pdf_bytes, content_type="application/pdf")
-        resp["Content-Disposition"] = f'inline; filename="reporte_{scope}_fallback.pdf"'
+        resp["Content-Disposition"] = f'inline; filename="registro_actividad_{scope}.pdf"'
         return resp
-
-
+ 
+ 
 @login_required
 def agregar_servicio(request):
     perms = permisos_context(request.user)
     if not perms["es_admin"]:
         messages.error(request, "No tienes permisos para acceder a esta página.")
         return redirect("home_operador")
-
+ 
     if request.method == "POST":
         nombre = (request.POST.get("nombre") or "").strip().title()
         SERVICIOS_FIJOS = [
@@ -936,7 +1097,7 @@ def agregar_servicio(request):
         ]
         ya_existe_fijo = any(nombre.lower() == s.lower() for s in SERVICIOS_FIJOS)
         ya_existe_extra = ServicioExtra.objects.filter(nombre__iexact=nombre).exists()
-
+ 
         if not nombre:
             messages.error(request, "El nombre no puede estar vacío.")
         elif ya_existe_fijo or ya_existe_extra:
@@ -945,52 +1106,49 @@ def agregar_servicio(request):
             ServicioExtra.objects.create(nombre=nombre)
             messages.success(request, f"Servicio '{nombre}' agregado correctamente.")
             return redirect("agregar_servicio")
-
+ 
     servicios = ServicioExtra.objects.all()
     ctx = perms
     ctx.update({"servicios": servicios})
     return render(request, "agregar_servicio.html", ctx)
-
+ 
 @login_required
 def reportes_view(request):
     scope = (request.GET.get("scope") or "24h").lower()
     now = timezone.now()
-
+ 
     if scope == "24h":
         since_dt = now - timedelta(hours=24)
-        since_date = since_dt.date()
         bienes = (
             BienPatrimonial.objects
             .select_related("expediente")
             .filter(
-                Q(fecha_adquisicion__gte=since_date) |
-                Q(fecha_baja__gte=since_date)
+                Q(fecha_registro__gte=since_dt) |
+                Q(fecha_baja__gte=since_dt.date())
             )
-            .order_by("-fecha_baja", "-fecha_adquisicion", "pk")
+            .order_by("-fecha_registro", "pk")
         )
     elif scope == "12h":
         since_dt = now - timedelta(hours=12)
-        since_date = since_dt.date()
         bienes = (
             BienPatrimonial.objects
             .select_related("expediente")
             .filter(
-                Q(fecha_adquisicion__gte=since_date) |
-                Q(fecha_baja__gte=since_date)
+                Q(fecha_registro__gte=since_dt) |
+                Q(fecha_baja__gte=since_dt.date())
             )
-            .order_by("-fecha_baja", "-fecha_adquisicion", "pk")
+            .order_by("-fecha_registro", "pk")
         )
     elif scope == "6h":
         since_dt = now - timedelta(hours=6)
-        since_date = since_dt.date()
         bienes = (
             BienPatrimonial.objects
             .select_related("expediente")
             .filter(
-                Q(fecha_adquisicion__gte=since_date) |
-                Q(fecha_baja__gte=since_date)
+                Q(fecha_registro__gte=since_dt) |
+                Q(fecha_baja__gte=since_dt.date())
             )
-            .order_by("-fecha_baja", "-fecha_adquisicion", "pk")
+            .order_by("-fecha_registro", "pk")
         )
     else:
         bienes = (
@@ -998,7 +1156,7 @@ def reportes_view(request):
             .select_related("expediente")
             .order_by("-fecha_adquisicion", "pk")
         )
-
+ 
     servicios_seleccionados = request.GET.getlist("servicio")
     if servicios_seleccionados:
         q_services = Q()
@@ -1020,7 +1178,7 @@ def reportes_view(request):
                 else:
                     q_services |= Q(servicios__icontains=val)
         bienes = bienes.filter(q_services)
-
+ 
     q = (request.GET.get("q") or "").strip()
     if q:
         bienes = bienes.filter(
@@ -1037,12 +1195,12 @@ def reportes_view(request):
             | Q(expediente__numero_expediente__icontains=q)
             | Q(expediente__numero_compra__icontains=q)
         )
-
+ 
     try:
-        per_page = int(request.GET.get("per_page") or 15)
+        per_page = int(request.GET.get("per_page") or 20)
     except ValueError:
-        per_page = 15
-
+        per_page = 20
+ 
  
     paginator = Paginator(bienes, per_page)
     page_raw = request.GET.get("page") or "1"
@@ -1052,12 +1210,12 @@ def reportes_view(request):
         page_number = 1
     if page_number < 1:
         page_number = 1
-
+ 
     try:
         page_obj = paginator.page(page_number)
     except (PageNotAnInteger, EmptyPage):
         page_obj = paginator.page(1)
-
+ 
     try:
         prev_page = page_obj.previous_page_number()
     except Exception:
@@ -1066,7 +1224,7 @@ def reportes_view(request):
         next_page = page_obj.next_page_number()
     except Exception:
         next_page = None
-
+ 
     current = page_obj.number
     total = paginator.num_pages
     window = 2
@@ -1076,45 +1234,45 @@ def reportes_view(request):
             page_range.append(num)
         elif page_range and page_range[-1] != "…":
             page_range.append("…")
-
+ 
     qd = request.GET.copy()
     qd.pop("page", None)
     querystring = qd.urlencode()
-
+ 
     from core.models.servicio_extra import ServicioExtra
     SERVICIOS_FIJOS = [
-        "Apoyo A La Comunidad", "Area Guardia", "Area Limpieza Hospitalaria",
-        "Area Parque Cultural", "Arquitectura", "CAPER", "Camilleros", "Cardiologia",
-        "Charcot", "Cirugia", "Clinica", "Cocina", "Compras", "Conmutador", "Consejeria",
-        "Consultorio De Gastroenterologia", "Consultorio Externo Salud Mental",
-        "Consultorios Externos Pab V", "Contable", "Costurero",
-        "Cud Y Servicios De Consumos Problematicos", "Departamento De Enfermerias Supervision",
-        "Departamento Sistema De Informacion - Samo Turnos Y Estadistica",
-        "Deposito Descartable", "Deposito General", "Dermatologia", "Diagnostico Por Imagenes",
-        "Dira", "Direccion Administrativa", "Direccion Asociada Area Tecnica",
-        "Direccion Asociada Medico Quirurgica", "Direccion Ejecutiva", "Direccion Salud Mental",
-        "Dispositivo Artistico Cultural", "Docencia E Investigacion",
-        "Donacion Fundacion Florencio Perez", "Emergencia", "En Guarda Patrimoniales",
-        "Enfermeria", "Epidemiologia", "Estadistica", "Estadistica Central",
-        "Estadistica Pabellon V", "Esterilizacion", "Farmacia", "Gastroenterologia",
-        "Gerenciamiento De Camas", "Hemoterapia", "Infancias Y Juventudes", "Infectologia",
-        "Informatica", "Infraestructura Y Mantenimiento", "Intendencia", "Jardin Maternal",
-        "Laboratorio", "Lasegue", "Legales", "Limpieza", "Mesa De Entrada",
-        "Neumonologia Y Oftalmologia", "Neurocirugia", "Neuropsicologia", "Odontologia",
-        "Oncologia", "Patologia", "Patrimoniales", "Pediatria Y Neonatologia", "Penfield",
-        "Percial", "Podologia Y Peluqueria", "Polo Educativo", "Pre Alta", "Quirofano",
-        "RRHH", "Recuperacion Clinica", "Registro Civil", "Rehabilitacion Fisica Y Kinesiologia",
-        "Rehabilitacion Salud Mental Direccion", "Reumatologia Y Oftalmologia",
-        "SAC", "SAM", "SAMO Contable", "SAMO Facturacion",
-        "SAP (Servicio De Area Programatica Y Redes De Salud)", "SGU", "Sala De Endoscopia",
-        "Sala F", "Sala G", "Seguridad E Higiene", "Servicio De Psicologia",
-        "Servicio Rehabilitacion Larga Distancia", "Servicio Social", "Sumar",
-        "Tocoginecologia", "Toxicologia", "Traumatologia", "U.T.I.", "UCAC",
-        "Vacunacion", "Vigilancia",
+        'Apoyo A La Comunidad', 'Area Guardia', 'Area Limpieza Hospitalaria',
+        'Area Parque Cultural', 'Arquitectura', 'CAPER', 'Camilleros', 'Cardiologia',
+        'Charcot', 'Cirugia', 'Clinica', 'Cocina', 'Compras', 'Conmutador', 'Consejeria',
+        'Consultorio De Gastroenterologia', 'Consultorio Externo Salud Mental',
+        'Consultorios Externos Pab V', 'Contable', 'Costurero',
+        'Cud Y Servicios De Consumos Problematicos', 'Departamento De Enfermerias Supervision',
+        'Departamento Sistema De Informacion - Samo Turnos Y Estadistica',
+        'Deposito Descartable', 'Deposito General', 'Dermatologia', 'Diagnostico Por Imagenes',
+        'Dira', 'Direccion Administrativa', 'Direccion Asociada Area Tecnica',
+        'Direccion Asociada Medico Quirurgica', 'Direccion Ejecutiva', 'Direccion Salud Mental',
+        'Dispositivo Artistico Cultural', 'Docencia E Investigacion',
+        'Donacion Fundacion Florencio Perez', 'Emergencia', 'En Guarda Patrimoniales',
+        'Enfermeria', 'Epidemiologia', 'Estadistica', 'Estadistica Central',
+        'Estadistica Pabellon V', 'Esterilizacion', 'Farmacia', 'Gastroenterologia',
+        'Gerenciamiento De Camas', 'Hemoterapia', 'Infancias Y Juventudes', 'Infectologia',
+        'Informatica', 'Infraestructura Y Mantenimiento', 'Intendencia', 'Jardin Maternal',
+        'Laboratorio', 'Lasegue', 'Legales', 'Limpieza', 'Mesa De Entrada',
+        'Neumonologia Y Oftalmologia', 'Neurocirugia', 'Neuropsicologia', 'Odontologia',
+        'Oncologia', 'Patologia', 'Patrimoniales', 'Pediatria Y Neonatologia', 'Penfield',
+        'Percial', 'Podologia Y Peluqueria', 'Polo Educativo', 'Pre Alta', 'Quirofano',
+        'RRHH', 'Recuperacion Clinica', 'Registro Civil', 'Rehabilitacion Fisica Y Kinesiologia',
+        'Rehabilitacion Salud Mental Direccion', 'Reumatologia Y Oftalmologia',
+        'SAC', 'SAM', 'SAMO Contable', 'SAMO Facturacion',
+        'SAP (Servicio De Area Programatica Y Redes De Salud)', 'SGU', 'Sala De Endoscopia',
+        'Sala F', 'Sala G', 'Seguridad E Higiene', 'Servicio De Psicologia',
+        'Servicio Rehabilitacion Larga Distancia', 'Servicio Social', 'Sumar',
+        'Tocoginecologia', 'Toxicologia', 'Traumatologia', 'U.T.I.', 'UCAC',
+        'Vacunacion', 'Vigilancia',
     ]
     extras = list(ServicioExtra.objects.values_list('nombre', flat=True))
     todos_servicios = sorted(set(SERVICIOS_FIJOS + extras))
-
+ 
     ctx = permisos_context(request.user)
     ctx.update({
         "bienes": page_obj.object_list,
@@ -1130,14 +1288,14 @@ def reportes_view(request):
         "next_page": next_page,
         "querystring": querystring,
     })
-
+ 
     return render(request, "reportes.html", ctx)
-
-
+ 
+ 
 # ============================
 # HELPERS DE ORDEN
 # ============================
-
+ 
 def _build_ordering(orden_param: str):
     mapping = {
         "-fecha": [F("fecha_adquisicion").desc(nulls_last=True), "pk", "clave_unica"],
@@ -1159,8 +1317,8 @@ def _build_ordering(orden_param: str):
         orden_param,
         [F("fecha_adquisicion").desc(nulls_last=True), "pk", "clave_unica"],
     )
-
-
+ 
+ 
 def _build_ordering_baja(orden_param: str):
     mapping = {
         "-fecha_baja": [F("fecha_baja").desc(nulls_last=True), "pk", "clave_unica"],
@@ -1182,15 +1340,15 @@ def _build_ordering_baja(orden_param: str):
         orden_param,
         [F("fecha_baja").desc(nulls_last=True), "pk", "clave_unica"],
     )
-
-
+ 
+ 
 # ============================
 # BIENES - LISTA GENERAL
 # ============================
-
+ 
 def _paginar_bienes(request, bienes_queryset, template, extra_context=None):
     """Helper reutilizable para paginar y renderizar listas de bienes."""
-    per_page = 30
+    per_page = 20
     paginator = Paginator(bienes_queryset, per_page)
     page_raw = request.GET.get("page", "1")
     try:
@@ -1199,12 +1357,12 @@ def _paginar_bienes(request, bienes_queryset, template, extra_context=None):
             page_number = 1
     except ValueError:
         page_number = 1
-
+ 
     try:
         page_obj = paginator.page(page_number)
     except (EmptyPage, PageNotAnInteger):
         page_obj = paginator.page(1)
-
+ 
     try:
         prev_page = page_obj.previous_page_number()
     except Exception:
@@ -1213,7 +1371,7 @@ def _paginar_bienes(request, bienes_queryset, template, extra_context=None):
         next_page = page_obj.next_page_number()
     except Exception:
         next_page = None
-
+ 
     current = page_obj.number
     last = paginator.num_pages
     window = 2
@@ -1228,11 +1386,11 @@ def _paginar_bienes(request, bienes_queryset, template, extra_context=None):
             if last_added != "…":
                 page_range.append("…")
                 last_added = "…"
-
+ 
     qs = request.GET.copy()
     qs.pop("page", None)
     querystring = qs.urlencode()
-
+ 
     context = permisos_context(request.user)
     context.update({
         "bienes": page_obj.object_list,
@@ -1247,8 +1405,8 @@ def _paginar_bienes(request, bienes_queryset, template, extra_context=None):
     if extra_context:
         context.update(extra_context)
     return render(request, template, context)
-
-
+ 
+ 
 def _filtrar_bienes(request, base_qs):
     """Aplica filtros comunes de búsqueda a un queryset de bienes."""
     q = (request.GET.get("q") or "").strip()
@@ -1257,7 +1415,7 @@ def _filtrar_bienes(request, base_qs):
     f_desde = request.GET.get("f_desde") or ""
     f_hasta = request.GET.get("f_hasta") or ""
     orden = request.GET.get("orden") or "-fecha"
-
+ 
     if q:
         base_qs = base_qs.filter(
             Q(clave_unica__icontains=q)
@@ -1281,6 +1439,9 @@ def _filtrar_bienes(request, base_qs):
         base_qs = base_qs.filter(estado__isnull=True)
     elif f_estado:
         base_qs = base_qs.filter(estado=f_estado)
+    # If no specific estado filter is provided, do not exclude BAJA items —
+    # mostrar todas las filas por defecto (incluye BAJA). Esto permite que
+    # al dar de baja un bien siga apareciendo en la lista principal.
     if f_desde:
         d = parse_date(f_desde)
         if d:
@@ -1289,7 +1450,7 @@ def _filtrar_bienes(request, base_qs):
         h = parse_date(f_hasta)
         if h:
             base_qs = base_qs.filter(fecha_adquisicion__lte=h)
-
+ 
     if orden == "servicios":
         from django.db.models import Case, When, Value, IntegerField
         from django.db.models.functions import Upper, Substr
@@ -1306,46 +1467,44 @@ def _filtrar_bienes(request, base_qs):
     else:
         base_qs = base_qs.order_by(*_build_ordering(orden))
     return base_qs, q
-
-
+ 
+ 
 @login_required
 def lista_bienes(request):
     perms = permisos_context(request.user)
     if not perms["es_admin"] and not perms["es_supervisor"]:
         return redirect("lista_bienes_operador")
-
-    qs = BienPatrimonial.objects.select_related("expediente")
+    qs = BienPatrimonial.objects.select_related("expediente").exclude(estado="BAJA")
     qs, q = _filtrar_bienes(request, qs)
     return _paginar_bienes(request, qs, "bienes/lista_bienes.html", {"q": q})
-
-
+ 
+ 
 @login_required
 def lista_bienes_operador(request):
-    qs = BienPatrimonial.objects.select_related("expediente")
+    qs = BienPatrimonial.objects.select_related("expediente").exclude(estado="BAJA")
     qs, q = _filtrar_bienes(request, qs)
     return _paginar_bienes(request, qs, "bienes/lista_bienes_operador.html", {"q": q})
-
-
+ 
+ 
 @login_required
 def lista_bienes_supervisor(request):
     tipo = getattr(request.user, "tipo_usuario", None)
     if not (request.user.is_superuser or tipo in ("admin", "supervisor")):
         messages.error(request, "No tenés permisos para acceder a esta sección.")
         return redirect("home_operador")
-
-    qs = BienPatrimonial.objects.select_related("expediente")
+    qs = BienPatrimonial.objects.select_related("expediente").exclude(estado="BAJA")
     qs, q = _filtrar_bienes(request, qs)
     return _paginar_bienes(request, qs, "bienes/lista_bienes_supervisor.html", {
         "q": q,
         "solo_lectura": True,
         "es_supervisor": True,
     })
-
-
+ 
+ 
 # ============================
 # CRUD SIMPLE
 # ============================
-
+ 
 @login_required
 def editar_bien(request, pk):
     bien = get_object_or_404(BienPatrimonial, pk=pk)
@@ -1367,9 +1526,10 @@ def editar_bien(request, pk):
                 obj.nombre = (obj.descripcion or obj.numero_serie or "SIN NOMBRE")[:200]
             obj.save()
             nombre_bien = getattr(obj, "nombre", None) or getattr(obj, "descripcion", "Sin nombre")
-            crear_notificacion_admins(
-                f"Se editó el bien '{nombre_bien}' (Clave: {obj.clave_unica})."
-            )
+            msg_edit = f"Se editó el bien '{nombre_bien}' (Clave: {obj.clave_unica})."
+            crear_notificacion_admins(msg_edit)
+            registrar_log(request.user, 'EDICION', msg_edit)
+            
             messages.success(request, f"Bien '{nombre_bien}' editado correctamente.")
             perms = permisos_context(request.user)
             if perms.get("es_admin", False):
@@ -1378,7 +1538,7 @@ def editar_bien(request, pk):
         messages.error(request, "Revisá los datos del formulario.")
     else:
         form = BienPatrimonialForm(instance=bien)
-
+ 
     context = permisos_context(request.user)
     context.update({
         "form": form,
@@ -1386,55 +1546,56 @@ def editar_bien(request, pk):
         "servicios_extra": ServicioExtra.objects.all(),
     })
     return render(request, "bienes/editar_bien.html", context)
-
-
+ 
+ 
 @login_required
 def eliminar_bien(request, pk):
     perms = permisos_context(request.user)
     if not perms["puede_eliminar"]:
         messages.error(request, "No tienes permisos para eliminar bienes.")
         return redirect("lista_bienes")
-
+ 
     bien = get_object_or_404(BienPatrimonial, pk=pk)
     nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
-    crear_notificacion_admins(
-        f"Se dio de baja el bien '{nombre_bien}' (Clave: {bien.clave_unica})."
-    )
+    msg_del = f"Se eliminó definitivamente el bien '{nombre_bien}' (Clave: {bien.clave_unica})."
+    crear_notificacion_admins(msg_del)
+    registrar_log(request.user, 'ELIMINACION', msg_del)
+    
     bien.delete()
     messages.success(request, f"✅ Bien '{nombre_bien}' eliminado correctamente.", extra_tags='eliminar')
     return redirect("lista_bienes")
-
-
+ 
+ 
 # ============================
 # CARGA MASIVA
 # ============================
-
+ 
 @login_required
 def carga_masiva_bienes(request):
     if request.method != "POST":
         context = permisos_context(request.user)
         context.update({"form": CargaMasivaForm()})
         return render(request, "carga_masiva.html", context)
-
+ 
     form = CargaMasivaForm(request.POST, request.FILES)
     if not form.is_valid():
         context = permisos_context(request.user)
         context.update({"form": form})
         return render(request, "carga_masiva.html", {"form": form})
-
+ 
     try:
         archivos = request.FILES.getlist("archivo_excel")
         sector_form = (form.cleaned_data.get("servicio") or "").strip()
         hashes_esta_carga = set()
         hashes_contenido_esta_carga = set()
-
+ 
         creados, actualizados, sin_cambios, duplicados_omitidos, errores = 0, 0, 0, 0, []
         from core.models import Expediente, BienPatrimonial, Notificacion, ArchivoCargaMasiva
         import unicodedata
         import os
         from datetime import date
         from decimal import Decimal, InvalidOperation
-
+ 
         def normalizar(texto: str) -> str:
             """Normaliza un nombre de columna: minúsculas, sin acentos, sin caracteres especiales."""
             if not texto: return ""
@@ -1443,13 +1604,13 @@ def carga_masiva_bienes(request):
             texto = ''.join(c for c in texto if not unicodedata.combining(c))
             texto = ''.join(c if c.isalnum() or c == ' ' else ' ' for c in texto)
             return ' '.join(texto.lower().split())
-
+ 
         def s(v: object) -> str:
             """Limpia el valor; devuelve '' si es vacío/nan."""
             if v is None: return ""
             txt = str(v).strip()
             return "" if txt.lower() in ("nan", "none") else txt
-
+ 
         def parse_money(v):
             txt = s(v)
             if not txt: return None
@@ -1462,7 +1623,7 @@ def carga_masiva_bienes(request):
                 return Decimal(txt)
             except InvalidOperation:
                 return None
-
+ 
         def parse_date_any(v):
             txt = s(v)
             if not txt: return None
@@ -1472,7 +1633,7 @@ def carga_masiva_bienes(request):
                 return dt.date()
             except (ValueError, TypeError):
                 return None
-
+ 
         def map_origen(v):
             t = s(v).lower()
             if not t: return None
@@ -1481,7 +1642,7 @@ def carga_masiva_bienes(request):
             if "omisi" in t: return "OMISION"
             if "transfer" in t or "traslad" in t: return "TRANSFERENCIA"
             return None
-
+ 
         def map_estado(v):
             t = s(v).lower()
             if not t: return None
@@ -1490,36 +1651,36 @@ def carga_masiva_bienes(request):
             if "inac" in t: return "INACTIVO"
             if "activ" in t: return "ACTIVO"
             return None
-
+ 
         def hash_archivo_subido(archivo) -> str:
             hasher = hashlib.sha256()
             for chunk in archivo.chunks():
                 hasher.update(chunk)
             archivo.seek(0)
             return hasher.hexdigest()
-
+ 
         def hash_contenido_dataframe(df: pd.DataFrame) -> str:
             df_normalizado = df.copy()
             df_normalizado.columns = [normalizar(str(c)) for c in df_normalizado.columns]
-
+ 
             for columna in df_normalizado.columns:
                 df_normalizado[columna] = df_normalizado[columna].map(s)
-
+ 
             # Quita filas completamente vacías para no depender de relleno accidental del Excel.
             df_normalizado = df_normalizado.loc[
                 ~(df_normalizado.apply(lambda fila: all(not valor for valor in fila), axis=1))
             ].reset_index(drop=True)
-
+ 
             columnas_ordenadas = sorted(df_normalizado.columns)
             registros = []
             for _, row in df_normalizado[columnas_ordenadas].iterrows():
                 registros.append("||".join(row[col] for col in columnas_ordenadas))
-
+ 
             contenido_canonico = "\n".join(
                 [f"cols:{'||'.join(columnas_ordenadas)}", *registros]
             )
             return hashlib.sha256(contenido_canonico.encode("utf-8")).hexdigest()
-
+ 
         def clave_fila_canonica(numero_id_val, nro_serie, descripcion, cuenta_cod, nomencl, servicios):
             if numero_id_val:
                 return f"id:{normalizar(numero_id_val)}"
@@ -1533,28 +1694,28 @@ def carga_masiva_bienes(request):
                 normalizar(servicios if servicios != "NO" else ""),
             ]
             return f"fila:{'|'.join(partes)}"
-
+ 
         def valores_distintos(valor_actual, valor_nuevo):
             if hasattr(valor_actual, "pk") or hasattr(valor_nuevo, "pk"):
                 actual_pk = getattr(valor_actual, "pk", None) if valor_actual else None
                 nuevo_pk = getattr(valor_nuevo, "pk", None) if valor_nuevo else None
                 return actual_pk != nuevo_pk
             return valor_actual != valor_nuevo
-
+ 
         claves_filas_esta_carga = set()
-
+ 
         for archivo in archivos:
             nombre_archivo_completo = getattr(archivo, 'name', 'Archivo')
             try:
                 hash_archivo = hash_archivo_subido(archivo)
-
+ 
                 nombre_archivo_lower = nombre_archivo_completo.lower()
                 
                 # Nombre del servicio basado en el archivo
                 servicio_archivo = os.path.splitext(nombre_archivo_completo)[0].upper()
                 if sector_form:
                     servicio_archivo = f"{sector_form} - {servicio_archivo}"
-
+ 
                 if nombre_archivo_lower.endswith('.xls') or nombre_archivo_lower.endswith('.xlt'):
                     engine = 'xlrd'
                 elif nombre_archivo_lower.endswith('.xlsb'):
@@ -1563,12 +1724,12 @@ def carga_masiva_bienes(request):
                     engine = 'odf'
                 else:
                     engine = 'openpyxl'
-
+ 
                 try:
                     df = pd.read_excel(archivo, dtype=str, engine=engine)
                 except Exception:
                     df = pd.read_excel(archivo, dtype=str)
-
+ 
                 # Detección de cabeceras
                 df.columns = [normalizar(str(c)) for c in df.columns]
                 keywords = ["descripcion", "cantidad", "expediente", "compra", "clave", "id", "serie", "nomenclatura"]
@@ -1591,7 +1752,7 @@ def carga_masiva_bienes(request):
                     if not header_found:
                         errores.append(f"No se detectaron cabeceras válidas en '{nombre_archivo_completo}'")
                         continue
-
+ 
                 hash_contenido = hash_contenido_dataframe(df)
                 if (
                     hash_archivo in hashes_esta_carga
@@ -1601,7 +1762,7 @@ def carga_masiva_bienes(request):
                 ):
                     errores.append(f"Excel ya cargado: '{nombre_archivo_completo}'")
                     continue
-
+ 
                 # Helpers de búsqueda de columnas (definidos por archivo porque dependen de df.columns)
                 def get_first(row_data, names):
                     # 1. Match exacto
@@ -1617,11 +1778,11 @@ def carga_masiva_bienes(request):
                             if key in col:
                                 return s(row_data.get(col))
                     return ""
-
+ 
                 def get_first_no(row_data, names):
                     val = get_first(row_data, names)
                     return val if val else "NO"
-
+ 
                 def to_int1(v):
                     txt = s(v)
                     if not txt: return 1
@@ -1629,7 +1790,7 @@ def carga_masiva_bienes(request):
                         return max(int(float(txt)), 1)
                     except (ValueError, TypeError):
                         return 1
-
+ 
                 # Procesamiento de filas
                 errores_previos = len(errores)
                 for i, row in df.iterrows():
@@ -1650,26 +1811,26 @@ def carga_masiva_bienes(request):
                             
                             serv_raw = s(get_first(row, ["servicios", "servicio", "sector"]) or servicio_archivo)
                             servicios = (serv_raw if serv_raw else "NO")[:200]
-
+ 
                             fecha_alta = parse_date_any(get_first(row, ["fecha alta", "fecha de alta"])) or date.today()
                             fecha_baja = parse_date_any(get_first(row, ["fecha de baja"]))
                             
                             origen_val = map_origen(origen_txt)
                             estado_val = map_estado(estado_txt)
                             precio = parse_money(precio_raw) if origen_val == "COMPRA" else None
-
+ 
                             expediente_obj = None
                             if nro_exp and nro_exp.upper() != "NO":
                                 expediente_obj, _ = Expediente.objects.get_or_create(numero_expediente=nro_exp[:50])
                                 if nro_compra and nro_compra.upper() != "NO":
                                     expediente_obj.numero_compra = nro_compra[:50]
                                     expediente_obj.save(update_fields=["numero_compra"])
-
+ 
                             nombre_bien = (descripcion[:200] if descripcion else (nro_serie[:200] if nro_serie != "NO" else "NO"))
                             numero_id_val = ((numero_id or "").strip() or None)
                             if numero_id_val:
                                 numero_id_val = numero_id_val[:50]
-
+ 
                             defaults = {
                                 "nombre": nombre_bien,
                                 "descripcion": descripcion or "NO",
@@ -1688,7 +1849,7 @@ def carga_masiva_bienes(request):
                             }
                             if origen_val: defaults["origen"] = origen_val
                             if estado_val: defaults["estado"] = estado_val
-
+ 
                             clave_fila = clave_fila_canonica(
                                 numero_id_val,
                                 nro_serie,
@@ -1700,7 +1861,7 @@ def carga_masiva_bienes(request):
                             if clave_fila in claves_filas_esta_carga:
                                 duplicados_omitidos += 1
                                 continue
-
+ 
                             bien_existente = None
                             if numero_id_val:
                                 bien_existente = BienPatrimonial.objects.filter(
@@ -1711,7 +1872,7 @@ def carga_masiva_bienes(request):
                                     numero_serie=nro_serie,
                                     descripcion=descripcion,
                                 ).first()
-
+ 
                             if bien_existente is None:
                                 BienPatrimonial.objects.create(**defaults)
                                 creados += 1
@@ -1721,13 +1882,13 @@ def carga_masiva_bienes(request):
                                     if valores_distintos(getattr(bien_existente, campo), valor_nuevo):
                                         setattr(bien_existente, campo, valor_nuevo)
                                         campos_a_actualizar.append(campo)
-
+ 
                                 if campos_a_actualizar:
                                     bien_existente.save(update_fields=campos_a_actualizar)
                                     actualizados += 1
                                 else:
                                     sin_cambios += 1
-
+ 
                             claves_filas_esta_carga.add(clave_fila)
                     except Exception as e:
                         errores.append(f"Error en {nombre_archivo_completo} (fila {i+1}): {str(e)}")
@@ -1742,7 +1903,7 @@ def carga_masiva_bienes(request):
                     hashes_contenido_esta_carga.add(hash_contenido)
             except Exception as e:
                 errores.append(f"Error crítico procesando '{nombre_archivo_completo}': {str(e)}")
-
+ 
         if creados or actualizados:
             messages.success(
                 request,
@@ -1756,23 +1917,26 @@ def carga_masiva_bienes(request):
         
         if errores:
             messages.error(request, "Resumen de errores: " + " | ".join(errores[:5]))
-
+ 
+        msg_masiva = f"Carga masiva finalizada: {creados} nuevos, {actualizados} actualizados, {sin_cambios} sin cambios, {duplicados_omitidos} duplicados omitidos. {len(errores)} errores."
         Notificacion.objects.create(
             usuario=request.user,
-            mensaje=f"Carga masiva finalizada: {creados} nuevos, {actualizados} actualizados, {sin_cambios} sin cambios, {duplicados_omitidos} duplicados omitidos. {len(errores)} errores.",
+            mensaje=msg_masiva,
             leida=False
         )
+        registrar_log(request.user, 'CARGA_MASIVA', msg_masiva)
+        
         return redirect("lista_bienes")
-
+ 
     except Exception as e:
         messages.error(request, f"Error general en la carga: {str(e)}")
         return redirect("lista_bienes")
-
-
+ 
+ 
 # ============================
 # ELIMINACIONES MASIVAS
 # ============================
-
+ 
 @login_required
 @require_POST
 def eliminar_bienes_seleccionados(request):
@@ -1780,27 +1944,31 @@ def eliminar_bienes_seleccionados(request):
     if not perms["puede_eliminar"]:
         messages.error(request, "No tienes permisos para eliminar bienes.")
         return redirect("lista_bienes")
-
+ 
     ids = request.POST.getlist("seleccionados")
     if not ids:
         messages.warning(request, "No seleccionaste bienes para eliminar.")
         return redirect("lista_bienes")
-
+ 
     eliminados = BienPatrimonial.objects.filter(pk__in=ids).delete()[0]
+    msg_masiva_del = f"Se eliminaron definitivamente {eliminados} bienes mediante selección masiva."
+    crear_notificacion_admins(msg_masiva_del)
+    registrar_log(request.user, 'ELIMINACION', msg_masiva_del)
+    
     messages.success(request, f"✅ Eliminados: {eliminados} bienes correctamente.")
     return redirect("lista_bienes")
-
-
+ 
+ 
 # ============================
 # BAJAS
 # ============================
-
+ 
 @login_required
 def lista_baja_bienes(request):
     q = (request.GET.get("q") or "").strip()
     orden = request.GET.get("orden") or "-fecha_baja"
     bienes_baja = BienPatrimonial.objects.select_related("expediente").filter(estado="BAJA")
-
+ 
     if q:
         bienes_baja = bienes_baja.filter(
             Q(clave_unica__icontains=q)
@@ -1815,14 +1983,14 @@ def lista_baja_bienes(request):
             | Q(expediente__numero_expediente__icontains=q)
             | Q(expediente_baja__icontains=q)
         )
-
+ 
     bienes_baja = bienes_baja.order_by(*_build_ordering_baja(orden))
-
+ 
     try:
-        per_page = int(request.GET.get("per_page") or 30)
+        per_page = int(request.GET.get("per_page") or 20)
     except ValueError:
-        per_page = 30
-
+        per_page = 20
+ 
     paginator = Paginator(bienes_baja, per_page)
     page_str = request.GET.get("page") or "1"
     try:
@@ -1831,16 +1999,16 @@ def lista_baja_bienes(request):
         page_number = 1
     if page_number < 1:
         page_number = 1
-
+ 
     try:
         page_obj = paginator.page(page_number)
     except (PageNotAnInteger, EmptyPage):
         page_obj = paginator.page(1)
-
+ 
     qd = request.GET.copy()
     qd.pop("page", None)
     querystring = qd.urlencode()
-
+ 
     current = page_obj.number
     total = paginator.num_pages
     window = 2
@@ -1850,10 +2018,10 @@ def lista_baja_bienes(request):
             page_range.append(num)
         elif page_range and page_range[-1] != "…":
             page_range.append("…")
-
+ 
     prev_page = current - 1 if page_obj.has_previous() else None
     next_page = current + 1 if page_obj.has_next() else None
-
+ 
     context = permisos_context(request.user)
     context.update({
         "bienes": page_obj.object_list,
@@ -1866,16 +2034,23 @@ def lista_baja_bienes(request):
         "querystring": querystring,
     })
     return render(request, "bienes/lista_baja_bienes.html", context)
-
-
+ 
+ 
 @login_required
 @require_POST
 def dar_baja_bien(request, pk):
     bien = get_object_or_404(BienPatrimonial, pk=pk)
+    print("DAR BAJA POST:", dict(request.POST))
     fecha_baja = parse_date(request.POST.get("fecha_baja") or "") or date.today()
-    expediente_baja = (request.POST.get("expediente_baja") or "").strip()
-    descripcion_baja = (request.POST.get("descripcion_baja") or "").strip()
-
+    expediente_baja = (
+        request.POST.get(f"expediente_baja_{pk}")
+        or request.POST.get("expediente_baja")
+        or "").strip()
+    descripcion_baja = (
+        request.POST.get(f"descripcion_baja_{pk}")
+        or request.POST.get("descripcion_baja")
+        or ""
+    ).strip()
     bien.estado = "BAJA"
     update_fields = ["estado"]
     if hasattr(bien, "fecha_baja"):
@@ -1888,15 +2063,16 @@ def dar_baja_bien(request, pk):
         bien.descripcion_baja = descripcion_baja
         update_fields.append("descripcion_baja")
     bien.save(update_fields=update_fields)
-
+    print("GUARDADO:", bien.pk, bien.estado, bien.fecha_baja, bien.expediente_baja, bien.descripcion_baja)
     nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
-    crear_notificacion_admins(
-        f"Se dio de baja el bien '{nombre_bien}' (Clave: {bien.clave_unica})."
-    )
+    msg_baja = f"Se dio de baja el bien '{nombre_bien}' (Clave: {bien.clave_unica})."
+    crear_notificacion_admins(msg_baja)
+    registrar_log(request.user, 'BAJA', msg_baja)
+    
     messages.success(request, f"Bien '{nombre_bien}' dado de baja correctamente.")
     return redirect("lista_bienes")
-
-
+ 
+ 
 @login_required
 @require_POST
 @transaction.atomic
@@ -1905,18 +2081,18 @@ def dar_baja_bienes_seleccionados(request):
     if not perms["es_admin"]:
         messages.error(request, "No tienes permisos para dar de baja bienes.")
         return redirect("lista_bienes")
-
+ 
     pks = request.POST.getlist("bienes_seleccionados_baja")
     if not pks:
         messages.warning(request, "No se seleccionó ningún bien para dar de baja.")
         return redirect("lista_bienes")
-
+ 
     bienes = BienPatrimonial.objects.filter(pk__in=pks)
     count = bienes.count()
     if count == 0:
         messages.warning(request, "No se encontraron los bienes seleccionados.")
         return redirect("lista_bienes")
-
+ 
     nombres_bienes = []
     
     for bien in bienes:
@@ -1925,7 +2101,7 @@ def dar_baja_bienes_seleccionados(request):
         fecha_baja = parse_date(fecha_str or "") or date.today()
         expediente_baja = (request.POST.get(f"expediente_baja_{pk}") or "").strip()
         descripcion_baja = (request.POST.get(f"descripcion_baja_{pk}") or "").strip()
-
+ 
         bien.estado = "BAJA"
         bien.fecha_baja = fecha_baja
         bien.expediente_baja = expediente_baja
@@ -1934,10 +2110,11 @@ def dar_baja_bienes_seleccionados(request):
         
         nombre = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
         nombres_bienes.append(nombre)
-
-    crear_notificacion_admins(
-        f"Se dieron de baja {count} bienes: {', '.join(nombres_bienes[:5])}{'...' if count > 5 else ''}."
-    )
+ 
+    msg_baja_masiva = f"Se dieron de baja {count} bienes mediante selección masiva: {', '.join(nombres_bienes[:5])}{'...' if count > 5 else ''}."
+    crear_notificacion_admins(msg_baja_masiva)
+    registrar_log(request.user, 'BAJA', msg_baja_masiva)
+    
     messages.success(request, f"Se han dado de baja {count} bienes correctamente.")
     return redirect("lista_bienes")
  
@@ -1950,7 +2127,7 @@ def restablecer_bien(request, pk):
     if not perms["es_admin"]:
         messages.error(request, "No tienes permisos para restablecer bienes.")
         return redirect("lista_baja_bienes")
-
+ 
     bien = get_object_or_404(BienPatrimonial, pk=pk)
     bien.estado = "ACTIVO"
     update_fields = ["estado"]
@@ -1964,15 +2141,16 @@ def restablecer_bien(request, pk):
         bien.descripcion_baja = ""
         update_fields.append("descripcion_baja")
     bien.save(update_fields=update_fields)
-
+ 
     nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
-    crear_notificacion_admins(
-        f"Se restableció el bien '{nombre_bien}' (Clave: {bien.clave_unica}) a ACTIVO."
-    )
+    msg_rest = f"Se restableció el bien '{nombre_bien}' (Clave: {bien.clave_unica}) a ACTIVO."
+    crear_notificacion_admins(msg_rest)
+    registrar_log(request.user, 'RESTABLECIMIENTO', msg_rest)
+    
     messages.success(request, f"Bien '{nombre_bien}' restablecido a ACTIVO.")
     return redirect("lista_bienes")
-
-
+ 
+ 
 @login_required
 @require_POST
 @transaction.atomic
@@ -1981,17 +2159,17 @@ def restablecer_bienes_seleccionados(request):
     if not perms["es_admin"]:
         messages.error(request, "No tienes permisos para restablecer bienes.")
         return redirect("lista_baja_bienes")
-
+ 
     pks = request.POST.getlist("bienes_seleccionados_restaurar")
     if not pks:
         messages.warning(request, "No se seleccionó ningún bien.")
         return redirect("lista_baja_bienes")
-
+ 
     bienes = BienPatrimonial.objects.filter(pk__in=pks)
     count = bienes.count()
     if count == 0:
         return redirect("lista_baja_bienes")
-
+ 
     nombres = []
     for bien in bienes:
         bien.estado = "ACTIVO"
@@ -2003,18 +2181,18 @@ def restablecer_bienes_seleccionados(request):
             bien.descripcion_baja = ""
             
         nombres.append(getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre"))
-
+ 
         update_fields = ["estado"]
         if hasattr(bien, "fecha_baja"): update_fields.append("fecha_baja")
         if hasattr(bien, "expediente_baja"): update_fields.append("expediente_baja")
         if hasattr(bien, "descripcion_baja"): update_fields.append("descripcion_baja")
-
+ 
         bien.save(update_fields=update_fields)
-
+ 
     nombres_str = ", ".join(nombres[:5])
     if count > 5:
         nombres_str += f" y {count - 5} más"
-
+ 
     crear_notificacion_admins(
         f"Se restablecieron {count} bienes a ACTIVO: {nombres_str}."
     )
@@ -2030,23 +2208,24 @@ def eliminar_bien_definitivo(request, pk):
     if not perms["es_admin"]:
         messages.error(request, "No tienes permisos para eliminar bienes definitivamente.")
         return redirect("lista_baja_bienes")
-
+ 
     bien = get_object_or_404(BienPatrimonial, pk=pk)
     identificador = bien.clave_unica or bien.pk
     nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
+    msg_del_def = f"Se eliminó definitivamente el bien '{nombre_bien}' (Clave: {identificador})."
+    crear_notificacion_admins(msg_del_def)
+    registrar_log(request.user, 'ELIMINACION', msg_del_def)
+    
     bien.delete()
-    crear_notificacion_admins(
-        f"Se eliminó definitivamente el bien '{nombre_bien}' (Clave: {identificador})."
-    )
     messages.success(request, f"Bien '{nombre_bien}' eliminado definitivamente.")
     return redirect("lista_baja_bienes")
  
  
-
+ 
 # ============================
 # NOTIFICACIONES
 # ============================
-
+ 
 @login_required
 def marcar_notificaciones_leidas(request):
     if request.method == "POST":
@@ -2057,8 +2236,8 @@ def marcar_notificaciones_leidas(request):
         ).update(leida=True)
         return JsonResponse({"ok": True})
     return JsonResponse({"ok": False}, status=400)
-
-
+ 
+ 
 @login_required
 @require_POST
 def borrar_todas_notificaciones(request):
@@ -2069,8 +2248,8 @@ def borrar_todas_notificaciones(request):
         ).update(eliminada=True)
         return JsonResponse({"ok": True})
     return JsonResponse({"ok": False}, status=400)
-
-
+ 
+ 
 @login_required
 @require_POST
 def eliminar_notificacion(request, pk):
@@ -2080,8 +2259,8 @@ def eliminar_notificacion(request, pk):
     notif.eliminada = True
     notif.save(update_fields=["eliminada"])
     return JsonResponse({"ok": True})
-
-
+ 
+ 
 @login_required
 @require_POST
 def marcar_notificacion_leida(request, pk):
@@ -2091,12 +2270,12 @@ def marcar_notificacion_leida(request, pk):
     notif.leida = True
     notif.save(update_fields=["leida"])
     return JsonResponse({"ok": True})
-
-
+ 
+ 
 def crear_notificacion(usuario, mensaje):
     Notificacion.objects.create(usuario=usuario, mensaje=mensaje)
-
-
+ 
+ 
 def crear_notificacion_admins(mensaje):
     UserModel = get_user_model()
     admins = UserModel.objects.filter(
@@ -2105,25 +2284,35 @@ def crear_notificacion_admins(mensaje):
     for admin in admins:
         crear_notificacion(admin, mensaje)
 
+def registrar_log(usuario, accion, mensaje):
+    try:
+        LogActividad.objects.create(
+            usuario=usuario,
+            accion=accion,
+            mensaje=mensaje
+        )
+    except Exception as e:
+        print(f"Error al registrar log: {e}")
+ 
 @login_required
 def agregar_servicio_ajax(request):
     if request.method != "POST":
         return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
-
+ 
     perms = permisos_context(request.user)
     if not perms["es_admin"]:
         return JsonResponse({"ok": False, "error": "Sin permisos."}, status=403)
-
+ 
     import json
     try:
         data = json.loads(request.body)
         nombre = (data.get("nombre") or "").strip().title()
     except Exception:
         return JsonResponse({"ok": False, "error": "Datos inválidos."}, status=400)
-
+ 
     if not nombre:
         return JsonResponse({"ok": False, "error": "El nombre no puede estar vacío."})
-
+ 
     SERVICIOS_FIJOS = [
         "Apoyo A La Comunidad", "Area Guardia", "Area Limpieza Hospitalaria",
         "Area Parque Cultural", "Arquitectura", "CAPER", "Camilleros", "Cardiologia",
@@ -2154,66 +2343,12 @@ def agregar_servicio_ajax(request):
         "Tocoginecologia", "Toxicologia", "Traumatologia", "U.T.I.", "UCAC",
         "Vacunacion", "Vigilancia",
     ]
-
+ 
     ya_existe_fijo = any(nombre.lower() == s.lower() for s in SERVICIOS_FIJOS)
     ya_existe_extra = ServicioExtra.objects.filter(nombre__iexact=nombre).exists()
-
+ 
     if ya_existe_fijo or ya_existe_extra:
         return JsonResponse({"ok": False, "error": f"El servicio '{nombre}' ya existe."})
-
+ 
     ServicioExtra.objects.create(nombre=nombre)
     return JsonResponse({"ok": True, "nombre": nombre, "mensaje": f"Servicio '{nombre}' agregado correctamente."})
- 
-@login_required
-def agregar_servicio(request):
-    perms = permisos_context(request.user)
-    if not perms["es_admin"]:
-        messages.error(request, "No tienes permisos para agregar servicios.")
-        return redirect("home_operador")
-
-    if request.method == "POST":
-        nombre = (request.POST.get("nombre") or "").strip().title()
-        SERVICIOS_FIJOS = [
-            "Apoyo A La Comunidad", "Area Guardia", "Area Limpieza Hospitalaria",
-            "Area Parque Cultural", "Arquitectura", "CAPER", "Camilleros", "Cardiologia",
-            "Charcot", "Cirugia", "Clinica", "Cocina", "Compras", "Conmutador", "Consejeria",
-            "Consultorio De Gastroenterologia", "Consultorio Externo Salud Mental",
-            "Consultorios Externos Pab V", "Contable", "Costurero",
-            "Cud Y Servicios De Consumos Problemacion", "Departamento De Enfermerias Supervision",
-            "Departamento Sistema De Informacion - Samo Turnos Y Estadistica",
-            "Deposito Descartable", "Deposito General", "Dermatologia", "Diagnostico Por Imagenes",
-            "Dira", "Direccion Administrativa", "Direccion Asociada Area Tecnica",
-            "Direccion Asociada Medico Quirurgica", "Direccion Ejecutiva", "Direccion Salud Mental",
-            "Dispositivo Artistico Cultural", "Docencia E Investigacion",
-            "Donacion Fundacion Florencio Perez", "Emergencia", "En Guarda Patrimoniales",
-            "Enfermeria", "Epidemiologia", "Estadistica", "Estadistica Central",
-            "Estadistica Pabellon V", "Esterilizacion", "Farmacia", "Gastroenterologia",
-            "Gerenciamiento De Camas", "Hemoterapia", "Infancias Y Juventudes", "Infectologia",
-            "Informatica", "Infraestructura Y Mantenimiento", "Intendencia", "Jardin Maternal",
-            "Laboratorio", "Lasegue", "Legales", "Limpieza", "Mesa De Entrada",
-            "Neumonologia Y Oftalmologia", "Neurocirugia", "Neuropsicologia", "Odontologia",
-            "Oncologia", "Patologia", "Patrimoniales", "Pediatria Y Neonatologia", "Penfield",
-            "Percial", "Podologia Y Peluqueria", "Polo Educativo", "Pre Alta", "Quirofano",
-            "RRHH", "Recuperacion Clinica", "Registro Civil", "Rehabilitacion Fisica Y Kinesiologia",
-            "Rehabilitacion Salud Mental Direccion", "Reumatologia Y Oftalmologia",
-            "SAC", "SAM", "SAMO Contable", "SAMO Facturacion",
-            "SAP (Servicio De Area Programatica Y Redes De Salud)", "SGU", "Sala De Endoscopia",
-            "Sala F", "Sala G", "Seguridad E Higiene", "Servicio De Psicologia",
-            "Servicio Rehabilitacion Larga Distancia", "Servicio Social", "Sumar",
-            "Tocoginecologia", "Toxicologia", "Traumatologia", "U.T.I.", "UCAC",
-            "Vacunacion", "Vigilancia",
-        ]
-        ya_existe_fijo = any(nombre.lower() == s.lower() for s in SERVICIOS_FIJOS)
-        ya_existe_extra = ServicioExtra.objects.filter(nombre__iexact=nombre).exists()
-
-        if ya_existe_fijo or ya_existe_extra:
-            messages.error(request, f"El servicio '{nombre}' ya existe.")
-        elif nombre:
-            ServicioExtra.objects.create(nombre=nombre)
-            messages.success(request, f"Servicio '{nombre}' agregado correctamente.")
-        else:
-            messages.error(request, "El nombre del servicio no puede estar vacío.")
-        
-        return redirect("alta_bien")
-
-    return render(request, "agregar_servicio.html")

@@ -67,11 +67,12 @@
                 </div>
             </div>
         </div>
+    </form>
+    <div id="bienes-container">
         <div class="col-12 mt-2 text-muted">
             {% if q %}Mostrando resultados para: <strong>{{ q }}</strong> · {% endif %}
             Total {{ paginator.count }}{% if is_paginated %} — página {{ page_obj.number }} de {{ paginator.num_pages }}{% endif %}
         </div>
-    </form>
     <div class="table-responsive">
         <table id="tabla-bienes" class="table table-sm table-bordered align-middle">
             <thead class="table-light text-center">
@@ -212,23 +213,50 @@
         </nav>
     </div>
     {% endif %}
+    </div>
+
 
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<!-- Autosubmit (operador) -->
+<!-- Autosubmit (operador) (AJAX) -->
 <script>
 (function () {
   const form = document.querySelector('#filtros-form');
-  if (!form) return;
+  const container = document.querySelector('#bienes-container');
+  if (!form || !container) return;
 
-  const requestSubmit = () => (form.requestSubmit ? form.requestSubmit() : form.submit());
+  const updateList = (url) => {
+    container.style.opacity = '0.5';
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(response => response.text())
+      .then(html => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const newContent = doc.querySelector('#bienes-container').innerHTML;
+        container.innerHTML = newContent;
+        container.style.opacity = '1';
+        window.history.pushState({}, '', url);
+      })
+      .catch(err => {
+        console.error('Error en fetch:', err);
+        container.style.opacity = '1';
+      });
+  };
+
+  const handleFormSubmit = (e) => {
+    if (e) e.preventDefault();
+    const formData = new FormData(form);
+    const params = new URLSearchParams(formData);
+    const url = `${window.location.pathname}?${params.toString()}`;
+    updateList(url);
+  };
 
   const debounce = (fn, ms) => {
     let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn.apply(null, args), ms); };
   };
-  const debouncedSubmit = debounce(requestSubmit, 400);
+  const debouncedSubmit = debounce(handleFormSubmit, 400);
 
   const ensurePageReset = () => {
     let pageInput = form.querySelector('input[name="page"]');
@@ -241,20 +269,24 @@
     pageInput.value = '1';
   };
 
-  const autoEls = form.querySelectorAll('.auto-submit');
-
-  autoEls.forEach(el => {
+  form.querySelectorAll('.auto-submit').forEach(el => {
     const tag = el.tagName;
     const type = (el.type || '').toLowerCase();
-
-    // Selects / fechas / checks → inmediato
     if (tag === 'SELECT' || (tag === 'INPUT' && (type === 'date' || type === 'checkbox' || type === 'radio'))) {
-      el.addEventListener('change', () => { ensurePageReset(); requestSubmit(); });
+      el.addEventListener('change', () => { ensurePageReset(); handleFormSubmit(); });
     }
-
-    // Texto / search (q, f_origen, f_estado) → debounce
     if (tag === 'INPUT' && (type === 'text' || type === 'search')) {
       el.addEventListener('input', () => { ensurePageReset(); debouncedSubmit(); });
+    }
+  });
+
+  form.addEventListener('submit', handleFormSubmit);
+
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest('.pagination .page-link');
+    if (link && link.getAttribute('href') && link.getAttribute('href') !== '#') {
+      e.preventDefault();
+      updateList(link.href);
     }
   });
 })();

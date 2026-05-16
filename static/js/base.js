@@ -119,4 +119,75 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+
+    // ---------------------------
+    // FLOATING SCROLLBAR (STICKY)
+    // ---------------------------
+    function initFloatingScrollbar() {
+        // Buscamos contenedores de tablas responsivas
+        const containers = document.querySelectorAll('.table-responsive');
+        
+        containers.forEach(container => {
+            if (container.dataset.floatingScrollInit) return;
+            container.dataset.floatingScrollInit = 'true';
+
+            const table = container.querySelector('table');
+            if (!table) return;
+
+            // Creamos un div para la barra "fantasma"
+            const ghostScroll = document.createElement('div');
+            ghostScroll.className = 'floating-scrollbar-ghost';
+            ghostScroll.style.cssText = `
+                position: fixed;
+                bottom: 0;
+                overflow-x: auto;
+                overflow-y: hidden;
+                z-index: 1050;
+                display: none;
+                height: 20px;
+                background: rgba(255,255,255,0.1);
+            `;
+
+            const ghostContent = document.createElement('div');
+            ghostContent.style.height = '1px';
+            ghostScroll.appendChild(ghostContent);
+            document.body.appendChild(ghostScroll);
+
+            const updatePosition = () => {
+                const rect = container.getBoundingClientRect();
+                const viewportHeight = window.innerHeight;
+
+                // Solo mostrar si el contenedor está en el viewport pero su parte inferior está fuera
+                const isVisible = rect.top < viewportHeight && rect.bottom > 0;
+                const bottomIsOffscreen = rect.bottom > viewportHeight;
+
+                if (isVisible && bottomIsOffscreen) {
+                    ghostScroll.style.display = 'block';
+                    ghostScroll.style.left = rect.left + 'px';
+                    ghostScroll.style.width = rect.width + 'px';
+                    ghostContent.style.width = table.offsetWidth + 'px';
+                    ghostScroll.scrollLeft = container.scrollLeft;
+                } else {
+                    ghostScroll.style.display = 'none';
+                }
+            };
+
+            // Sincronizar scrolls
+            ghostScroll.onscroll = () => {
+                container.scrollLeft = ghostScroll.scrollLeft;
+            };
+            container.onscroll = () => {
+                ghostScroll.scrollLeft = container.scrollLeft;
+            };
+
+            window.addEventListener('scroll', updatePosition);
+            window.addEventListener('resize', updatePosition);
+            new ResizeObserver(updatePosition).observe(table);
+            new ResizeObserver(updatePosition).observe(container);
+            
+            updatePosition();
+        });
+    }
+
+    initFloatingScrollbar();
 });

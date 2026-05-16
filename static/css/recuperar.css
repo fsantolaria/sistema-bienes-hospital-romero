@@ -138,6 +138,13 @@ main.main-content > .messages-container {
     box-shadow: 0 0 0 3px rgba(0, 164, 198, 0.15);
 }
 
+.label-recuperar {
+    font-size: 13px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-top: 8px;
+}
+
 /* ===== BOTÓN ===== */
 .btn-send {
     background-color: #00aec3;

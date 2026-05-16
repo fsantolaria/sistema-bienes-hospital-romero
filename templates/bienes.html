@@ -84,7 +84,7 @@
           <div class="col-md-4">
             <div class="form-group-item {% if form.servicios.errors %}campo-error{% endif %}">
               <label for="{{ form.servicios.id_for_label }}">Servicios / Sector</label>
-              <div style="display: flex; gap: 8px; align-items: center;">
+              <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
                 {{ form.servicios }}
                 {% if es_admin %}
                 <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#modalAgregarServicio" style="
@@ -293,7 +293,9 @@
         if (inputPrecio) { inputPrecio.value = ''; inputPrecio.disabled = true; }
       }
     }
+
     togglePrecio();
+
     origen?.addEventListener('change', togglePrecio);
 
     const estado = document.getElementById('id_estado');

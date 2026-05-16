@@ -138,6 +138,33 @@ input::-webkit-credentials-auto-fill-button {
     right: 0 !important;
 }
 
+/* ======== OJO MOSTRAR/OCULTAR CONTRASEÑA ======== */
+.password-wrapper {
+    position: relative;
+    width: 100%;
+}
+.password-wrapper .input-field-new {
+    padding-right: 44px;
+}
+.toggle-password {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 40px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    color: #aaa;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+}
+.toggle-password:hover { color: #00bcd4; }
+
 /* ======== LINK DE OLVIDÉ CONTRASEÑA ======== */
 .forgot-password {
     display: block;

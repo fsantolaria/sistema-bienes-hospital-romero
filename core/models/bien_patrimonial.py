@@ -115,6 +115,14 @@ class BienPatrimonial(models.Model):
         blank=True, verbose_name="Descripción de baja"
     )
 
+    # --- Auditoría ---
+    fecha_registro = models.DateTimeField(
+        auto_now_add=True,
+        null=True,
+        blank=True,
+        verbose_name="Fecha de Registro en Sistema"
+    )
+
     class Meta:
         verbose_name = "Bien Patrimonial"
         verbose_name_plural = "Bienes Patrimoniales"

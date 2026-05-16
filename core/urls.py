@@ -1,12 +1,7 @@
 from django.urls import path
 from django.views.generic import RedirectView
 from . import views
-
 from core.views import marcar_notificaciones_leidas, borrar_todas_notificaciones
-
-
-from core.views import marcar_notificaciones_leidas
-from core.views import home_supervisor, lista_bienes_supervisor
 
 urlpatterns = [
     # ===== Raíz del sitio =====
@@ -18,6 +13,7 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('registro/', views.registro, name='registro'),
     path('recuperar-password/', views.recuperar_password, name='recuperar_password'),
+    path('resetear-contraseña/<str:token>/', views.resetear_password, name='resetear_password'),
 
     # Compatibilidad con /accounts/login/
     path('accounts/login/', RedirectView.as_view(pattern_name='login', permanent=False)),
@@ -25,11 +21,7 @@ urlpatterns = [
     # ===== Dashboards =====
     path('home_admin/', views.home_admin, name='home_admin'),
     path('home_operador/', views.home_operador, name='home_operador'),
-
-    path("supervisor/", home_supervisor, name="home_supervisor"),
-    path("supervisor/bienes/", lista_bienes_supervisor, name="lista_bienes_supervisor"),
     path('home_supervisor/', views.home_supervisor, name='home_supervisor'),
-
 
     # ===== Operadores =====
     path('operadores/', views.operadores, name='operadores'),
@@ -42,16 +34,15 @@ urlpatterns = [
     path('base/', views.base, name='base'),
     path("reportes/", views.reportes_view, name="reportes"),
     path("reportes/pdf/", views.reportes_pdf, name="reportes_pdf"),
+    path("reportes/registro-pdf/", views.registro_pdf, name="registro_pdf"),
     path('servicios/agregar/', views.agregar_servicio, name='agregar_servicio'),
     path('servicios/agregar-ajax/', views.agregar_servicio_ajax, name='agregar_servicio_ajax'),
 
     # ===== Bienes =====
-    # Acciones específicas primero
     path('bienes/<int:pk>/editar/', views.editar_bien, name='editar_bien'),
     path('bienes/<int:pk>/eliminar/', views.eliminar_bien, name='eliminar_bien'),
     path('bienes/eliminar-seleccionados/', views.eliminar_bienes_seleccionados, name='eliminar_bienes_seleccionados'),
-    path('bienes/bajas-seleccionados/', views.dar_baja_bienes_seleccionados, name='dar_baja_bienes_seleccionados'),
-    path('bienes/restablecer-seleccionados/', views.restablecer_bienes_seleccionados, name='restablecer_bienes_seleccionados'),
+    path('bienes/dar-baja-seleccionados/', views.dar_baja_bienes_seleccionados, name='dar_baja_bienes_seleccionados'),
 
     # Listas
     path('lista-bienes/', views.lista_bienes, name='lista_bienes'),
@@ -61,6 +52,7 @@ urlpatterns = [
     # Acciones sobre bajas
     path('bienes/<int:pk>/dar-baja/', views.dar_baja_bien, name='dar_baja_bien'),
     path('bienes/<int:pk>/restablecer/', views.restablecer_bien, name='restablecer_bien'),
+    path('bienes/restablecer-seleccionados/', views.restablecer_bienes_seleccionados, name='restablecer_bienes_seleccionados'),
     path('bienes/<int:pk>/eliminar-definitivo/', views.eliminar_bien_definitivo, name='eliminar_bien_definitivo'),
 
     # Carga masiva
@@ -75,5 +67,4 @@ urlpatterns = [
     path('notificaciones/borrar-todas/', borrar_todas_notificaciones, name='borrar_todas_notificaciones'),
     path('notificaciones/<int:pk>/eliminar/', views.eliminar_notificacion, name='eliminar_notificacion'),
     path('notificaciones/<int:pk>/marcar-leida/', views.marcar_notificacion_leida, name='marcar_notificacion_leida'),
-    path('actualizar-tema/', views.actualizar_tema, name='actualizar_tema'),
 ]

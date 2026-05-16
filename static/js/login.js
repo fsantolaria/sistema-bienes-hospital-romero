@@ -78,4 +78,16 @@ document.addEventListener('DOMContentLoaded', function() {
             if (loginError) loginError.style.display = 'none';
         });
     }
+
+    const togglePassword = document.getElementById('togglePassword');
+    const toggleIcon = document.getElementById('toggleIcon');
+    if (togglePassword && passwordInput && toggleIcon) {
+        togglePassword.addEventListener('click', () => {
+            const isHidden = passwordInput.type === 'password';
+            passwordInput.type = isHidden ? 'text' : 'password';
+            toggleIcon.classList.toggle('fa-eye', !isHidden);
+            toggleIcon.classList.toggle('fa-eye-slash', isHidden);
+            togglePassword.setAttribute('aria-label', isHidden ? 'Ocultar contraseña' : 'Mostrar contraseña');
+        });
+    }
 });

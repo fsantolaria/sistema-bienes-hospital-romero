@@ -4,7 +4,7 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-SECRET_KEY = 
+SECRET_KEY = 'ery@#b7zsbl^vsz!d(qu86q^p(g__sk=^jkq(x2(zg0r^rna8_'
 DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
@@ -37,6 +37,28 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+# settings.py
+
+AUTH_PASSWORD_VALIDATORS = [
+    # ... los que ya estén ...
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {'min_length': 8},
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+    # AGREGÁ ESTA LÍNEA (ajustá "nombre_de_tu_app" al nombre real):
+    {
+        'NAME': 'core.validators.ComplexPasswordValidator',
+    },
 ]
 
 # ==========================
@@ -101,3 +123,15 @@ LANGUAGE_CODE = 'es-ar'
 TIME_ZONE = 'America/Argentina/Buenos_Aires'
 USE_I18N = True
 USE_TZ = True
+
+# ==========================
+# EMAIL CONFIGURATION
+# ==========================
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'desposfrancisco@gmail.com'
+EMAIL_HOST_PASSWORD = 'your-app-password-here'  # Reemplaza con la App Password de Google
+DEFAULT_FROM_EMAIL = 'desposfrancisco@gmail.com'
+

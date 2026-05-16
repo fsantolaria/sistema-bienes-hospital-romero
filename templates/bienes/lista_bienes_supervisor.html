@@ -16,19 +16,19 @@
     </span>
   </div>
 
-  <form method="get" class="card border-0 shadow-sm p-3 mb-3">
+  <form id="filtros-form" method="get" class="card border-0 shadow-sm p-3 mb-3">
     <div class="row g-2 align-items-end">
       <div class="col-md-4">
         <label class="form-label small text-muted mb-1">Buscar</label>
         <div class="input-group">
           <span class="input-group-text"><i class="bi bi-search"></i></span>
-          <input type="text" name="q" value="{{ q }}" class="form-control"
+          <input type="text" name="q" value="{{ q }}" class="form-control auto-submit"
                  placeholder="Clave, descripción, serie…">
         </div>
       </div>
       <div class="col-md-2">
         <label class="form-label small text-muted mb-1">Estado</label>
-        <select name="f_estado" class="form-select">
+        <select name="f_estado" class="form-select auto-submit">
           <option value="">Todos</option>
           <option value="ACTIVO" {% if request.GET.f_estado == "ACTIVO" %}selected{% endif %}>Activo</option>
           <option value="BAJA" {% if request.GET.f_estado == "BAJA" %}selected{% endif %}>Baja</option>
@@ -38,7 +38,7 @@
       </div>
       <div class="col-md-2">
         <label class="form-label small text-muted mb-1">Origen</label>
-        <select name="f_origen" class="form-select">
+        <select name="f_origen" class="form-select auto-submit">
           <option value="">Todos</option>
           <option value="COMPRA" {% if request.GET.f_origen == "COMPRA" %}selected{% endif %}>Compra</option>
           <option value="DONACION" {% if request.GET.f_origen == "DONACION" %}selected{% endif %}>Donación</option>
@@ -48,11 +48,11 @@
       </div>
       <div class="col-md-2">
         <label class="form-label small text-muted mb-1">Desde</label>
-        <input type="date" name="f_desde" value="{{ request.GET.f_desde }}" class="form-control">
+        <input type="date" name="f_desde" value="{{ request.GET.f_desde }}" class="form-control auto-submit">
       </div>
       <div class="col-md-2">
         <label class="form-label small text-muted mb-1">Hasta</label>
-        <input type="date" name="f_hasta" value="{{ request.GET.f_hasta }}" class="form-control">
+        <input type="date" name="f_hasta" value="{{ request.GET.f_hasta }}" class="form-control auto-submit">
       </div>
       <div class="col-12 d-flex gap-2">
         <button type="submit" class="btn btn-primary btn-sm px-4">
@@ -64,6 +64,8 @@
       </div>
     </div>
   </form>
+  <div id="bienes-container">
+
 
   <div class="card border-0 shadow-sm">
     <div class="table-responsive">
@@ -145,6 +147,8 @@
     {% endif %}
   </div>
 
+  </div>
+
   <div class="alert alert-warning d-flex gap-2 align-items-center mt-3" role="alert">
     <i class="bi bi-lock-fill"></i>
     <span>Como <strong>supervisor</strong>, solo podés visualizar los bienes. Las acciones de alta, edición o baja requieren permisos de administrador.</span>
@@ -152,3 +156,76 @@
 
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const form = document.querySelector('#filtros-form');
+  const container = document.querySelector('#bienes-container');
+  if (!form || !container) return;
+
+  const updateList = (url) => {
+    container.style.opacity = '0.5';
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(response => response.text())
+      .then(html => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const newContent = doc.querySelector('#bienes-container').innerHTML;
+        container.innerHTML = newContent;
+        container.style.opacity = '1';
+        window.history.pushState({}, '', url);
+      })
+      .catch(err => {
+        console.error('Error en fetch:', err);
+        container.style.opacity = '1';
+      });
+  };
+
+  const handleFormSubmit = (e) => {
+    if (e) e.preventDefault();
+    const formData = new FormData(form);
+    const params = new URLSearchParams(formData);
+    const url = `${window.location.pathname}?${params.toString()}`;
+    updateList(url);
+  };
+
+  const debounce = (fn, ms) => {
+    let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn.apply(null, args), ms); };
+  };
+  const debouncedSubmit = debounce(handleFormSubmit, 400);
+
+  const ensurePageReset = () => {
+    let pageInput = form.querySelector('input[name="page"]');
+    if (!pageInput) {
+      pageInput = document.createElement('input');
+      pageInput.type = 'hidden';
+      pageInput.name = 'page';
+      form.appendChild(pageInput);
+    }
+    pageInput.value = '1';
+  };
+
+  form.querySelectorAll('.auto-submit').forEach(el => {
+    const tag = el.tagName;
+    const type = (el.type || '').toLowerCase();
+    if (tag === 'SELECT' || (tag === 'INPUT' && (type === 'date' || type === 'checkbox' || type === 'radio'))) {
+      el.addEventListener('change', () => { ensurePageReset(); handleFormSubmit(); });
+    }
+    if (tag === 'INPUT' && (type === 'text' || type === 'search')) {
+      el.addEventListener('input', () => { ensurePageReset(); debouncedSubmit(); });
+    }
+  });
+
+  form.addEventListener('submit', handleFormSubmit);
+
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest('.pagination .page-link');
+    if (link && link.getAttribute('href') && link.getAttribute('href') !== '#') {
+      e.preventDefault();
+      updateList(link.href);
+    }
+  });
+})();
+</script>
+{% endblock %}

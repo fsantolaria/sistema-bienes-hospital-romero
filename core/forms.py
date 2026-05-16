@@ -1,22 +1,21 @@
 # core/forms.py
+import re
+
 from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
-from django.contrib.auth.password_validation import validate_password
 from core.models import BienPatrimonial
 from core.models.expediente import Expediente
 from datetime import date
 
 
-
-# ========== FORMULARIO DE CARGA MASIVA ==========
 class MultipleFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True
 
 class MultipleFileField(forms.FileField):
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault("widget", MultipleFileInput(attrs={'class': 'form-control', 'accept': '.xlsx,.xls,.xlsm,.xlsb,.ods,.csv'}))
+        kwargs.setdefault("widget", MultipleFileInput(attrs={'class': 'form-control', 'accept': '.xlsx,.xls,.xlsm,.xlsb,.ods'}))
         super().__init__(*args, **kwargs)
 
     def clean(self, data, initial=None):
@@ -25,16 +24,18 @@ class MultipleFileField(forms.FileField):
             return [single_file_clean(d, initial) for d in data]
         return single_file_clean(data, initial)
 
+
+# ========== FORMULARIO DE CARGA MASIVA ==========
 class CargaMasivaForm(forms.Form):
     archivo_excel = MultipleFileField(
         label='Seleccionar archivo(s) Excel',
-        help_text='Formatos soportados: .xlsx, .xls, .xlsm, .xlsb, .ods, .csv'
+        help_text='Formatos soportados: .xlsx, .xls, .xlsm, .xlsb, .ods'
     )
     servicio = forms.CharField(
         max_length=100,
         required=False,
         label='Servicio por defecto (opcional)',
-        help_text='Si se deja vacío, se tomará el servicio de cada fila del archivo. Si el archivo se llama "RELEVAMIENTO...", se asignará automáticamente.',
+        help_text='Si se deja vacío, se tomará el servicio de cada fila del archivo.',
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
 
@@ -48,9 +49,14 @@ class BienPatrimonialForm(forms.ModelForm):
         model = BienPatrimonial
         fields = [
             'descripcion', 'cantidad', 'expediente', 'cuenta_codigo', 'nomenclatura_bienes',
-            'numero_serie', 'numero_identificacion', 'numero_compra', 'origen', 'estado', 'servicios',
-            'observaciones', 'siem', 'valor_adquisicion', 'fecha_adquisicion', 'fecha_baja',
+            'numero_serie', 'numero_identificacion', 'origen', 'estado', 'servicios',
+            'observaciones', 'valor_adquisicion', 'fecha_adquisicion', 'fecha_baja', 'siem',
         ]
+        error_messages = {
+            'descripcion': {'required': 'Este campo es obligatorio.'},
+            'cantidad':    {'required': 'Este campo es obligatorio.'},
+            'origen':      {'required': 'Este campo es obligatorio.'},
+        }
         widgets = {
             'descripcion': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
             'cantidad': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
@@ -59,15 +65,14 @@ class BienPatrimonialForm(forms.ModelForm):
             'nomenclatura_bienes': forms.TextInput(attrs={'class': 'form-control'}),
             'numero_serie': forms.TextInput(attrs={'class': 'form-control'}),
             'numero_identificacion': forms.TextInput(attrs={'class': 'form-control'}),
-            'numero_compra': forms.TextInput(attrs={'class': 'form-control'}),
             'origen': forms.Select(attrs={'class': 'form-select'}),
             'estado': forms.Select(attrs={'class': 'form-select'}),
-            'servicios': forms.Select(attrs={'class': 'form-select'}),
+            'servicios': forms.Select(attrs={'class': 'form-select flex-grow-1'}),
             'observaciones': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
-            'siem': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'valor_adquisicion': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': 0}),
             'fecha_adquisicion': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'fecha_baja': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'siem': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -81,57 +86,145 @@ class BienPatrimonialForm(forms.ModelForm):
         exp = getattr(self.instance, "expediente", None)
         if exp:
             self.fields["numero_expediente"].initial = exp.numero_expediente
-            # Si el bien no tiene numero_compra propio, podemos usar el del expediente como inicial
-            if not self.instance.numero_compra:
-                self.fields["numero_compra"].initial = exp.numero_compra
+            self.fields["numero_compra"].initial = exp.numero_compra
 
         # ===== SERVICIOS: fijos + extras, ordenados alfabéticamente =====
         from core.models.servicio_extra import ServicioExtra
 
         SERVICIOS_FIJOS = [
-            "Apoyo A La Comunidad", "Area Guardia", "Area Limpieza Hospitalaria",
-            "Area Parque Cultural", "Arquitectura", "CAPER", "Camilleros", "Cardiologia",
-            "Charcot", "Cirugia", "Clinica", "Cocina", "Compras", "Conmutador", "Consejeria",
-            "Consultorio De Gastroenterologia", "Consultorio Externo Salud Mental",
-            "Consultorios Externos Pab V", "Contable", "Costurero",
-            "Cud Y Servicios De Consumos Problematicos", "Departamento De Enfermerias Supervision",
-            "Departamento Sistema De Informacion - Samo Turnos Y Estadistica",
-            "Deposito Descartable", "Deposito General", "Dermatologia", "Diagnostico Por Imagenes",
-            "Dira", "Direccion Administrativa", "Direccion Asociada Area Tecnica",
-            "Direccion Asociada Medico Quirurgica", "Direccion Ejecutiva", "Direccion Salud Mental",
-            "Dispositivo Artistico Cultural", "Docencia E Investigacion",
-            "Donacion Fundacion Florencio Perez", "Emergencia", "En Guarda Patrimoniales",
-            "Enfermeria", "Epidemiologia", "Estadistica", "Estadistica Central",
-            "Estadistica Pabellon V", "Esterilizacion", "Farmacia", "Gastroenterologia",
-            "Gerenciamiento De Camas", "Hemoterapia", "Infancias Y Juventudes", "Infectologia",
-            "Informatica", "Infraestructura Y Mantenimiento", "Intendencia", "Jardin Maternal",
-            "Laboratorio", "Lasegue", "Legales", "Limpieza", "Mesa De Entrada",
-            "Neumonologia Y Oftalmologia", "Neurocirugia", "Neuropsicologia", "Odontologia",
-            "Oncologia", "Patologia", "Patrimoniales", "Pediatria Y Neonatologia", "Penfield",
-            "Percial", "Podologia Y Peluqueria", "Polo Educativo", "Pre Alta", "Quirofano",
-            "RRHH", "Recuperacion Clinica", "Registro Civil", "Rehabilitacion Fisica Y Kinesiologia",
-            "Rehabilitacion Salud Mental Direccion", "Reumatologia Y Oftalmologia",
-            "SAC", "SAM", "SAMO Contable", "SAMO Facturacion",
-            "SAP (Servicio De Area Programatica Y Redes De Salud)", "SGU", "Sala De Endoscopia",
-            "Sala F", "Sala G", "Seguridad E Higiene", "Servicio De Psicologia",
-            "Servicio Rehabilitacion Larga Distancia", "Servicio Social", "Sumar",
-            "Tocoginecologia", "Toxicologia", "Traumatologia", "U.T.I.", "UCAC",
-            "Vacunacion", "Vigilancia",
+            'Apoyo A La Comunidad',
+            'Area Guardia',
+            'Area Limpieza Hospitalaria',
+            'Area Parque Cultural',
+            'Arquitectura',
+            'CAPER',
+            'Camilleros',
+            'Cardiologia',
+            'Charcot',
+            'Cirugia',
+            'Clinica',
+            'Cocina',
+            'Compras',
+            'Conmutador',
+            'Consejeria',
+            'Consultorio De Gastroenterologia',
+            'Consultorio Externo Salud Mental',
+            'Consultorios Externos Pab V',
+            'Contable',
+            'Costurero',
+            'Cud Y Servicios De Consumos Problematicos',
+            'Departamento De Enfermerias Supervision',
+            'Departamento Sistema De Informacion - Samo Turnos Y Estadistica',
+            'Deposito Descartable',
+            'Deposito General',
+            'Dermatologia',
+            'Diagnostico Por Imagenes',
+            'Dira',
+            'Direccion Administrativa',
+            'Direccion Asociada Area Tecnica',
+            'Direccion Asociada Medico Quirurgica',
+            'Direccion Ejecutiva',
+            'Direccion Salud Mental',
+            'Dispositivo Artistico Cultural',
+            'Docencia E Investigacion',
+            'Donacion Fundacion Florencio Perez',
+            'Emergencia',
+            'En Guarda Patrimoniales',
+            'Enfermeria',
+            'Epidemiologia',
+            'Estadistica',
+            'Estadistica Central',
+            'Estadistica Pabellon V',
+            'Esterilizacion',
+            'Farmacia',
+            'Gastroenterologia',
+            'Gerenciamiento De Camas',
+            'Hemoterapia',
+            'Infancias Y Juventudes',
+            'Infectologia',
+            'Informatica',
+            'Infraestructura Y Mantenimiento',
+            'Intendencia',
+            'Jardin Maternal',
+            'Laboratorio',
+            'Lasegue',
+            'Legales',
+            'Limpieza',
+            'Mesa De Entrada',
+            'Neumonologia Y Oftalmologia',
+            'Neurocirugia',
+            'Neuropsicologia',
+            'Odontologia',
+            'Oncologia',
+            'Patologia',
+            'Patrimoniales',
+            'Pediatria Y Neonatologia',
+            'Penfield',
+            'Percial',
+            'Podologia Y Peluqueria',
+            'Polo Educativo',
+            'Pre Alta',
+            'Quirofano',
+            'RRHH',
+            'Recuperacion Clinica',
+            'Registro Civil',
+            'Rehabilitacion Fisica Y Kinesiologia',
+            'Rehabilitacion Salud Mental Direccion',
+            'Reumatologia Y Oftalmologia',
+            'SAC',
+            'SAM',
+            'SAMO Contable',
+            'SAMO Facturacion',
+            'SAP (Servicio De Area Programatica Y Redes De Salud)',
+            'SGU',
+            'Sala De Endoscopia',
+            'Sala F',
+            'Sala G',
+            'Seguridad E Higiene',
+            'Servicio De Psicologia',
+            'Servicio Rehabilitacion Larga Distancia',
+            'Servicio Social',
+            'Sumar',
+            'Tocoginecologia',
+            'Toxicologia',
+            'Traumatologia',
+            'U.T.I.',
+            'UCAC',
+            'Vacunacion',
+            'Vigilancia',
         ]
 
         extras = [s.nombre for s in ServicioExtra.objects.all()]
         todos = sorted(set(SERVICIOS_FIJOS + extras))
         choices = [('', '— Seleccionar servicio —')] + [(s, s) for s in todos]
         self.fields["servicios"].widget.choices = choices
-        
+
+        origen_choices = [('', '— Seleccionar origen —')] + list(self.fields["origen"].choices)
+        self.fields["origen"].choices = origen_choices
+        self.fields["origen"].required = False  # manejado por clean_origen
+        self.fields["origen"].initial = ''       # no pre-seleccionar el default del modelo
+
+    def clean_origen(self):
+        value = self.cleaned_data.get("origen")
+        if not value:
+            raise forms.ValidationError("Este campo es obligatorio.")
+        return value
+
     def clean_servicios(self):
-        return self.cleaned_data.get("servicios") or ""
+        value = self.cleaned_data.get("servicios")
+        if not value:
+            raise forms.ValidationError("Este campo es obligatorio.")
+        return value
     
     def clean(self):
         cleaned = super().clean()
 
         n_exp = (cleaned.get("numero_expediente") or "").strip()
         n_cmp = (cleaned.get("numero_compra") or "").strip()
+
+        if n_cmp and not n_exp:
+            self.add_error("numero_expediente", "Si informás N° de compra, debés indicar el N° de Expediente.")
+
 
         # Precio: si el origen no es COMPRA, ignorar precio
         if cleaned.get("origen") and cleaned["origen"] != "COMPRA":
@@ -157,8 +250,7 @@ class BienPatrimonialForm(forms.ModelForm):
         expediente = None
         if n_exp:
             expediente, _ = Expediente.objects.get_or_create(numero_expediente=n_exp)
-            # Opcionalmente actualizamos el numero_compra del expediente si se cambió en el bien
-            if n_cmp and (not expediente.numero_compra or expediente.numero_compra != n_cmp):
+            if n_cmp and expediente.numero_compra != n_cmp:
                 expediente.numero_compra = n_cmp
                 expediente.save()
         else:
@@ -182,7 +274,7 @@ class OperadorForm(forms.Form):
         required=True,
         label='DNI',
         validators=[
-            RegexValidator(r'^\d{1,8}$', 'El DNI debe tener hasta 8 números.')
+            RegexValidator(r'^\d{1,8}$', 'El DNI debe tener sólo números y hasta 8 dígitos.')
         ]
     )
     email = forms.EmailField(required=False, label='Email')
@@ -191,20 +283,18 @@ class OperadorForm(forms.Form):
         initial='operador',
         label='Tipo de Usuario'
     )
-    password = forms.CharField(
-        required=False,
-        widget=forms.PasswordInput,
-        label='Contraseña',
-        help_text='Mínimo 8 caracteres, mayúscula, minúscula, número y carácter especial (Ej: Lm9!abcd).'
+    estado = forms.ChoiceField(
+        choices=[('habilitado', 'Habilitado'), ('no-habilitado', 'No Habilitado')],
+        initial='habilitado',
+        label='Estado'
     )
+    password = forms.CharField(required=False, widget=forms.PasswordInput, label='Contraseña')
 
     def __init__(self, *args, operador_pk=None, **kwargs):
         self.operador_pk = operador_pk
         super().__init__(*args, **kwargs)
         if self.operador_pk:
             self.fields['dni'].required = False
-        else:
-            self.fields['password'].required = True
 
     def clean_dni(self):
         dni = (self.cleaned_data.get('dni') or '').strip()
@@ -235,12 +325,25 @@ class OperadorForm(forms.Form):
         return email
 
     def clean_password(self):
-        password = self.cleaned_data.get('password') or ''
+        password = (self.cleaned_data.get('password') or '').strip()
+        if not password:
+            return password
 
-        if not self.operador_pk and not password:
-            raise ValidationError('La contraseña es obligatoria para un nuevo usuario.')
+        if len(password) < 8:
+            raise ValidationError('La contraseña debe tener al menos 8 caracteres.')
+        if not re.search(r'[A-Z]', password):
+            raise ValidationError('La contraseña debe incluir al menos una letra mayúscula.')
+        if not re.search(r'[a-z]', password):
+            raise ValidationError('La contraseña debe incluir al menos una letra minúscula.')
+        if not re.search(r'\d', password):
+            raise ValidationError('La contraseña debe incluir al menos un número.')
+        if not re.search(r'[^A-Za-z0-9]', password):
+            raise ValidationError('La contraseña debe incluir al menos un carácter especial.')
 
-        if password:
+        from django.contrib.auth.password_validation import validate_password
+        try:
             validate_password(password)
+        except ValidationError as e:
+            raise ValidationError(e.messages)
 
         return password

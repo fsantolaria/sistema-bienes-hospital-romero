@@ -1,0 +1,47 @@
+{% load humanize %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Registro de Actividad – {{ rango_desc }}</title>
+  <style>
+    h2 { margin: 0 0 8px 0; }
+    .muted { color: #666; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ddd; padding: 6px; vertical-align: top; font-size: 12px; }
+    thead th { background: #f2f2f2; }
+    .text-nowrap { white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <h2>Registro de Actividad del Sistema</h2>
+  <div class="muted">
+    Rango: <strong>{{ rango_desc }}</strong> · Generado: {{ generado_en|date:"d/m/Y H:i" }} · Usuario: {{ request.user.username }}
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 120px;">Fecha y hora</th>
+        <th style="width: 100px;">Usuario</th>
+        <th style="width: 100px;">Acción</th>
+        <th>Mensaje</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for n in logs %}
+      <tr>
+        <td class="text-nowrap">{{ n.fecha|date:"d/m/Y H:i" }}</td>
+        <td>{{ n.usuario.username|default:"Sistema" }}</td>
+        <td><span style="font-weight: bold;">{{ n.get_accion_display }}</span></td>
+        <td>{{ n.mensaje }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4" style="text-align:center; color:#666;">Sin actividad registrada en {{ rango_desc|lower }}.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>
