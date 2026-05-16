@@ -189,7 +189,7 @@
 
         <div class="form-buttons position-relative d-flex justify-content-center flex-wrap align-items-center">
           
-          {% if es_admin %}
+          {% if es_admin or es_supervisor %}
           <a href="{% url 'carga_masiva' %}" class="btn btn-gris">
             <i class="fa-solid fa-upload me-1"></i> Carga masiva
           </a>

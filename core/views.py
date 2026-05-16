@@ -1967,6 +1967,11 @@ def eliminar_bienes_seleccionados(request):
 def lista_baja_bienes(request):
     q = (request.GET.get("q") or "").strip()
     orden = request.GET.get("orden") or "-fecha_baja"
+
+    # Supervisores: solo lectura; admins: lectura + acciones
+    perms = permisos_context(request.user)
+    es_supervisor = perms.get('es_supervisor', False)
+
     bienes_baja = BienPatrimonial.objects.select_related("expediente").filter(estado="BAJA")
  
     if q:

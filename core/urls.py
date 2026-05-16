@@ -47,7 +47,9 @@ urlpatterns = [
     # Listas
     path('lista-bienes/', views.lista_bienes, name='lista_bienes'),
     path('lista-bienes-operador/', views.lista_bienes_operador, name='lista_bienes_operador'),
+    path('lista-bienes-supervisor/', views.lista_bienes_supervisor, name='lista_bienes_supervisor'),
     path('bienes/bajas/', views.lista_baja_bienes, name='lista_baja_bienes'),
+
 
     # Acciones sobre bajas
     path('bienes/<int:pk>/dar-baja/', views.dar_baja_bien, name='dar_baja_bien'),

@@ -554,7 +554,13 @@
     updateBajaPanel();
   };
 
+  // Exponer para el script AJAX
+  window.__bajaIsModeActive = () => bajaSelectionMode;
+
+  window.setBajaSelectionMode = (active) => setBajaSelectionMode(active);
+
   const setBajaSelectionMode = active => {
+
     bajaSelectionMode = active;
     if (hiddenBajaInput) {
       hiddenBajaInput.value = active ? '1' : '';
@@ -577,6 +583,31 @@
     document.querySelectorAll('#tabla-bienes tbody tr').forEach(tr => tr.classList.toggle('selectable-row', active));
     updateSelectionUI();
   };
+
+  // Delegación de eventos para filas (AJAX reemplaza la tabla, así que esto no depende del tbody inicial)
+  // Se mantiene la selección al filtrar porque el handler opera sobre elementos que existan en el DOM actual.
+  document.addEventListener('click', function(event) {
+    if (!bajaSelectionMode) return;
+    const row = event.target.closest('#tabla-bienes tbody tr');
+    if (!row) return;
+    if (event.target.closest('a, button, input, select, textarea, label')) return;
+
+    const checkbox = row.querySelector('.chk-bien');
+    if (!checkbox) return;
+
+    const nextChecked = !checkbox.checked;
+    checkbox.checked = nextChecked;
+    const id = String(checkbox.value);
+
+    if (nextChecked) {
+      selectedIdSet.add(id);
+      if (checkbox.dataset.descripcion) selectedItemDescriptions.set(id, checkbox.dataset.descripcion);
+    } else {
+      selectedIdSet.delete(id);
+      selectedItemDescriptions.delete(id);
+    }
+    updateSelectionUI();
+  });
 
   const tableBody = document.querySelector('#tabla-bienes tbody');
 
@@ -610,30 +641,7 @@
     }
   });
 
-  const toggleRowSelection = (event) => {
-    if (!bajaSelectionMode) return;
-    const row = event.target.closest('#tabla-bienes tbody tr');
-    if (!row) return;
-    if (event.target.closest('a, button, input, select, textarea, label')) return;
 
-    const checkbox = row.querySelector('.chk-bien');
-    if (!checkbox) return;
-    const nextChecked = !checkbox.checked;
-    checkbox.checked = nextChecked;
-    const id = String(checkbox.value);
-    if (nextChecked) {
-      selectedIdSet.add(id);
-      if (checkbox.dataset.descripcion) selectedItemDescriptions.set(id, checkbox.dataset.descripcion);
-    } else {
-      selectedIdSet.delete(id);
-      selectedItemDescriptions.delete(id);
-    }
-    updateSelectionUI();
-  };
-
-  if (tableBody) {
-    tableBody.addEventListener('click', toggleRowSelection);
-  }
 
   if (btnBajaMultiple) {
     btnBajaMultiple.addEventListener('click', function() {
@@ -922,9 +930,14 @@ document.addEventListener('click', function(e) {
       
       // Actualizar la URL en el navegador
       window.history.pushState({}, '', url);
-      
-      // Re-inicializar comportamientos si es necesario
-      // En este caso, la mayoría de los botones de acciones usan delegación en el script de arriba
+
+      // Re-sincronizar UI de Baja múltiple con la tabla renderizada por AJAX
+      // (evita que el usuario “pierda” el modo al filtrar)
+      if (typeof window.setBajaSelectionMode === 'function') {
+        // Mantener modo activo SI ya estaba activo antes del AJAX.
+        const shouldKeep = typeof window.__bajaIsModeActive === 'function' ? window.__bajaIsModeActive() : true;
+        window.setBajaSelectionMode(shouldKeep);
+      }
     })
     .catch(err => {
       console.error('Error en fetch:', err);

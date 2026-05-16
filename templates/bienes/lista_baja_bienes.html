@@ -124,16 +124,23 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="m-0">Bienes — Dados de Baja</h3>
-    <div class="d-flex gap-2">
-      <a class="btn-inst-nav" href="{% url 'lista_bienes' %}">
+<div class="container-fluid py-4">
+  <div class="row g-2 align-items-center mb-3">
+    <div class="col-auto">
+      <h3 class="m-0">Bienes — Dados de Baja</h3>
+    </div>
+    <div class="col ms-auto d-flex align-items-center justify-content-end gap-2 pe-0">
+      <a class="btn-inst-nav" href="{% if es_supervisor %}{% url 'lista_bienes_supervisor' %}{% else %}{% url 'lista_bienes' %}{% endif %}">
         <i class="fas fa-arrow-left"></i> Volver a lista de bienes
       </a>
+      {% if es_supervisor %}
+      <a class="btn btn-warning text-dark" href="#" style="pointer-events:none; opacity:.8; margin-right: 10;" aria-disabled="true">
+        <i class="bi bi-eye me-1"></i> Solo lectura
+      </a>
+      {% endif %}
     </div>
   </div>
-
+</div>
   <!-- BÚSQUEDA / ORDEN -->
   <form id="filtros-form" method="get" class="row g-2 align-items-end mb-3">
     <div class="col-md-4">
@@ -166,6 +173,8 @@
         <i class="fas fa-undo me-1"></i> Restablecer múltiples bienes
       </button>
       {% endif %}
+
+      
     </div>
 
     <div class="col-12 collapse mt-3" id="filtrosBox">
