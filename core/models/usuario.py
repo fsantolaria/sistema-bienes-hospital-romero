@@ -19,11 +19,11 @@ class Usuario(AbstractUser):
 
     numero_doc = models.CharField(
         max_length=50,
-        blank=True,
-        null=True,
-        unique=True,
+        primary_key=True,
         verbose_name='Número de Documento'
     )
+
+    REQUIRED_FIELDS = ['email', 'numero_doc']
 
     tema_oscuro = models.BooleanField(
         default=False,

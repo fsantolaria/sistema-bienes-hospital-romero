@@ -505,6 +505,7 @@ def alta_operadores(request):
         is_active = estado == "habilitado"
  
         operador = Operador(
+            numero_doc=numero_doc,
             username=username,
             email=email or None,
             first_name=nombre,
@@ -515,16 +516,13 @@ def alta_operadores(request):
         )
         operador.tipo_usuario = form.cleaned_data["tipo_usuario"]
 
-
         if password:
             operador.set_password(password)
         else:
             operador.set_password(username)
- 
+
         if hasattr(operador, "pais"):
             operador.pais = pais
-        if hasattr(operador, "numero_doc"):
-            operador.numero_doc = numero_doc or None
         if hasattr(operador, "estado"):
             operador.estado = estado
  
