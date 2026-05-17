@@ -3,7 +3,6 @@
 {% block title %}Lista de Bienes — Supervisor{% endblock %}
 {% block content %}
 <div class="container-fluid py-3">
-
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="m-0">Lista de Bienes</h3>
     <div class="d-flex gap-2">
@@ -41,15 +40,16 @@
         <i class="fas fa-times"></i> Limpiar
       </a>
     </div>
+
     <div class="col-12 collapse mt-3" id="filtrosBox">
       <div class="row g-2">
         <div class="col-md-3">
           <label class="form-label">Estado</label>
           <select name="f_estado" class="form-select auto-submit">
             <option value="">Todos</option>
-            <option value="ACTIVO" {% if request.GET.f_estado == "ACTIVO" %}selected{% endif %}>Activo</option>
-            <option value="BAJA" {% if request.GET.f_estado == "BAJA" %}selected{% endif %}>Baja</option>
-            <option value="INACTIVO" {% if request.GET.f_estado == "INACTIVO" %}selected{% endif %}>Inactivo</option>
+            <option value="ACTIVO"        {% if request.GET.f_estado == "ACTIVO" %}selected{% endif %}>Activo</option>
+            <option value="BAJA"          {% if request.GET.f_estado == "BAJA" %}selected{% endif %}>Baja</option>
+            <option value="INACTIVO"      {% if request.GET.f_estado == "INACTIVO" %}selected{% endif %}>Inactivo</option>
             <option value="MANTENIMIENTO" {% if request.GET.f_estado == "MANTENIMIENTO" %}selected{% endif %}>Mantenimiento</option>
           </select>
         </div>
@@ -57,10 +57,10 @@
           <label class="form-label">Origen</label>
           <select name="f_origen" class="form-select auto-submit">
             <option value="">Todos</option>
-            <option value="COMPRA" {% if request.GET.f_origen == "COMPRA" %}selected{% endif %}>Compra</option>
-            <option value="DONACION" {% if request.GET.f_origen == "DONACION" %}selected{% endif %}>Donación</option>
+            <option value="COMPRA"        {% if request.GET.f_origen == "COMPRA" %}selected{% endif %}>Compra</option>
+            <option value="DONACION"      {% if request.GET.f_origen == "DONACION" %}selected{% endif %}>Donación</option>
             <option value="TRANSFERENCIA" {% if request.GET.f_origen == "TRANSFERENCIA" %}selected{% endif %}>Transferencia</option>
-            <option value="OMISION" {% if request.GET.f_origen == "OMISION" %}selected{% endif %}>Omisión</option>
+            <option value="OMISION"       {% if request.GET.f_origen == "OMISION" %}selected{% endif %}>Omisión</option>
           </select>
         </div>
         <div class="col-md-3">
@@ -73,6 +73,7 @@
         </div>
       </div>
     </div>
+
     <div class="col-12 mt-2" style="font-family: var(--font-roboto); color: var(--secondary-gris); font-size: 14px;">
       {% if q %}Mostrando resultados para: <strong>{{ q }}</strong> · {% endif %}
       Mostrando {{ page_obj.paginator.count }} bienes en total
@@ -171,7 +172,6 @@
     <i class="bi bi-lock-fill"></i>
     <span>Como <strong>supervisor</strong>, solo podés visualizar los bienes. Las acciones de alta, edición o baja requieren permisos de administrador.</span>
   </div>
-
 </div>
 {% endblock %}
 
@@ -186,7 +186,7 @@
   };
   const debouncedSubmit = debounce(requestSubmit, 400);
   form.querySelectorAll('.auto-submit').forEach(el => {
-    const tag = el.tagName;
+    const tag  = el.tagName;
     const type = (el.type || '').toLowerCase();
     if (tag === 'SELECT' || (tag === 'INPUT' && (type === 'date' || type === 'checkbox' || type === 'radio'))) {
       el.addEventListener('change', () => requestSubmit());

@@ -101,8 +101,14 @@ class BienPatrimonial(models.Model):
 
     servicios = models.CharField(max_length=200, blank=True, verbose_name="Servicios")
     observaciones = models.TextField(blank=True, null=True, verbose_name="Observaciones")
-    # Fecha SIEM (campo nuevo para almacenar fechas SIEM)
-    siem = models.DateField(null=True, blank=True, verbose_name="SIEM")
+    # SIEM (Si/No)
+    siem = models.CharField(
+        max_length=2,
+        choices=[("Si", "Si"), ("No", "No")],
+        null=True,
+        blank=True,
+        verbose_name="SIEM"
+    )
 
     # --- Campos de BAJA ---
     fecha_baja = models.DateField(

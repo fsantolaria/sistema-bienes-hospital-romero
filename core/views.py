@@ -298,94 +298,24 @@ def recuperar_password(request):
     
     if request.method == "POST":
         identificador = (request.POST.get("usuario_o_email") or "").strip()
-        tipo_usuario = (request.POST.get("tipo_usuario") or "").strip().lower()
-
-        if not tipo_usuario:
-            messages.error(request, "Seleccioná tu rol para continuar.")
-            return render(
-                request,
-                "recuperar_password.html",
-                {"usuario_o_email": identificador, "tipo_usuario": tipo_usuario},
-                status=400,
-            )
-
-        if tipo_usuario == "admin":
-            if not identificador:
-                messages.error(request, "Ingresá tu usuario o email para recuperar tu contraseña de administrador.")
-                return render(
-                    request,
-                    "recuperar_password.html",
-                    {"usuario_o_email": identificador, "tipo_usuario": tipo_usuario},
-                    status=400,
-                )
-            
-            # Buscar admin por username o email
-            try:
-                admin = User.objects.get(
-                    Q(username=identificador) | Q(email=identificador),
-                    Q(is_superuser=True) | Q(tipo_usuario="admin")
-                )
-            except User.DoesNotExist:
-                messages.warning(request, "Si este administrador existe, recibirá un email de recuperación.")
-                return render(request, "recuperar_password.html")
-            
-            # Generar token
-            token = PasswordResetToken.generate_token()
-            PasswordResetToken.objects.create(user=admin, token=token)
-            
-            # Enviar email
-            reset_link = request.build_absolute_uri(f"/resetear-contraseña/{token}/")
-            email_subject = "Recupera tu contraseña - Sistema Patrimonio Hospital"
-            email_body = f"""
-Hola {admin.username},
-
-Recibimos una solicitud para recuperar tu contraseña de administrador.
-
-Haz clic en el siguiente enlace para resetearla (válido por 24 horas):
-{reset_link}
-
-Si no solicitaste este cambio, ignora este email.
-
-Saludos,
-Sistema de Patrimonio Hospital Romero
-"""
-            
-            try:
-                send_mail(
-                    email_subject,
-                    email_body,
-                    'desposfrancisco@gmail.com',
-                    [admin.email],
-                    fail_silently=False,
-                )
-                messages.success(request, f"Email de recuperación enviado a {admin.email}.")
-            except Exception as e:
-                messages.error(request, f"Error al enviar email: {str(e)}")
-                return render(request, "recuperar_password.html")
-            
-            return redirect("recuperar_password")
 
         if not identificador:
             messages.error(request, "Ingresá tu usuario o email para enviar la solicitud.")
-            return render(
-                request,
-                "recuperar_password.html",
-                {"usuario_o_email": identificador, "tipo_usuario": tipo_usuario},
-                status=400,
-            )
+            return render(request, "recuperar_password.html", {"usuario_o_email": identificador})
 
-        if tipo_usuario not in ["operador", "supervisor"]:
-            messages.error(request, "Rol no válido. Seleccioná Operador o Supervisor.")
-            return render(
-                request,
-                "recuperar_password.html",
-                {"usuario_o_email": identificador, "tipo_usuario": tipo_usuario},
-                status=400,
-            )
+        # Intentar buscar al usuario para ver si existe (opcional, para dar mejor feedback)
+        try:
+            user = User.objects.get(Q(username=identificador) | Q(email=identificador))
+            rol = getattr(user, 'tipo_usuario', 'usuario')
+            mensaje_notif = f"El usuario '{user.username}' (Rol: {rol}) solicitó recuperación de contraseña."
+        except User.DoesNotExist:
+            # Aunque no exista, damos el mismo mensaje por seguridad, o podemos ser específicos si el cliente lo prefiere.
+            # En este caso, el cliente pidió simplicidad:
+            mensaje_notif = f"Se solicitó recuperación para el identificador desconocido: '{identificador}'"
 
-        crear_notificacion_admins(
-            f"El {tipo_usuario} '{identificador}' solicitó recuperación de contraseña."
-        )
+        from core.views import crear_notificacion_admins
+        crear_notificacion_admins(mensaje_notif)
+        
         messages.success(request, "Solicitud enviada correctamente. Un administrador revisará tu pedido.")
         return redirect("recuperar_password")
     return render(request, "recuperar_password.html")
@@ -763,24 +693,70 @@ def dar_baja_operador(request, pk):
 def reportes_pdf(request):
     scope = (request.GET.get("scope") or "24h").lower()
     now = timezone.now()
- 
+
     if scope == "24h":
         since_dt = now - timedelta(hours=24)
-        # Filtramos por fecha_registro para que aparezca lo recién cargado
-        bienes = (
-            BienPatrimonial.objects
-            .select_related("expediente")
-            .filter(Q(fecha_registro__gte=since_dt) | Q(fecha_baja__gte=since_dt.date()))
-            .order_by("-fecha_registro", "pk")
-        )
+        bienes = BienPatrimonial.objects.select_related("expediente").filter(
+            Q(fecha_registro__gte=since_dt) | Q(fecha_baja__gte=since_dt.date())
+        ).order_by("-fecha_registro", "pk")
         rango_desc = "Últimas 24 horas"
+    elif scope == "12h":
+        since_dt = now - timedelta(hours=12)
+        bienes = BienPatrimonial.objects.select_related("expediente").filter(
+            Q(fecha_registro__gte=since_dt) | Q(fecha_baja__gte=since_dt.date())
+        ).order_by("-fecha_registro", "pk")
+        rango_desc = "Últimas 12 horas"
+    elif scope == "6h":
+        since_dt = now - timedelta(hours=6)
+        bienes = BienPatrimonial.objects.select_related("expediente").filter(
+            Q(fecha_registro__gte=since_dt) | Q(fecha_baja__gte=since_dt.date())
+        ).order_by("-fecha_registro", "pk")
+        rango_desc = "Últimas 6 horas"
     else:
-        bienes = (
-            BienPatrimonial.objects
-            .select_related("expediente")
-            .order_by("-fecha_adquisicion", "pk")
-        )
+        bienes = BienPatrimonial.objects.select_related("expediente").order_by("-fecha_adquisicion", "pk")
         rango_desc = "Todos"
+
+    # Filtrado por Servicios (Multi-select)
+    servicios_seleccionados = request.GET.getlist("servicio")
+    if servicios_seleccionados:
+        q_services = Q()
+        import unicodedata
+        def clean_word(w):
+            nfkd = unicodedata.normalize('NFKD', w)
+            return "".join([c for c in nfkd if not unicodedata.combining(c)]).lower()
+
+        for s in servicios_seleccionados:
+            val = s.strip()
+            if "samo" in val.lower():
+                q_services |= Q(servicios__icontains="SAMO") | Q(servicios__icontains="Samo")
+            else:
+                words = [clean_word(w) for w in val.split() if len(w) > 2 and w.lower() not in ["de", "la", "el", "los", "las", "del"]]
+                if words:
+                    q_words = Q()
+                    for w in words:
+                        q_words |= Q(servicios__icontains=w)
+                    q_services |= q_words
+                else:
+                    q_services |= Q(servicios__icontains=val)
+        bienes = bienes.filter(q_services)
+
+    # Filtrado por búsqueda de texto (q)
+    q = (request.GET.get("q") or "").strip()
+    if q:
+        bienes = bienes.filter(
+            Q(clave_unica__icontains=q)
+            | Q(descripcion__icontains=q)
+            | Q(observaciones__icontains=q)
+            | Q(numero_identificacion__icontains=q)
+            | Q(servicios__icontains=q)
+            | Q(cuenta_codigo__icontains=q)
+            | Q(nomenclatura_bienes__icontains=q)
+            | Q(numero_serie__icontains=q)
+            | Q(origen__icontains=q)
+            | Q(estado__icontains=q)
+            | Q(expediente__numero_expediente__icontains=q)
+            | Q(expediente__numero_compra__icontains=q)
+        )
 
 
     ctx = {
@@ -1812,6 +1788,9 @@ def carga_masiva_bienes(request):
                             serv_raw = s(get_first(row, ["servicios", "servicio", "sector"]) or servicio_archivo)
                             servicios = (serv_raw if serv_raw else "NO")[:200]
  
+                            siem_raw = get_first(row, ["siem", "estado siem"])
+                            siem_val = "Si" if siem_raw else "No"
+ 
                             fecha_alta = parse_date_any(get_first(row, ["fecha alta", "fecha de alta"])) or date.today()
                             fecha_baja = parse_date_any(get_first(row, ["fecha de baja"]))
                             
@@ -1846,6 +1825,7 @@ def carga_masiva_bienes(request):
                                 "fecha_baja": fecha_baja,
                                 "expediente": expediente_obj,
                                 "numero_compra": (nro_compra if nro_compra and nro_compra.upper() != "NO" else "NO")[:50],
+                                "siem": siem_val,
                             }
                             if origen_val: defaults["origen"] = origen_val
                             if estado_val: defaults["estado"] = estado_val
@@ -1965,6 +1945,11 @@ def eliminar_bienes_seleccionados(request):
  
 @login_required
 def lista_baja_bienes(request):
+    perms = permisos_context(request.user)
+    if not (perms["es_admin"] or perms["es_supervisor"]):
+        messages.error(request, "No tienes permisos para acceder a esta página.")
+        return redirect("home")
+
     q = (request.GET.get("q") or "").strip()
     orden = request.GET.get("orden") or "-fecha_baja"
 

@@ -72,7 +72,7 @@ class BienPatrimonialForm(forms.ModelForm):
             'valor_adquisicion': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': 0}),
             'fecha_adquisicion': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'fecha_baja': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'siem': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'siem': forms.Select(attrs={'class': 'form-select'}, choices=[('', '—'), ('Si', 'Si'), ('No', 'No')]),
         }
 
     def __init__(self, *args, **kwargs):

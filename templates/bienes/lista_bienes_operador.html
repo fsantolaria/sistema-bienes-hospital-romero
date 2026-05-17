@@ -152,7 +152,7 @@
                     </td>
                     <td class="text-nowrap">{{ b.servicios|default:"—" }}</td>
                     <td style="min-width:220px;">{{ b.observaciones|default:"—" }}</td>
-                    <td class="text-nowrap">{% if b.siem %}{{ b.siem|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+                    <td class="text-nowrap">{{ b.siem|default:"—" }}</td>
                     <td class="text-end">
                         {% if b.valor_adquisicion %}
                             ${{ b.valor_adquisicion|floatformat:0|intcomma }}
@@ -238,6 +238,7 @@
         container.innerHTML = newContent;
         container.style.opacity = '1';
         window.history.pushState({}, '', url);
+        if (window.initFloatingScrollbar) window.initFloatingScrollbar();
       })
       .catch(err => {
         console.error('Error en fetch:', err);

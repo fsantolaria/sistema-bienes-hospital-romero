@@ -189,5 +189,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    window.initFloatingScrollbar = initFloatingScrollbar;
     initFloatingScrollbar();
 });
