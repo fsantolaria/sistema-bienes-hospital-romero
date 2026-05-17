@@ -370,42 +370,25 @@ def alta_operadores(request):
     if not perms["es_admin"]:
         messages.error(request, "No tienes permisos para acceder a esta página")
         return redirect("home_operador")
+
     if request.method == "POST":
-        nombre = " ".join((request.POST.get("nombre") or "").strip().split())
-        apellido = " ".join((request.POST.get("apellido") or "").strip().split())
-        pais = (request.POST.get("pais") or "").strip()
-        dni = (request.POST.get("dni") or "").strip()
-        email = (request.POST.get("email") or "").strip()
-        estado = (request.POST.get("estado") or "habilitado").strip()
-        password = (request.POST.get("password") or "").strip()
- 
         form = OperadorForm(request.POST)
         if not form.is_valid():
             return render(
                 request,
                 "alta_operadores.html",
-                {"usar_operador_model": False, "form": form},
+                {**perms, "usar_operador_model": False, "form": form},
             )
  
-        if not nombre or not apellido:
-            messages.error(request, "Debés completar nombre y apellido.")
-            return render(
-                request,
-                "alta_operadores.html",
-                {"usar_operador_model": False, "form": form},
-            )
+        nombre = form.cleaned_data.get("nombre")
+        apellido = form.cleaned_data.get("apellido")
+        pais = form.cleaned_data.get("pais")
+        numero_doc = form.cleaned_data.get("dni")
+        email = form.cleaned_data.get("email")
+        estado = form.cleaned_data.get("estado")
+        password = form.cleaned_data.get("password")
  
-        numero_doc = form.cleaned_data["dni"]
- 
-        nombre     = (request.POST.get("nombre") or "").strip()
-        apellido   = (request.POST.get("apellido") or "").strip()
-        pais       = (request.POST.get("pais") or "").strip()
-        numero_doc = (request.POST.get("numero_doc") or "").strip()
-        email      = (request.POST.get("email") or "").strip()
-        estado     = (request.POST.get("estado") or "habilitado").strip()
-        password   = (request.POST.get("password") or "").strip()
- 
-        # Validación DNI duplicado
+        # Validación extra de DNI (aunque el form ya debería hacerlo, aquí manejamos el modelo Usuario directamente)
         if numero_doc and Usuario.objects.filter(numero_doc=numero_doc).exists():
             messages.error(request, f"Ya existe un operador con el DNI {numero_doc}.")
             return redirect("alta_operadores")
@@ -416,7 +399,7 @@ def alta_operadores(request):
             return render(
                 request,
                 "alta_operadores.html",
-                {"usar_operador_model": False, "form": form},
+                {**perms, "usar_operador_model": False, "form": form},
             )
  
         username = base_username
@@ -471,7 +454,7 @@ def alta_operadores(request):
             return render(
                 request,
                 "alta_operadores.html",
-                {"usar_operador_model": False, "form": form},
+                {**perms, "usar_operador_model": False, "form": form},
             )
  
         Notificacion.objects.create(
@@ -502,14 +485,6 @@ def editar_operador(request, pk):
     operador = get_object_or_404(Operador, pk=pk, is_staff=False)
  
     if request.method == "POST":
-        nombre = " ".join((request.POST.get("nombre") or "").strip().split())
-        apellido = " ".join((request.POST.get("apellido") or "").strip().split())
-        email = (request.POST.get("email") or "").strip()
-        estado = (request.POST.get("estado") or "habilitado").strip()
-        pais = (request.POST.get("pais") or "").strip()
-        dni = (request.POST.get("dni") or "").strip()
-        tipo_usuario = (request.POST.get("tipo_usuario") or "empleado").strip()
-        password = (request.POST.get("password") or "").strip()
  
         form = OperadorForm(request.POST, operador_pk=operador.pk)
         if not form.is_valid():
@@ -517,69 +492,54 @@ def editar_operador(request, pk):
             ctx.update({"operador": operador, "usar_operador_model": False, "form": form})
             return render(request, "editar_operadores.html", ctx)
  
-        numero_doc = form.cleaned_data["dni"]
- 
-        if not nombre or not apellido:
-            messages.error(request, "Debés completar nombre y apellido.")
-            ctx = permisos_context(request.user)
-            ctx.update({"operador": operador, "usar_operador_model": False, "form": form})
-            return render(request, "editar_operadores.html", ctx)
+        nombre = form.cleaned_data.get("nombre")
+        apellido = form.cleaned_data.get("apellido")
+        email = form.cleaned_data.get("email")
+        estado = form.cleaned_data.get("estado")
+        pais = form.cleaned_data.get("pais")
+        numero_doc = form.cleaned_data.get("dni")
+        tipo_usuario = form.cleaned_data.get("tipo_usuario")
+        password = form.cleaned_data.get("password")
  
         hubo_cambio = False
  
         if operador.first_name != nombre:
             operador.first_name = nombre
             hubo_cambio = True
-        else:
-            operador.first_name = nombre
  
         if operador.last_name != apellido:
             operador.last_name = apellido
             hubo_cambio = True
-        else:
-            operador.last_name = apellido
  
         email_normalizado = email or None
         if operador.email != email_normalizado:
             operador.email = email_normalizado
             hubo_cambio = True
-        else:
-            operador.email = email_normalizado
  
         is_active_nuevo = estado == "habilitado"
         if operador.is_active != is_active_nuevo:
             operador.is_active = is_active_nuevo
             hubo_cambio = True
-        else:
-            operador.is_active = is_active_nuevo
  
         if hasattr(operador, "estado"):
             if operador.estado != estado:
                 operador.estado = estado
                 hubo_cambio = True
-            else:
-                operador.estado = estado
  
         if hasattr(operador, "pais"):
             if operador.pais != pais:
                 operador.pais = pais
                 hubo_cambio = True
-            else:
-                operador.pais = pais
  
         if hasattr(operador, "numero_doc"):
             if operador.numero_doc != numero_doc:
                 operador.numero_doc = numero_doc
                 hubo_cambio = True
-            else:
-                operador.numero_doc = numero_doc
  
         if hasattr(operador, "tipo_usuario"):
             if operador.tipo_usuario != tipo_usuario:
                 operador.tipo_usuario = tipo_usuario
                 hubo_cambio = True
-            else:
-                operador.tipo_usuario = tipo_usuario
  
  
         if password:
@@ -2030,7 +1990,6 @@ def lista_baja_bienes(request):
 @require_POST
 def dar_baja_bien(request, pk):
     bien = get_object_or_404(BienPatrimonial, pk=pk)
-    print("DAR BAJA POST:", dict(request.POST))
     fecha_baja = parse_date(request.POST.get("fecha_baja") or "") or date.today()
     expediente_baja = (
         request.POST.get(f"expediente_baja_{pk}")
@@ -2053,7 +2012,6 @@ def dar_baja_bien(request, pk):
         bien.descripcion_baja = descripcion_baja
         update_fields.append("descripcion_baja")
     bien.save(update_fields=update_fields)
-    print("GUARDADO:", bien.pk, bien.estado, bien.fecha_baja, bien.expediente_baja, bien.descripcion_baja)
     nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
     msg_baja = f"Se dio de baja el bien '{nombre_bien}' (Clave: {bien.clave_unica})."
     crear_notificacion_admins(msg_baja)
@@ -2354,4 +2312,3 @@ def agregar_servicio_ajax(request):
  
     ServicioExtra.objects.create(nombre=nombre)
     return JsonResponse({"ok": True, "nombre": nombre, "mensaje": f"Servicio '{nombre}' agregado correctamente."})
-
