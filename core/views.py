@@ -2129,9 +2129,15 @@ def dar_baja_bienes_seleccionados(request):
 @transaction.atomic
 def restablecer_bien(request, pk):
     perms = permisos_context(request.user)
-    if not perms["es_admin"]:
+    if not perms.get("es_admin", False):
         messages.error(request, "No tienes permisos para restablecer bienes.")
         return redirect("lista_baja_bienes")
+
+    # Seguridad extra: el supervisor no debe poder restaurar aunque manipule el frontend
+    if getattr(request.user, "tipo_usuario", None) == "supervisor" and not request.user.is_superuser:
+        messages.error(request, "Como supervisor solo podés visualizar los bienes.")
+        return redirect("lista_bienes_supervisor")
+
  
     bien = get_object_or_404(BienPatrimonial, pk=pk)
     bien.estado = "ACTIVO"
@@ -2161,9 +2167,15 @@ def restablecer_bien(request, pk):
 @transaction.atomic
 def restablecer_bienes_seleccionados(request):
     perms = permisos_context(request.user)
-    if not perms["es_admin"]:
+    if not perms.get("es_admin", False):
         messages.error(request, "No tienes permisos para restablecer bienes.")
         return redirect("lista_baja_bienes")
+
+    # Seguridad extra: el supervisor no debe poder restaurar aunque manipule el frontend
+    if getattr(request.user, "tipo_usuario", None) == "supervisor" and not request.user.is_superuser:
+        messages.error(request, "Como supervisor solo podés visualizar los bienes.")
+        return redirect("lista_bienes_supervisor")
+
  
     pks = request.POST.getlist("bienes_seleccionados_restaurar")
     if not pks:
@@ -2357,3 +2369,4 @@ def agregar_servicio_ajax(request):
  
     ServicioExtra.objects.create(nombre=nombre)
     return JsonResponse({"ok": True, "nombre": nombre, "mensaje": f"Servicio '{nombre}' agregado correctamente."})
+
