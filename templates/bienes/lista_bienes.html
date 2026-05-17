@@ -17,6 +17,121 @@
   tr.seleccionado-baja td:last-child {
     border-right: 1.5px solid #dc3545 !important;
   }
+
+  .selectable-row td {
+    cursor: pointer;
+  }
+  .selectable-row td a,
+  .selectable-row td button,
+  .selectable-row td input,
+  .selectable-row td select,
+  .selectable-row td textarea {
+    cursor: default;
+  }
+
+  .baja-multiple-panel {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 1080;
+    width: min(360px, calc(100% - 2rem));
+    background: #fff;
+    border: 1px solid rgba(0,0,0,.12);
+    border-radius: 14px;
+    box-shadow: 0 18px 45px rgba(0,0,0,0.18);
+    overflow: hidden;
+    transform: translateY(16px);
+    opacity: 0;
+    visibility: hidden;
+    transition: transform .22s ease, opacity .22s ease, visibility .22s ease;
+  }
+  .baja-multiple-panel--visible {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+  }
+  .baja-multiple-panel::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    right: 22px;
+    border-width: 0 8px 8px 8px;
+    border-style: solid;
+    border-color: transparent transparent #fff transparent;
+  }
+  .baja-multiple-panel__body {
+    padding: 16px 18px;
+  }
+  .baja-multiple-panel__title {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .baja-multiple-panel__text {
+    margin: 0;
+    color: #444;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .baja-multiple-panel__actions {
+    padding: 12px 16px 16px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    background: #f8f9fa;
+  }
+  .baja-multiple-panel__button {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+  }
+  .baja-multiple-panel__button--confirm {
+    background: #dc3545;
+    color: #fff;
+  }
+  .baja-multiple-panel__button--cancel {
+    background: transparent;
+    color: #495057;
+    border: 1px solid #ced4da;
+  }
+  .baja-multiple-panel__button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .baja-multiple-panel__button--confirm:disabled {
+    background: #ccc;
+  }
+
+  /* Estilos para modo de selección múltiple */
+  .tabla-selection-mode {
+    position: relative;
+  }
+  .tabla-selection-mode::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.03) 0%, rgba(0, 0, 0, 0.02) 100%);
+    pointer-events: none;
+    border-radius: inherit;
+  }
+  .tabla-selection-mode .table {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(248, 249, 250, 0.8) 100%);
+  }
+  .tabla-selection-mode .table tbody tr:not(.seleccionado-baja) {
+    opacity: 0.65;
+    background-color: rgba(255, 255, 255, 0.6);
+  }
+  .tabla-selection-mode .table tbody tr:not(.seleccionado-baja) td {
+    color: #666;
+  }
+  .tabla-selection-mode .table tbody tr.seleccionado-baja {
+    opacity: 1;
+  }
+  .tabla-selection-mode .table thead {
+    background: linear-gradient(180deg, #fff 0%, #f8f9fa 100%);
+  }
+
 </style>
 {% endblock %}
 
@@ -25,6 +140,8 @@
     <h3 class="m-0">Lista de Bienes</h3>
   <!-- BÚSQUEDA + BOTONES -->
   <form id="filtros-form" method="get" class="row g-2 align-items-end mb-3">
+    <input type="hidden" name="baja_multiple" id="baja-multiple-hidden" value="{% if request.GET.baja_multiple == '1' %}1{% endif %}">
+    <input type="hidden" name="baja_selected_ids" id="baja-selected-hidden" value="{{ request.GET.baja_selected_ids|default_if_none:'' }}">
     <div class="col-md-4">
       <label class="form-label">Buscar</label>
       <input type="search" name="q" value="{{ q }}" class="form-control auto-submit"
@@ -66,12 +183,16 @@
     <div class="col ms-auto d-flex align-items-end justify-content-end gap-2">
       {% if es_admin %}
       <button type="button" id="btn-abrir-baja-multiple"
-              class="btn btn-warning text-dark d-none"
-              data-bs-toggle="offcanvas"
-              data-bs-target="#offcanvasDarBaja" title="Dar de baja seleccionados">
-        <i class="fas fa-level-down-alt me-1"></i> Baja múltiple (0)
+              class="btn btn-warning text-dark d-inline-flex align-items-center justify-content-center"
+              style="height: 38px; font-weight: 700; font-size: 14px; border-radius: 6px; padding: 0 16px; border: none;"
+              title="Seleccionar bienes para dar de baja">
+        <i class="fas fa-level-down-alt me-2"></i> Baja múltiple
       </button>
       {% endif %}
+
+      <a class="btn-inst-nav" href="{% url 'lista_baja_bienes' %}" title="Ver bienes dados de baja">
+        <i class="fa-solid fa-trash me-2"></i> Lista de bajas
+      </a>
 
       {% if not es_supervisor %}
       <button type="submit" id="btn-confirm-eliminar"
@@ -79,10 +200,6 @@
               class="btn btn-danger d-none" disabled>
         <i class="fas fa-trash me-1"></i> Eliminar (0)
       </button>
-
-      <a class="btn-inst-nav" href="{% url 'lista_baja_bienes' %}" title="Ver bienes dados de baja">
-        <i class="fa-solid fa-trash"></i>
-      </a>
       {% endif %}
     </div>
 
@@ -124,11 +241,12 @@
     </div>
 
     <!-- TOTAL -->
-    <div class="col-12 mt-2" style="font-family: var(--font-roboto); color: var(--secondary-gris); font-size: 14px;">
-      {% if q %}Mostrando resultados para: <strong>{{ q }}</strong> · {% endif %}
-      Mostrando {{ page_obj.paginator.count }} bienes en total
-    </div>
-  </form>
+    </form>
+    <div id="bienes-container">
+      <div class="col-12 mt-2" style="font-family: var(--font-roboto); color: var(--secondary-gris); font-size: 14px;">
+        {% if q %}Mostrando resultados para: <strong>{{ q }}</strong> · {% endif %}
+        Mostrando {{ page_obj.paginator.count }} bienes en total
+      </div>
 
   <!-- TABLA DE BIENES -->
   <form id="form-eliminar-bienes" method="post" action="{% url 'eliminar_bienes_seleccionados' %}">
@@ -165,7 +283,7 @@
           {% for b in bienes %}
           <tr>
             <td class="text-center seleccion-col d-none">
-              <input type="checkbox" class="form-check-input chk-bien" name="seleccionados" value="{{ b.pk }}">
+              <input type="checkbox" class="form-check-input chk-bien" name="seleccionados" value="{{ b.pk }}" data-descripcion="{{ b.descripcion|escapejs }}">
             </td>
 
             <td class="text-nowrap">{{ b.clave_unica }}</td>
@@ -222,7 +340,7 @@
             <td class="text-nowrap">{{ b.servicios|default:"—" }}</td>
             <td style="min-width:220px;">{{ b.observaciones|default:"—" }}</td>
             <td class="text-nowrap">
-              {% if b.siem %}Si{% else %}No{% endif %}
+              {{ b.siem|default:"—" }}
             </td>
             <td class="text-end">
               {% if b.valor_adquisicion %}
@@ -244,23 +362,31 @@
               <a class="btn btn-sm btn-info" href="{% url 'editar_bien' b.pk %}" title="Editar">
                 <i class="fas fa-pen"></i>
               </a>
-              <a href="#"
-                 class="btn btn-sm btn-danger ms-1 btn-dar-baja {% if es_admin %}btn-toggle-baja{% endif %}"
-                 data-pk="{{ b.pk }}"
-                 data-action="{% url 'dar_baja_bien' b.pk %}"
-                 data-descripcion="{{ b.descripcion|escapejs }}"
-                 {% if not es_admin %}
-                 data-bs-toggle="offcanvas"
-                 data-bs-target="#offcanvasDarBaja"
-                 {% endif %}
-                 title="{% if es_admin %}Seleccionar para dar de baja{% else %}Dar de baja{% endif %}">
+                {% if es_admin %}
+                <button type="button" class="btn btn-sm btn-danger ms-1 btn-dar-baja"
+                     data-pk="{{ b.pk }}"
+                     data-action="{% url 'dar_baja_bien' b.pk %}"
+                     data-descripcion="{{ b.descripcion|escapejs }}"
+                     title="Dar de baja">
                  <i class="fas fa-trash"></i>
-              </a>
+                </button>
+                {% else %}
+                <a href="#"
+                  class="btn btn-sm btn-danger ms-1 btn-dar-baja"
+                  data-pk="{{ b.pk }}"
+                  data-action="{% url 'dar_baja_bien' b.pk %}"
+                  data-descripcion="{{ b.descripcion|escapejs }}"
+                  data-bs-toggle="offcanvas"
+                  data-bs-target="#offcanvasDarBaja"
+                  title="Dar de baja">
+                  <i class="fas fa-trash"></i>
+                </a>
+                {% endif %}
             </td>
             {% endif %}
           </tr>
           {% empty %}
-          <tr><td colspan="17" class="text-center text-muted py-4">No hay bienes para mostrar.</td></tr>
+          <tr><td colspan="{% if not es_supervisor %}18{% else %}17{% endif %}" class="text-center text-muted py-4">No hay bienes para mostrar.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -301,9 +427,21 @@
     </nav>
   </div>
   {% endif %}
+  </div>
 
 
   {% include 'bienes/includes/offcanvas_dar_baja.html' %}
+
+  <div id="baja-multiple-panel" class="baja-multiple-panel" role="dialog" aria-live="polite">
+    <div class="baja-multiple-panel__body">
+      <h5 class="baja-multiple-panel__title">Baja múltiple</h5>
+      <p class="baja-multiple-panel__text">Has seleccionado <span id="baja-multiple-count">0</span> bienes. Presioná confirmar para continuar.</p>
+    </div>
+    <div class="baja-multiple-panel__actions">
+      <button type="button" id="btn-cancelar-baja-multiple" class="baja-multiple-panel__button baja-multiple-panel__button--cancel">Cancelar</button>
+      <button type="button" id="btn-confirmar-baja-multiple" class="baja-multiple-panel__button baja-multiple-panel__button--confirm" disabled>Confirmar</button>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
@@ -311,152 +449,299 @@
 <script>
 (function () {
   // Selección múltiple
-  const btnToggle = document.getElementById('btn-toggle-seleccion');
   const btnEliminar = document.getElementById('btn-confirm-eliminar');
   const selectAll  = document.getElementById('select-all');
 
-  const updateCount = () => {
-    const n = Array.from(document.querySelectorAll('.chk-bien')).filter(c => c.checked).length;
-    if (btnEliminar) {
-      btnEliminar.textContent = n > 0 ? `Eliminar (${n})` : 'Eliminar (0)';
-      btnEliminar.disabled = n === 0;
-    }
-  };
-
-  const toggleCols = () => {
-    document.querySelectorAll('.seleccion-col').forEach(el => el.classList.toggle('d-none'));
-    if (btnEliminar) btnEliminar.classList.toggle('d-none');
-    if (selectAll) selectAll.checked = false;
-    document.querySelectorAll('.chk-bien').forEach(c => c.checked = false);
-    updateCount();
-  };
-
-  if (btnToggle) btnToggle.addEventListener('click', toggleCols);
-  if (selectAll) {
-    selectAll.addEventListener('change', () => {
-      document.querySelectorAll('.chk-bien').forEach(c => c.checked = selectAll.checked);
-      updateCount();
-    });
-  }
-  document.addEventListener('change', e => {
-    if (e.target.classList && e.target.classList.contains('chk-bien')) updateCount();
-  });
-
   // Preparar OFFCANVAS
   const esAdmin = {% if es_admin %}true{% else %}false{% endif %};
-  const LS_KEY = 'bienes_baja_seleccionados';
-  
-  // Cargar de localStorage o crear mapa vacío
-  let bienesParaBaja = new Map(JSON.parse(localStorage.getItem(LS_KEY)) || []);
   const btnBajaMultiple = document.getElementById('btn-abrir-baja-multiple');
+  let bajaSelectionMode = false;
 
-  // Modal de Alerta Límite
-  const alertModalHtml = `
-  <div id="alertLimitModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:2000; align-items:center; justify-content:center;">
-    <div style="max-width:480px; width:94%;">
-      <div style="background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 18px 50px rgba(0,0,0,0.35);">
-        <div style="background:#00aec3; color:#fff; padding:14px 18px; font-size:18px; font-weight:600;"> 
-          <i class="fas fa-exclamation-circle me-1"></i> Aviso
-        </div>
-        <div style="padding:18px; color:#333; background:#fff;">
-          <p style="margin:0 0 12px; font-size: 16px;">Límite de 20 bienes por operación alcanzado.</p>
-        </div>
-        <div style="padding:12px 18px 18px; display:flex; gap:10px; justify-content:flex-end; background:#fff;">
-          <button type="button" id="alertLimitBtn" style="background:#28a745; color:#fff; padding:8px 14px; border-radius:6px; border:1px solid transparent; box-sizing:border-box;">Entendido</button>
-        </div>
-      </div>
-    </div>
-  </div>`;
+  const getSelectedItems = () => {
+    return Array.from(selectedIdSet).map(pk => ({
+      pk,
+      desc: selectedItemDescriptions.get(pk) || ''
+    }));
+  };
 
-  const wrapper = document.createElement('div');
-  wrapper.innerHTML = alertModalHtml;
-  document.body.appendChild(wrapper.firstElementChild);
+  const bajaPanel = document.getElementById('baja-multiple-panel');
+  const bajaCount = document.getElementById('baja-multiple-count');
+  const btnCancelarBaja = document.getElementById('btn-cancelar-baja-multiple');
+  const btnConfirmarBaja = document.getElementById('btn-confirmar-baja-multiple');
 
-  const alertModal = document.getElementById('alertLimitModal');
-  const alertBtn = document.getElementById('alertLimitBtn');
-  
-  function closeAlertModal() { alertModal.style.display = 'none'; }
-  alertBtn.addEventListener('click', closeAlertModal);
-  alertModal.addEventListener('click', function(ev) { if (ev.target === alertModal) closeAlertModal(); });
-
-  function saveBajaState() {
-    localStorage.setItem(LS_KEY, JSON.stringify(Array.from(bienesParaBaja.entries())));
-    updateBajaMultipleUI();
-  }
-
-  function updateBajaMultipleUI() {
-    if (!btnBajaMultiple) return;
-    const count = bienesParaBaja.size;
-    if (count > 0) {
-      btnBajaMultiple.classList.remove('d-none');
-      btnBajaMultiple.innerHTML = `<i class="fas fa-level-down-alt me-1"></i> Baja múltiple (${count})`;
-    } else {
-      btnBajaMultiple.classList.add('d-none');
+  const updateBajaPanel = () => {
+    if (!bajaPanel || !bajaCount) return;
+    const selectedItems = getSelectedItems();
+    const count = selectedItems.length;
+    bajaCount.textContent = count;
+    // Mostrar panel cuando está en modo selección, sin importar la cantidad
+    bajaPanel.classList.toggle('baja-multiple-panel--visible', bajaSelectionMode);
+    // Habilitar botón Confirmar solo si hay 2+ items
+    if (btnConfirmarBaja) {
+      btnConfirmarBaja.disabled = count < 2;
     }
-  }
+  };
 
-  // Al cargar la página, restaurar estilos visuales si ya están seleccionados
-  if (esAdmin) {
-    document.querySelectorAll('.btn-toggle-baja').forEach(btn => {
-      const pk = btn.getAttribute('data-pk');
-      if (bienesParaBaja.has(pk)) {
-        const tr = btn.closest('tr');
-        if (tr) {
-          tr.classList.add('seleccionado-baja');
+  const hiddenBajaInput = document.getElementById('baja-multiple-hidden');
+  const hiddenSelectedIdsInput = document.getElementById('baja-selected-hidden');
+
+  const LS_KEY_BAJA_MULTI = 'bienesABajaMultiple_v1';
+
+  const loadPersistedSelection = () => {
+    try {
+      const raw = localStorage.getItem(LS_KEY_BAJA_MULTI);
+      if (!raw) return { ids: new Set(), descriptions: new Map() };
+      const saved = JSON.parse(raw);
+      if (!saved || typeof saved !== 'object') return { ids: new Set(), descriptions: new Map() };
+      const ids = Array.isArray(saved.ids) ? new Set(saved.ids.map(String)) : new Set();
+      const descriptions = saved.descriptions && typeof saved.descriptions === 'object'
+        ? new Map(Object.entries(saved.descriptions).map(([k, v]) => [String(k), String(v)]))
+        : new Map();
+      return { ids, descriptions };
+    } catch (e) {
+      return { ids: new Set(), descriptions: new Map() };
+    }
+  };
+
+  const persistSelection = () => {
+    try {
+      const payload = {
+        ids: Array.from(selectedIdSet),
+        descriptions: Object.fromEntries(selectedItemDescriptions)
+      };
+      localStorage.setItem(LS_KEY_BAJA_MULTI, JSON.stringify(payload));
+    } catch (e) {
+      // noop
+    }
+  };
+
+  const selectedPersisted = loadPersistedSelection();
+  const selectedIdSet = selectedPersisted.ids;
+  const selectedItemDescriptions = selectedPersisted.descriptions;
+
+  const syncHiddenInputs = () => {
+    if (hiddenSelectedIdsInput) {
+      hiddenSelectedIdsInput.value = Array.from(selectedIdSet).join(',');
+    }
+    if (hiddenBajaInput) {
+      hiddenBajaInput.value = bajaSelectionMode ? '1' : '';
+    }
+  };
+
+  const saveSelectionState = () => {
+    syncHiddenInputs();
+    persistSelection();
+  };
+
+  const updateSelectionUI = () => {
+    document.querySelectorAll('.chk-bien').forEach(chk => {
+      const id = String(chk.value);
+      const selected = selectedIdSet.has(id);
+      chk.checked = selected;
+      if (selected && chk.dataset.descripcion) {
+        selectedItemDescriptions.set(id, chk.dataset.descripcion);
+      }
+      const tr = chk.closest('tr');
+      if (!tr) return;
+      tr.classList.toggle('seleccionado-baja', selected);
+    });
+
+    const currentSelectAll = document.getElementById('select-all');
+    if (currentSelectAll) {
+      const all = Array.from(document.querySelectorAll('.chk-bien'));
+      currentSelectAll.checked = all.length > 0 && all.every(chk => chk.checked);
+    }
+
+    saveSelectionState();
+    updateBajaPanel();
+  };
+
+  const setBajaSelectionMode = active => {
+    bajaSelectionMode = active;
+    if (hiddenBajaInput) {
+      hiddenBajaInput.value = active ? '1' : '';
+    }
+    const tableContainer = document.querySelector('.table-responsive');
+    if (tableContainer) {
+      tableContainer.classList.toggle('tabla-selection-mode', active);
+    }
+    if (!active) {
+      selectedIdSet.clear();
+      selectedItemDescriptions.clear();
+      saveSelectionState();
+      document.querySelectorAll('.chk-bien').forEach(chk => {
+        chk.checked = false;
+        const tr = chk.closest('tr');
+        if (tr) tr.classList.remove('seleccionado-baja');
+      });
+      const currentSelectAll = document.getElementById('select-all');
+      if (currentSelectAll) currentSelectAll.checked = false;
+    }
+    document.querySelectorAll('#tabla-bienes tbody tr').forEach(tr => tr.classList.toggle('selectable-row', active));
+    updateSelectionUI();
+  };
+
+  const tableBody = document.querySelector('#tabla-bienes tbody');
+
+  // Delegación para Select All
+  document.addEventListener('change', e => {
+    if (e.target.id === 'select-all') {
+      const isChecked = e.target.checked;
+      document.querySelectorAll('.chk-bien').forEach(chk => {
+        const id = String(chk.value);
+        if (isChecked) {
+          selectedIdSet.add(id);
+          if (chk.dataset.descripcion) selectedItemDescriptions.set(id, chk.dataset.descripcion);
+        } else {
+          selectedIdSet.delete(id);
+          selectedItemDescriptions.delete(id);
+        }
+      });
+      updateSelectionUI();
+    }
+  });
+
+  document.addEventListener('change', e => {
+    if (e.target.classList && e.target.classList.contains('chk-bien')) {
+      const id = String(e.target.value);
+      if (e.target.checked) {
+        selectedIdSet.add(id);
+        if (e.target.dataset.descripcion) selectedItemDescriptions.set(id, e.target.dataset.descripcion);
+      } else {
+        selectedIdSet.delete(id);
+        selectedItemDescriptions.delete(id);
+      }
+      updateSelectionUI();
+    }
+  });
+
+  const toggleRowSelection = (event) => {
+    if (!bajaSelectionMode) return;
+    const row = event.target.closest('#tabla-bienes tbody tr');
+    if (!row) return;
+    if (event.target.closest('a, button, input, select, textarea, label')) return;
+
+    const checkbox = row.querySelector('.chk-bien');
+    if (!checkbox) return;
+    const nextChecked = !checkbox.checked;
+    checkbox.checked = nextChecked;
+    const id = String(checkbox.value);
+    if (nextChecked) {
+      selectedIdSet.add(id);
+      if (checkbox.dataset.descripcion) selectedItemDescriptions.set(id, checkbox.dataset.descripcion);
+    } else {
+      selectedIdSet.delete(id);
+      selectedItemDescriptions.delete(id);
+    }
+    updateSelectionUI();
+  };
+
+  document.addEventListener('click', toggleRowSelection);
+
+  // Función global para refrescar tras AJAX
+  window.refreshBajaSelection = () => {
+    if (bajaSelectionMode) {
+      const tableContainer = document.querySelector('.table-responsive');
+      if (tableContainer) tableContainer.classList.add('tabla-selection-mode');
+      document.querySelectorAll('#tabla-bienes tbody tr').forEach(tr => tr.classList.add('selectable-row'));
+      restoreSelectedRows();
+    }
+  };
+
+  if (btnBajaMultiple) {
+    btnBajaMultiple.addEventListener('click', function() {
+      // If not in selection mode, enable it. If already in selection mode:
+      // - keep it active when there are selected items (don't hide the panel)
+      // - allow disabling only when nothing is selected
+      if (!bajaSelectionMode) {
+        setBajaSelectionMode(true);
+      } else {
+        if (selectedIdSet.size > 0) {
+          // keep active and refresh UI (do not close panel)
+          updateBajaPanel();
+        } else {
+          setBajaSelectionMode(false);
         }
       }
     });
-    updateBajaMultipleUI();
   }
 
-  document.addEventListener('click', function(e) {
-    const btn = e.target.closest('.btn-dar-baja');
-    if (!btn) return;
+  if (btnCancelarBaja) {
+    btnCancelarBaja.addEventListener('click', function() {
+      // Clear selection state and persisted storage then restore UI to normal
+      setBajaSelectionMode(false);
+      try { localStorage.removeItem(LS_KEY_BAJA_MULTI); } catch (err) {}
+      if (hiddenSelectedIdsInput) hiddenSelectedIdsInput.value = '';
+    });
+  }
 
-    if (esAdmin && btn.classList.contains('btn-toggle-baja')) {
-      e.preventDefault();
-      e.stopPropagation(); // Evitar que abra un modal si tiene data-bs-toggle
+  const filtrosForm = document.querySelector('#filtros-form');
+  if (filtrosForm) {
+    filtrosForm.addEventListener('submit', saveSelectionState);
+  }
 
-      const pk = btn.getAttribute('data-pk');
-      const desc = btn.getAttribute('data-descripcion');
-      const tr = btn.closest('tr');
-
-      if (bienesParaBaja.has(pk)) {
-        // Deseleccionar
-        bienesParaBaja.delete(pk);
-        if (tr) {
-          tr.classList.remove('seleccionado-baja');
-        }
-      } else {
-        if (bienesParaBaja.size >= 20) {
-          alertModal.style.display = 'flex';
-          alertBtn.focus();
-          return;
-        }
-        // Seleccionar
-        bienesParaBaja.set(pk, desc);
-        if (tr) {
-          tr.classList.add('seleccionado-baja');
-        }
+  const restoreSelectedRows = () => {
+    let ids = [];
+    if (hiddenSelectedIdsInput && hiddenSelectedIdsInput.value) {
+      ids = hiddenSelectedIdsInput.value.split(',').map(id => id.trim()).filter(Boolean);
+    } else {
+      ids = Array.from(selectedIdSet);
+    }
+    if (!ids.length) return;
+    ids.forEach(id => {
+      selectedIdSet.add(id);
+      const checkbox = document.querySelector(`.chk-bien[value="${id}"]`);
+      if (checkbox) {
+        checkbox.checked = true;
+        if (checkbox.dataset.descripcion) selectedItemDescriptions.set(id, checkbox.dataset.descripcion);
+        const tr = checkbox.closest('tr');
+        if (tr) tr.classList.add('seleccionado-baja');
       }
-      saveBajaState();
-      return;
-    }
+    });
+    saveSelectionState();
+    updateSelectionUI();
+  };
 
-    // Comportamiento original para no admin (o un solo item)
+  // Restaurar modo baja múltiple si viene desde la URL o si hay IDs seleccionados guardados
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('baja_multiple') === '1' || selectedIdSet.size > 0 || (hiddenSelectedIdsInput && hiddenSelectedIdsInput.value)) {
+    setBajaSelectionMode(true);
+    restoreSelectedRows();
+  }
+
+  if (btnConfirmarBaja) {
+    btnConfirmarBaja.addEventListener('click', function() {
+      const selectedItems = getSelectedItems();
+      if (selectedItems.length < 2) return;
+      const form = document.getElementById('form-dar-baja');
+      if (form) form.action = "{% url 'dar_baja_bienes_seleccionados' %}";
+      buildBajaTable(selectedItems.map(item => [item.pk, item.desc]));
+      const offcanvasEl = document.getElementById('offcanvasDarBaja');
+      if (offcanvasEl) {
+        const offcanvas = bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl);
+        offcanvas.show();
+      }
+    });
+  }
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.btn-dar-baja');
+  if (!btn) return;
+  if (bajaSelectionMode) {
     e.preventDefault();
-    const form = document.getElementById('form-dar-baja');
-    if (form) form.action = btn.getAttribute('data-action') || '';
-
-    // Construir tabla para 1 solo item
-    buildBajaTable([[btn.getAttribute('data-pk'), btn.getAttribute('data-descripcion') || '']]);
-
-    const offcanvasEl = document.getElementById('offcanvasDarBaja');
-    if (offcanvasEl) {
-      const offcanvas = bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl);
-      offcanvas.show();
-    }
-  });
+    e.stopPropagation();
+    alert('Desactivá Baja múltiple para dar de baja individual.');
+    return;
+  }
+  e.preventDefault();
+  const form = document.getElementById('form-dar-baja');
+  if (form) form.action = btn.getAttribute('data-action') || '';
+  buildBajaTable([[btn.getAttribute('data-pk'), btn.getAttribute('data-descripcion') || '']]);
+  const offcanvasEl = document.getElementById('offcanvasDarBaja');
+  if (offcanvasEl) {
+    const offcanvas = bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl);
+    offcanvas.show();
+  }
+});
 
   function buildBajaTable(items) {
     const container = document.getElementById('tabla-bienes-baja');
@@ -473,7 +758,7 @@
             <th style="padding-left: 12px;">ID / Nombre</th>
             <th style="width: 160px;">Fecha Baja <span class="text-danger">*</span></th>
             <th>Expediente</th>
-            <th style="padding-right: 12px;">Motivo</th>
+            <th style="padding-right: 12px;">Motivo <span class="text-danger">*</span></th>
           </tr>
         </thead>
         <tbody>
@@ -491,7 +776,7 @@
             </div>
           </td>
           <td><input type="text" class="form-control form-control-sm custom-input-baja" name="expediente_baja_${pk}" placeholder="Ej: EX-2025..."></td>
-          <td style="padding-right: 12px;"><input type="text" class="form-control form-control-sm custom-input-baja" name="descripcion_baja_${pk}" placeholder="Motivo, destino..."></td>
+          <td style="padding-right: 12px;"><input type="text" class="form-control form-control-sm custom-input-baja" name="descripcion_baja_${pk}" placeholder="Motivo, destino..." required></td>
         </tr>
       `;
     });
@@ -500,37 +785,174 @@
     container.innerHTML = html;
   }
 
-  // Al abrir el offcanvas por "Baja múltiple", sincronizar el form
-  if (btnBajaMultiple) {
-    btnBajaMultiple.addEventListener('click', function(e) {
-      const form = document.getElementById('form-dar-baja');
-      // Enviamos a la nueva vista de bajas múltiples
-      if (form) form.action = "{% url 'dar_baja_bienes_seleccionados' %}";
-
-      buildBajaTable(Array.from(bienesParaBaja.entries()));
-    });
-  }
-
-  // Limpiar localStorage al enviar el formulario exitosamente
   const formDarBaja = document.getElementById('form-dar-baja');
   if (formDarBaja) {
     formDarBaja.addEventListener('submit', function() {
-      // Si el formulario es válido y se va a enviar, limpiamos
       if (formDarBaja.checkValidity()) {
-        localStorage.removeItem(LS_KEY);
+        setBajaSelectionMode(false);
+        try { localStorage.removeItem(LS_KEY_BAJA_MULTI); } catch (err) {}
+        if (hiddenSelectedIdsInput) {
+          hiddenSelectedIdsInput.value = '';
+        }
       }
     });
   }
+
+  // When deleting selected items (form-eliminar-bienes), clear selection and persistence
+  const formEliminar = document.getElementById('form-eliminar-bienes');
+  if (formEliminar) {
+    formEliminar.addEventListener('submit', function() {
+      try { localStorage.removeItem(LS_KEY_BAJA_MULTI); } catch (err) {}
+      selectedIdSet.clear();
+      selectedItemDescriptions.clear();
+      setBajaSelectionMode(false);
+      if (hiddenSelectedIdsInput) hiddenSelectedIdsInput.value = '';
+    });
+  }
+
+  // Clear persisted selection when navigating to another tab (visibility change)
+  // Do NOT apply on search filter to preserve accumulated selection while filtering
+  window.addEventListener('visibilitychange', function() {
+    if (document.hidden && bajaSelectionMode) {
+      try { localStorage.removeItem(LS_KEY_BAJA_MULTI); } catch (err) {}
+      selectedIdSet.clear();
+      selectedItemDescriptions.clear();
+      setBajaSelectionMode(false);
+      if (hiddenSelectedIdsInput) hiddenSelectedIdsInput.value = '';
+    }
+  });
 })();
 </script>
 
-<!-- Autosubmit de filtros -->
+<script>
+(function(){
+  const modalHtml = `
+  <div id="confirmDeleteBienModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:2100; align-items:center; justify-content:center;">
+    <div style="max-width:460px; width:94%;">
+      <div style="background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 18px 50px rgba(0,0,0,0.35);">
+        <div style="background:#dc3545; color:#fff; padding:14px 18px; font-size:18px; font-weight:600;">
+          <i class="fas fa-exclamation-triangle me-1"></i> Confirmar eliminación
+        </div>
+        <div style="padding:18px; color:#333; background:#fff;">
+          <p style="margin:0 0 12px; font-size:16px;">¿Querés eliminar el bien <strong id="confirmDeleteBienNombre"></strong>?</p>
+          <p style="margin:0; color:#555;">Esta acción no se puede deshacer.</p>
+        </div>
+        <div style="padding:12px 18px 18px; display:flex; gap:10px; justify-content:flex-end; background:#fff;">
+          <button type="button" id="confirmDeleteBienCancel" style="background:transparent; color:#333; border:1px solid #ccc; border-radius:6px; padding:8px 14px;">Cancelar</button>
+          <form id="confirmDeleteBienForm" method="post" style="margin:0;">
+            {% csrf_token %}
+            <button type="submit" style="background:#dc3545; color:#fff; border:1px solid transparent; border-radius:6px; padding:8px 14px;">Eliminar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  document.addEventListener('DOMContentLoaded', function(){
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = modalHtml;
+    document.body.appendChild(wrapper.firstElementChild);
+
+    const modal = document.getElementById('confirmDeleteBienModal');
+    const bienNombre = document.getElementById('confirmDeleteBienNombre');
+    const form = document.getElementById('confirmDeleteBienForm');
+    const btnCancel = document.getElementById('confirmDeleteBienCancel');
+
+    document.body.addEventListener('click', function(e){
+      const btn = e.target.closest('.btn-eliminar-bien');
+      if (!btn) return;
+      const action = btn.getAttribute('data-action');
+      const nombre = btn.getAttribute('data-bien') || 'este bien';
+      const pk = btn.getAttribute('data-pk');
+      if (!action || !pk) return;
+
+      bienNombre.textContent = nombre;
+      form.setAttribute('action', action);
+      form.setAttribute('data-pk', pk);
+      form.setAttribute('data-nombre', nombre);
+      modal.style.display = 'flex';
+      const submitBtn = form.querySelector('button[type=submit]');
+      if (submitBtn) submitBtn.focus();
+    });
+
+   form.addEventListener('submit', function(e){
+  e.preventDefault();
+  const pk = form.getAttribute('data-pk');
+  const nombre = form.getAttribute('data-nombre');
+  const action = form.getAttribute('action');
+  modal.style.display = 'none';
+  const formDarBaja = document.getElementById('form-dar-baja');
+  if (formDarBaja) formDarBaja.action = action;
+  buildBajaTable([[pk, nombre]]);
+  const offcanvasEl = document.getElementById('offcanvasDarBaja');
+  if (offcanvasEl) {
+    const offcanvas = bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl);
+    offcanvas.show();
+  }
+});
+    btnCancel.addEventListener('click', function(){
+      modal.style.display = 'none';
+    });
+
+    modal.addEventListener('click', function(ev){
+      if (ev.target === modal) {
+        modal.style.display = 'none';
+      }
+    });
+
+    document.addEventListener('keydown', function(ev){
+      if (ev.key === 'Escape' && modal.style.display === 'flex') {
+        modal.style.display = 'none';
+      }
+    });
+  });
+})();
+</script>
+
+<!-- Autosubmit de filtros (AJAX) -->
 <script>
 (function () {
   const form = document.querySelector('#filtros-form');
-  if (!form) return;
+  const container = document.querySelector('#bienes-container');
+  if (!form || !container) return;
 
-  const requestSubmit = () => (form.requestSubmit ? form.requestSubmit() : form.submit());
+  const updateList = (url) => {
+    // Mostrar un estado de carga opcional si se desea
+    container.style.opacity = '0.5';
+    
+    fetch(url, {
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(response => response.text())
+    .then(html => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const newContent = doc.querySelector('#bienes-container').innerHTML;
+      container.innerHTML = newContent;
+      container.style.opacity = '1';
+      
+      // Actualizar la URL en el navegador
+      window.history.pushState({}, '', url);
+      
+      // Re-inicializar comportamientos si es necesario
+      if (window.refreshBajaSelection) window.refreshBajaSelection();
+      if (window.initFloatingScrollbar) window.initFloatingScrollbar();
+    })
+    .catch(err => {
+      console.error('Error en fetch:', err);
+      container.style.opacity = '1';
+    });
+  };
+
+  const handleFormSubmit = (e) => {
+    if (e) e.preventDefault();
+    const formData = new FormData(form);
+    const params = new URLSearchParams(formData);
+    const url = `${window.location.pathname}?${params.toString()}`;
+    updateList(url);
+  };
 
   // Debounce para texto/búsqueda
   const debounce = (fn, ms) => {
@@ -540,9 +962,8 @@
       t = setTimeout(() => fn.apply(null, args), ms);
     };
   };
-  const debouncedSubmit = debounce(requestSubmit, 400);
+  const debouncedSubmit = debounce(handleFormSubmit, 400);
 
-  // Siempre resetear a página 1 ante cualquier cambio
   const ensurePageReset = () => {
     let pageInput = form.querySelector('input[name="page"]');
     if (!pageInput) {
@@ -554,27 +975,35 @@
     pageInput.value = '1';
   };
 
-  // Campos que disparan autosubmit
-  const autoEls = form.querySelectorAll('.auto-submit');
-
-  autoEls.forEach(el => {
+  // Escuchar cambios en campos de auto-submit
+  form.querySelectorAll('.auto-submit').forEach(el => {
     const tag = el.tagName;
     const type = (el.type || '').toLowerCase();
 
-    // Selects / fechas / checks → submit inmediato
     if (tag === 'SELECT' || (tag === 'INPUT' && (type === 'date' || type === 'checkbox' || type === 'radio'))) {
       el.addEventListener('change', () => {
         ensurePageReset();
-        requestSubmit();
+        handleFormSubmit();
       });
     }
 
-    // Texto / search → submit con debounce
     if (tag === 'INPUT' && (type === 'text' || type === 'search')) {
       el.addEventListener('input', () => {
         ensurePageReset();
         debouncedSubmit();
       });
+    }
+  });
+
+  // Interceptar el submit real del form por si acaso
+  form.addEventListener('submit', handleFormSubmit);
+
+  // Delegación para clics en paginación
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest('.pagination .page-link');
+    if (link && link.getAttribute('href') && link.getAttribute('href') !== '#') {
+      e.preventDefault();
+      updateList(link.href);
     }
   });
 })();

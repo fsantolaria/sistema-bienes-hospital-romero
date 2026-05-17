@@ -22,21 +22,23 @@
   <table>
     <thead>
       <tr>
-        <th style="width: 130px;">Fecha y hora</th>
-        <th style="width: 130px;">Usuario</th>
+        <th style="width: 120px;">Fecha y hora</th>
+        <th style="width: 100px;">Usuario</th>
+        <th style="width: 100px;">Acción</th>
         <th>Mensaje</th>
       </tr>
     </thead>
     <tbody>
-      {% for n in notifs %}
+      {% for n in logs %}
       <tr>
         <td class="text-nowrap">{{ n.fecha|date:"d/m/Y H:i" }}</td>
-        <td>{{ n.usuario.username|default:"—" }}</td>
+        <td>{{ n.usuario.username|default:"Sistema" }}</td>
+        <td><span style="font-weight: bold;">{{ n.get_accion_display }}</span></td>
         <td>{{ n.mensaje }}</td>
       </tr>
       {% empty %}
       <tr>
-        <td colspan="3" style="text-align:center; color:#666;">Sin actividad registrada en {{ rango_desc|lower }}.</td>
+        <td colspan="4" style="text-align:center; color:#666;">Sin actividad registrada en {{ rango_desc|lower }}.</td>
       </tr>
       {% endfor %}
     </tbody>

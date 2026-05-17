@@ -1073,6 +1073,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     border-color: var(--btn-turquesa-active);
     box-shadow: none;
 }
+.btn-inst-nav--danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+.btn-inst-nav--danger:hover,
+.btn-inst-nav--danger:focus {
+    background-color: #bb2d3b;
+    border-color: #bb2d3b;
+    box-shadow: 0 3px 8px rgba(220, 53, 69, 0.35);
+}
 
 /* ---- 3. Botón Filtros — Outline turquesa ---- */
 /* Fondo blanco / borde turquesa → hover: fondo turquesa / texto blanco */

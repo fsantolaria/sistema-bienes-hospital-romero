@@ -129,14 +129,14 @@
               {% for e in form.valor_adquisicion.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
             </div>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-4" id="col-siem">
             <div class="form-group-item {% if form.siem.errors %}campo-error{% endif %}">
               <label for="{{ form.siem.id_for_label }}">SIEM</label>
               {{ form.siem }}
               {% for e in form.siem.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
             </div>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-4" id="col-fecha-alta">
             <div class="form-group-item {% if form.fecha_adquisicion.errors %}campo-error{% endif %}">
               <label for="{{ form.fecha_adquisicion.id_for_label }}">Fecha de Alta</label>
               {{ form.fecha_adquisicion }}
@@ -184,17 +184,17 @@
 
         </div>
 
-        <div class="form-buttons position-relative d-flex justify-content-center flex-wrap align-items-center">
+        <div class="form-buttons position-relative d-flex justify-content-center gap-3 flex-wrap align-items-center mt-4">
           
-          <a href="{% if es_admin %}{% url 'lista_bienes' %}{% else %}{% url 'lista_bienes_operador' %}{% endif %}" class="btn btn-ver-lista">
+          <a href="{% if es_admin %}{% url 'lista_bienes' %}{% else %}{% url 'lista_bienes_operador' %}{% endif %}" class="btn btn-ver-lista" style="min-width: 160px;">
             <i class="fa-solid fa-list me-1"></i> Ver lista
           </a>
 
-          <a href="{% if es_admin %}{% url 'lista_bienes' %}{% else %}{% url 'lista_bienes_operador' %}{% endif %}" class="btn btn-cancelar">
+          <a href="{% if es_admin %}{% url 'lista_bienes' %}{% else %}{% url 'lista_bienes_operador' %}{% endif %}" class="btn btn-cancelar" style="min-width: 160px;">
             <i class="fa-solid fa-times me-1"></i> Cancelar
           </a>
 
-          <button type="submit" class="btn btn-guardar">
+          <button type="submit" class="btn btn-guardar" style="min-width: 160px;">
             <i class="fas fa-save me-1"></i> Guardar cambios
           </button>
         </div>
@@ -271,14 +271,29 @@
     const grupoPrecio = document.getElementById('grupo-precio');
     const inputPrecio = document.getElementById('id_valor_adquisicion');
 
+    const colSiem = document.getElementById('col-siem');
+    const colFechaAlta = document.getElementById('col-fecha-alta');
+
     function togglePrecio() {
       const v = (origen?.value || '').toUpperCase();
       if (v === 'COMPRA') {
         grupoPrecio?.classList.remove('d-none');
         if (inputPrecio) inputPrecio.disabled = false;
+
+        // Ajustar a 3 columnas
+        colSiem?.classList.remove('col-md-6');
+        colSiem?.classList.add('col-md-4');
+        colFechaAlta?.classList.remove('col-md-6');
+        colFechaAlta?.classList.add('col-md-4');
       } else {
         grupoPrecio?.classList.add('d-none');
         if (inputPrecio) { inputPrecio.disabled = true; }
+
+        // Ajustar a 2 columnas (expandir)
+        colSiem?.classList.remove('col-md-4');
+        colSiem?.classList.add('col-md-6');
+        colFechaAlta?.classList.remove('col-md-4');
+        colFechaAlta?.classList.add('col-md-6');
       }
     }
     togglePrecio();

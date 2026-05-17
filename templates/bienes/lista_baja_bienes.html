@@ -7,7 +7,7 @@
 {% block extra_css %}
 <style>
   tr.seleccionado-restaurar td {
-    background-color: #e8f5e9 !important;
+    background-color: rgba(25, 135, 84, 0.08) !important;
     border-top: 1.5px solid #198754 !important;
     border-bottom: 1.5px solid #198754 !important;
   }
@@ -17,6 +17,109 @@
   tr.seleccionado-restaurar td:last-child {
     border-right: 1.5px solid #198754 !important;
   }
+
+  .tabla-selection-mode {
+    position: relative;
+  }
+  .tabla-selection-mode::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(25, 135, 84, 0.12) 0%, rgba(0, 0, 0, 0.02) 100%);
+    pointer-events: none;
+    border-radius: inherit;
+  }
+  .tabla-selection-mode .table tbody tr:not(.seleccionado-restaurar) {
+    opacity: 0.7;
+  }
+  .tabla-selection-mode .table tbody tr:not(.seleccionado-restaurar) td {
+    color: #5a5a5a;
+  }
+
+  /* Hacer filas seleccionables con cursor de mano y ocultar checkbox en modo restaurar */
+  .selectable-row td { cursor: pointer; }
+  .selectable-row td a,
+  .selectable-row td button,
+  .selectable-row td input,
+  .selectable-row td select,
+  .selectable-row td textarea { cursor: default; }
+
+  /* Ocultar visualmente los checkboxes de restaurar cuando la tabla está en modo selección */
+  .table-responsive.tabla-selection-mode .chk-restaurar { display: none !important; }
+
+  .restaurar-multiple-panel {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 1080;
+    width: min(360px, calc(100% - 2rem));
+    background: #fff;
+    border: 1px solid rgba(0,0,0,.12);
+    border-radius: 14px;
+    box-shadow: 0 18px 45px rgba(0,0,0,0.18);
+    overflow: hidden;
+    transform: translateY(16px);
+    opacity: 0;
+    visibility: hidden;
+    transition: transform .22s ease, opacity .22s ease, visibility .22s ease;
+  }
+  .restaurar-multiple-panel--visible {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+  }
+  .restaurar-multiple-panel::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    right: 22px;
+    border-width: 0 8px 8px 8px;
+    border-style: solid;
+    border-color: transparent transparent #fff transparent;
+  }
+  .restaurar-multiple-panel__body {
+    padding: 16px 18px;
+  }
+  .restaurar-multiple-panel__title {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .restaurar-multiple-panel__text {
+    margin: 0;
+    color: #444;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .restaurar-multiple-panel__actions {
+    padding: 12px 16px 16px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    background: #f8f9fa;
+  }
+  .restaurar-multiple-panel__button {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+  }
+  .restaurar-multiple-panel__button--confirm {
+    background: #198754;
+    color: #fff;
+  }
+  .restaurar-multiple-panel__button--cancel {
+    background: transparent;
+    color: #495057;
+    border: 1px solid #ced4da;
+  }
+  .restaurar-multiple-panel__button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .restaurar-multiple-panel__button--confirm:disabled {
+    background: #ccc;
+  }
 </style>
 {% endblock %}
 
@@ -24,11 +127,6 @@
 <div class="container-fluid py-3">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="m-0">Bienes — Dados de Baja</h3>
-    <div class="d-flex gap-2">
-      <a class="btn-inst-nav" href="{% url 'lista_bienes' %}">
-        <i class="fas fa-arrow-left"></i> Volver a lista de bienes
-      </a>
-    </div>
   </div>
 
   <!-- BÚSQUEDA / ORDEN -->
@@ -58,11 +156,21 @@
       <a class="btn-inst-clear" href="{% url 'lista_baja_bienes' %}">
         <i class="fas fa-times"></i> Limpiar
       </a>
+    </div>
+
+    <!-- CONTROLES DERECHA -->
+    <div class="col ms-auto d-flex align-items-end justify-content-end gap-2">
       {% if es_admin %}
-      <button class="btn btn-success d-none" type="button" id="btn-top-restaurar-multiple">
-        <i class="fas fa-undo me-1"></i> Restablecer bien (0)
+      <button class="btn btn-success d-inline-flex align-items-center justify-content-center" 
+              style="height: 38px; font-weight: 700; font-size: 14px; border-radius: 6px; padding: 0 16px; border: none;"
+              type="button" id="btn-top-restaurar-multiple">
+        <i class="fas fa-undo me-2"></i> Restablecer múltiples bienes
       </button>
       {% endif %}
+
+      <a class="btn-inst-nav" href="{% url 'lista_bienes' %}">
+        <i class="fas fa-arrow-left me-2"></i> Volver a lista de bienes
+      </a>
     </div>
 
     <div class="col-12 collapse mt-3" id="filtrosBox">
@@ -119,6 +227,11 @@
     <table class="table table-sm table-bordered align-middle">
       <thead class="table-light text-center">
         <tr>
+          {% if not es_supervisor %}
+          <th class="seleccion-col d-none" style="width:36px;">
+            <input type="checkbox" id="select-all-restaurar" class="form-check-input">
+          </th>
+          {% endif %}
           <th>Clave Única</th>
           <th>N° de ID</th>
           <th>Descripción</th>
@@ -138,12 +251,19 @@
           <th>Precio</th>
           <th>Fecha de Alta</th>
           <th>Fecha de Baja</th>
+          {% if not es_supervisor %}
           <th class="text-nowrap">Acciones</th>
+          {% endif %}
         </tr>
       </thead>
       <tbody>
         {% for b in bienes %}
         <tr>
+          {% if not es_supervisor %}
+          <td class="text-center seleccion-col d-none">
+            <input type="checkbox" class="form-check-input chk-restaurar" data-pk="{{ b.pk }}" data-descripcion="{{ b.descripcion|escapejs }}">
+          </td>
+          {% endif %}
           <td class="text-nowrap">{{ b.clave_unica }}</td>
           <td class="text-nowrap">{{ b.numero_identificacion|default:"—" }}</td>
           <td style="min-width:260px;">{{ b.descripcion }}</td>
@@ -201,7 +321,7 @@
           <td class="text-nowrap">{{ b.servicios|default:"—" }}</td>
 
           <td style="min-width:220px;">{{ b.observaciones|default:"—" }}</td>
-          <td class="text-nowrap">{% if b.siem %}Si{% else %}No{% endif %}</td>
+          <td class="text-nowrap">{{ b.siem|default:"—" }}</td>
           <td style="min-width:220px;">{{ b.descripcion_baja|default:"—" }}</td>
 
           <td class="text-end">
@@ -218,6 +338,7 @@
             {% if b.fecha_baja %}{{ b.fecha_baja|date:"d/m/Y" }}{% else %}—{% endif %}
           </td>
 
+          {% if not es_supervisor %}
           <td class="text-center text-nowrap">
             <!-- Botones ahora abren modal de confirmación centralizado -->
             <button type="button" class="btn btn-sm btn-success btn-open-confirm btn-toggle-restaurar" title="Restablecer a ACTIVO"
@@ -228,6 +349,7 @@
               <i class="fas fa-undo"></i>
             </button>
           </td>
+          {% endif %}
         </tr>
         {% empty %}
         <tr>
@@ -273,7 +395,16 @@
   </div>
   {% endif %}
 
-
+  <div id="restaurar-multiple-panel" class="restaurar-multiple-panel" role="dialog" aria-live="polite">
+    <div class="restaurar-multiple-panel__body">
+      <h5 class="restaurar-multiple-panel__title">Restablecer múltiples bienes</h5>
+      <p class="restaurar-multiple-panel__text">Has seleccionado <span id="restaurar-multiple-count">0</span> bienes. Presioná confirmar para continuar.</p>
+    </div>
+    <div class="restaurar-multiple-panel__actions">
+      <button type="button" id="btn-cancelar-restaurar-multiple" class="restaurar-multiple-panel__button restaurar-multiple-panel__button--cancel">Cancelar</button>
+      <button type="button" id="btn-confirmar-restaurar-multiple" class="restaurar-multiple-panel__button restaurar-multiple-panel__button--confirm" disabled>Confirmar</button>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
@@ -357,35 +488,146 @@
     const btnRestaurarMultiple = document.getElementById('btn-top-restaurar-multiple');
     const selectBienesRestaurar = document.getElementById('select-bienes-restaurar');
     const formRestaurarMultiple = document.getElementById('form-restaurar-multiple');
+    const tableBody = document.querySelector('table.table tbody');
+    const restaurarPanel = document.getElementById('restaurar-multiple-panel');
+    const restaurarCount = document.getElementById('restaurar-multiple-count');
+    const btnCancelarRestaurar = document.getElementById('btn-cancelar-restaurar-multiple');
+    const btnConfirmarRestaurar = document.getElementById('btn-confirmar-restaurar-multiple');
 
-    function saveRestaurarState() {
-      localStorage.setItem(LS_KEY, JSON.stringify(Array.from(bienesParaRestaurar.entries())));
-      updateRestaurarMultipleUI();
+    let restaurarSelectionMode = false;
+
+    function updateModeUI() {
+      if (btnRestaurarMultiple) {
+        const count = bienesParaRestaurar.size;
+        btnRestaurarMultiple.innerHTML = `<i class="fas fa-undo me-1"></i> Restablecer múltiples bienes${count > 0 ? ` (${count})` : ''}`;
+        btnRestaurarMultiple.classList.toggle('active', restaurarSelectionMode);
+      }
+
+      // Apply visual selection mode to the table container (same approach as lista_bienes)
+      const tableContainer = document.querySelector('.table-responsive');
+      if (tableContainer) {
+        tableContainer.classList.toggle('tabla-selection-mode', restaurarSelectionMode || bienesParaRestaurar.size > 0);
+      }
+
+      // Toggle selectable rows and selection-column visibility
+      document.querySelectorAll('#tabla-bienes, table.table tbody tr').forEach(tr => tr.classList.toggle('selectable-row', restaurarSelectionMode));
+      document.querySelectorAll('.seleccion-col').forEach(el => el.classList.toggle('d-none', !restaurarSelectionMode));
+
+      if (restaurarPanel) {
+        restaurarPanel.classList.toggle('restaurar-multiple-panel--visible', restaurarSelectionMode);
+      }
     }
 
     function updateRestaurarMultipleUI() {
       if (!btnRestaurarMultiple) return;
       const count = bienesParaRestaurar.size;
-      if (count > 0) {
-        btnRestaurarMultiple.classList.remove('d-none');
-        btnRestaurarMultiple.innerHTML = `<i class="fas fa-undo me-1"></i> Restablecer bien (${count})`;
-      } else {
-        btnRestaurarMultiple.classList.add('d-none');
+      btnRestaurarMultiple.innerHTML = `<i class="fas fa-undo me-1"></i> Restablecer múltiples bienes${count > 0 ? ` (${count})` : ''}`;
+    }
+
+    function saveRestaurarState() {
+      localStorage.setItem(LS_KEY, JSON.stringify(Array.from(bienesParaRestaurar.entries())));
+      updateRestaurarMultipleUI();
+      updateRowSelectionUI();
+    }
+
+    function updateRowSelectionUI() {
+      document.querySelectorAll('.chk-restaurar').forEach(chk => {
+        const pk = String(chk.dataset.pk);
+        const selected = bienesParaRestaurar.has(pk);
+        chk.checked = selected;
+        const tr = chk.closest('tr');
+        if (tr) {
+          tr.classList.toggle('seleccionado-restaurar', selected);
+        }
+      });
+      if (restaurarCount) {
+        restaurarCount.textContent = bienesParaRestaurar.size;
       }
+      if (btnConfirmarRestaurar) {
+        btnConfirmarRestaurar.disabled = bienesParaRestaurar.size < 2;
+      }
+      updateModeUI();
+    }
+
+    function toggleRestaurarSelection(pk) {
+      if (bienesParaRestaurar.has(pk)) {
+        bienesParaRestaurar.delete(pk);
+      } else {
+        bienesParaRestaurar.set(pk, true);
+      }
+      saveRestaurarState();
     }
 
     // Renderizar selecciones al cargar la página
     if (esAdmin) {
-      document.querySelectorAll('.btn-toggle-restaurar').forEach(btn => {
-        const pk = btn.getAttribute('data-pk');
-        if (bienesParaRestaurar.has(pk)) {
-          const tr = btn.closest('tr');
-          if (tr) {
-            tr.classList.add('seleccionado-restaurar');
+      restaurarSelectionMode = bienesParaRestaurar.size > 0;
+      updateRestaurarMultipleUI();
+      updateRowSelectionUI();
+      updateModeUI();
+    }
+
+    if (btnRestaurarMultiple) {
+      btnRestaurarMultiple.addEventListener('click', function() {
+        // If not in selection mode, enable it. If already in selection mode:
+        // - keep it active when there are selected items (don't hide the panel)
+        // - allow disabling only when nothing is selected
+        if (!restaurarSelectionMode) {
+          restaurarSelectionMode = true;
+        } else {
+          if (bienesParaRestaurar.size > 0) {
+            // keep active and refresh UI
+            updateRestaurarMultipleUI();
+          } else {
+            restaurarSelectionMode = false;
           }
         }
+        updateModeUI();
       });
-      updateRestaurarMultipleUI();
+    }
+
+    if (btnCancelarRestaurar) {
+      btnCancelarRestaurar.addEventListener('click', function() {
+        // Clear selection state and persisted storage then restore UI to normal
+        restaurarSelectionMode = false;
+        bienesParaRestaurar.clear();
+        try { localStorage.removeItem(LS_KEY); } catch (err) {}
+        if (selectBienesRestaurar) selectBienesRestaurar.innerHTML = '';
+        updateRowSelectionUI();
+        updateModeUI();
+      });
+    }
+
+    if (btnConfirmarRestaurar) {
+      btnConfirmarRestaurar.addEventListener('click', function() {
+        if (bienesParaRestaurar.size < 2) return;
+        showRestaurarModal();
+      });
+    }
+
+    document.addEventListener('change', function(e) {
+      if (!esAdmin) return;
+      if (e.target.classList && e.target.classList.contains('chk-restaurar')) {
+        const pk = String(e.target.dataset.pk);
+        if (e.target.checked) {
+          bienesParaRestaurar.set(pk, true);
+        } else {
+          bienesParaRestaurar.delete(pk);
+        }
+        saveRestaurarState();
+      }
+    });
+
+    if (tableBody) {
+      tableBody.addEventListener('click', function(event) {
+        if (!esAdmin || !restaurarSelectionMode) return;
+        if (event.target.closest('.btn-open-confirm')) return;
+        if (event.target.closest('a, button, input, select, textarea, label')) return;
+        const row = event.target.closest('tr');
+        if (!row) return;
+        const checkbox = row.querySelector('.chk-restaurar');
+        if (!checkbox) return;
+        toggleRestaurarSelection(String(checkbox.dataset.pk));
+      });
     }
 
     function showRestaurarModal() {
@@ -401,7 +643,11 @@
           bienesParaRestaurar.forEach((_, pk_val) => {
             selectBienesRestaurar.innerHTML += `<option value="${pk_val}" selected></option>`;
           });
+          // Clear selection mode and persisted state before submitting so UI returns to normal
+          bienesParaRestaurar.clear();
           localStorage.removeItem(LS_KEY);
+          restaurarSelectionMode = false;
+          updateModeUI();
           formRestaurarMultiple.submit();
         }
       };
@@ -444,36 +690,15 @@
     document.body.addEventListener('click', function(e){
       const btn = e.target.closest('.btn-open-confirm');
       if (!btn) return;
-      
-      const pk = btn.getAttribute('data-pk');
-      if (esAdmin && btn.classList.contains('btn-toggle-restaurar')) {
+
+      // If restore-multiple mode is active, block individual restore actions
+      if (restaurarSelectionMode) {
         e.preventDefault();
         e.stopPropagation();
-        
-        const tr = btn.closest('tr');
-        
-        if (bienesParaRestaurar.has(pk)) {
-          // Deseleccionar
-          bienesParaRestaurar.delete(pk);
-          if (tr) {
-            tr.classList.remove('seleccionado-restaurar');
-          }
-        } else {
-          if (bienesParaRestaurar.size >= 20) {
-            showRestaurarModal();
-            return;
-          }
-          // Seleccionar
-          bienesParaRestaurar.set(pk, true);
-          if (tr) {
-            tr.classList.add('seleccionado-restaurar');
-          }
-        }
-        saveRestaurarState();
+        try { alert('Desactivá "Restablecer múltiples bienes" para operar individualmente.'); } catch (err) {}
         return;
       }
 
-      // Comportamiento original si no es toggle
       const action = btn.getAttribute('data-action');
       const title = btn.getAttribute('data-title') || 'Confirmar';
       const message = btn.getAttribute('data-message') || '';
@@ -488,14 +713,21 @@
     document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape' && modal.style.display === 'flex') closeModal(); });
     modal.addEventListener('click', function(ev){ if (ev.target === modal) closeModal(); });
 
-    // Abrir modal de restauracion multiple desde el boton superior
-    if (btnRestaurarMultiple && formRestaurarMultiple && selectBienesRestaurar) {
-      btnRestaurarMultiple.addEventListener('click', function() {
-        showRestaurarModal();
-      });
-    }
+    // Clear persisted restore-selection when navigating to another tab (visibility change)
+    // Do NOT apply on search filter to preserve accumulated selection while filtering
+    window.addEventListener('visibilitychange', function() {
+      if (document.hidden && restaurarSelectionMode) {
+        try { localStorage.removeItem(LS_KEY); } catch (err) {}
+        bienesParaRestaurar.clear();
+        restaurarSelectionMode = false;
+        if (selectBienesRestaurar) selectBienesRestaurar.innerHTML = '';
+        updateRowSelectionUI();
+        updateModeUI();
+      }
+    });
 
   });
 })();
+
 </script>
 {% endblock %}

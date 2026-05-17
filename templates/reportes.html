@@ -6,40 +6,42 @@
 <div class="container py-4">
   <div class="d-flex flex-column gap-3 mb-4">
     <h2 class="m-0">Reportes de Bienes Patrimoniales</h2>
-    <form method="get" class="d-flex align-items-start gap-2 w-100" style="min-height: 38px; height: auto;">
-      <!-- Buscador de texto dinámico -->
-      <div style="width: 25%; height: 38px;">
-        <input type="search" name="q" value="{{ q|default:'' }}" class="form-control auto-submit"
-               placeholder="Descripción, ID, servicio..." style="height: 38px; font-family: var(--font-roboto); font-size: 14px;">
+    <form method="get" class="d-flex align-items-center gap-2 w-100" style="min-height: 38px; height: auto;">
+      <div class="d-flex align-items-center gap-2" style="flex: 1;">
+        <!-- Buscador de texto dinámico -->
+        <div style="width: 35%; height: 38px;">
+          <input type="search" name="q" value="{{ q|default:'' }}" class="form-control auto-submit"
+                 placeholder="Descripción, ID..." style="height: 38px; font-family: var(--font-roboto); font-size: 14px;">
+        </div>
+
+        <!-- Desplegable de horas - Tamaño más chico -->
+        <div style="width: 20%; height: 38px;">
+          <select name="scope" class="form-select form-select-sm" style="width: 100%; height: 38px; font-family: var(--font-roboto); font-size: 14px;">
+            <option value="24h" {% if scope == '24h' %}selected{% endif %}>Últimas 24 h</option>
+            <option value="12h" {% if scope == '12h' %}selected{% endif %}>Últimas 12 h</option>
+            <option value="6h"  {% if scope == '6h'  %}selected{% endif %}>Últimas 6 h</option>
+            <option value="all" {% if scope == 'all' %}selected{% endif %}>Historial</option>
+          </select>
+        </div>
+
+        <!-- Desplegable de servicios con Select2 -->
+        <div style="width: 45%; min-height: 38px; height: auto;">
+          <select name="servicio" id="filtro-servicio" class="form-select" multiple>
+            {% for s in todos_servicios %}
+            <option value="{{ s }}" {% if s in servicios_seleccionados %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
       </div>
 
-      <!-- Desplegable de horas - Tamaño más chico -->
-      <div style="width: 15%; height: 38px;">
-        <select name="scope" class="form-select form-select-sm" style="width: 100%; height: 38px; font-family: var(--font-roboto); font-size: 14px;">
-          <option value="24h" {% if scope == '24h' %}selected{% endif %}>Últimas 24 h</option>
-          <option value="12h" {% if scope == '12h' %}selected{% endif %}>Últimas 12 h</option>
-          <option value="6h"  {% if scope == '6h'  %}selected{% endif %}>Últimas 6 h</option>
-          <option value="all" {% if scope == 'all' %}selected{% endif %}>Historial</option>
-        </select>
-      </div>
-
-      <!-- Desplegable de servicios con Select2 -->
-      <div style="width: 25%; min-height: 38px; height: auto;">
-        <select name="servicio" id="filtro-servicio" class="form-select" multiple>
-          {% for s in todos_servicios %}
-          <option value="{{ s }}" {% if s in servicios_seleccionados %}selected{% endif %}>{{ s }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <!-- Botones Institucionales -->
-      <div class="btn-inst-group" style="height: 38px;">
-        <a class="btn-inst-primary" style="height: 38px; display: inline-flex; align-items: center; justify-content: center;"
+      <!-- Botones Institucionales alineados a la derecha -->
+      <div class="btn-inst-group ms-auto d-flex gap-2" style="height: 38px;">
+        <a class="btn-inst-primary" style="height: 38px; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center;"
            href="{% url 'reportes_pdf' %}?scope={{ scope|default:'24h' }}&q={{ q|default:'' }}{% for s in servicios_seleccionados %}&servicio={{ s }}{% endfor %}">
           <i class="fa-solid fa-file-pdf"></i>
           <span>Exportar PDF</span>
         </a>
-        <a class="btn-inst-primary" style="height: 38px; display: inline-flex; align-items: center; justify-content: center;"
+        <a class="btn-inst-primary" style="height: 38px; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center;"
            href="{% url 'registro_pdf' %}?scope={{ scope|default:'24h' }}">
           <i class="fa-solid fa-clipboard-list"></i>
           <span>Registro PDF</span>
@@ -61,7 +63,7 @@
           <th>Estado</th>
           <th style="width: 120px; text-align: center;">Fecha Alta</th>
           <th style="width: 120px; text-align: center;">Fecha Baja</th>
-          <th class="text-end">Valor</th>
+          <th class="text-center">Valor</th>
         </tr>
       </thead>
       <tbody>
@@ -77,7 +79,7 @@
           <td class="text-nowrap" style="width: 120px; text-align: center;">
             {% if b.fecha_baja %}{{ b.fecha_baja|date:"d/m/Y" }}{% else %}—{% endif %}
           </td>
-          <td class="text-end">
+          <td class="text-center">
             {% if b.valor_adquisicion %}
               ${{ b.valor_adquisicion|floatformat:0|intcomma }}
             {% else %}—{% endif %}
@@ -132,49 +134,83 @@
 
   <style>
     /* Estilos para que Select2 combine con el diseño institucional */
+    /* Reset total y limpieza de Select2 - Solución Flexbox Coordinada */
     .select2-container--default .select2-selection--multiple {
-      border: 1px solid var(--border-color) !important;
-      border-radius: 6px !important;
-      min-height: 38px !important;
-      height: auto !important;
-      display: flex !important;
-      align-items: center !important;
-      background-color: var(--input-bg) !important;
-      padding: 2px 4px !important;
-    }
-    .select2-container--default.select2-container--focus .select2-selection--multiple {
-      border-color: var(--primary-turquesa) !important;
-      box-shadow: 0 0 0 2px rgba(0, 174, 195, 0.25) !important;
-    }
-    .select2-container--default .select2-selection--multiple .select2-selection__choice {
-      background-color: #00aec3 !important;
-      border: none !important;
-      color: #fff !important;
-      border-radius: 4px !important;
-      padding: 2px 6px !important;
-      font-family: 'Roboto', sans-serif !important;
-      font-size: 12px !important;
-      margin: 2px !important;
-      display: inline-flex !important;
-      align-items: center !important;
-    }
-    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-      color: #fff !important;
-      margin-right: 5px !important;
-    }
-    .select2-container--default .select2-search--inline .select2-search__field {
-      margin-top: 0 !important;
-      height: 28px !important;
-      font-family: var(--font-roboto) !important;
-      font-size: 13px !important;
-      color: var(--input-text) !important;
-    }
-    .select2-container--default .select2-selection--multiple .select2-selection__rendered {
       display: flex !important;
       flex-wrap: wrap !important;
       align-items: center !important;
-      gap: 4px !important;
+      min-height: 38px !important;
+      height: auto !important;
       padding: 0 8px !important;
+      background-color: var(--input-bg) !important;
+      border: 1px solid var(--border-color) !important;
+      border-radius: 6px !important;
+      direction: ltr !important;
+    }
+    
+    .select2-container--default .select2-selection--multiple .select2-selection__rendered {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      width: auto !important;
+      flex: 0 1 auto !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      gap: 4px !important;
+      text-align: left !important;
+      direction: ltr !important;
+    }
+
+    /* Estilo de los servicios seleccionados (sin "sub-cuadro" pesado) */
+    .select2-container--default .select2-selection--multiple .select2-selection__choice {
+      display: flex !important;
+      align-items: center !important;
+      float: none !important;
+      background-color: transparent !important;
+      border: 1px solid var(--primary-turquesa) !important;
+      color: var(--primary-turquesa) !important;
+      margin: 2px 4px 2px 0 !important;
+      padding: 1px 6px !important;
+      font-size: 13px !important;
+    }
+
+    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+      color: var(--primary-turquesa) !important;
+      margin-right: 5px !important;
+      border: none !important;
+    }
+
+    .select2-container--default .select2-search--inline {
+      flex: 1 !important;
+      display: flex !important;
+      margin: 0 !important;
+      min-width: 120px !important;
+    }
+
+    .select2-container--default .select2-search--inline .select2-search__field {
+      width: 100% !important;
+      height: 34px !important;
+      margin: 0 !important;
+      border: none !important;
+      outline: none !important;
+      background: transparent !important;
+      font-family: var(--font-roboto) !important;
+      font-size: 14px !important;
+      color: var(--input-text) !important;
+      text-align: left !important;
+      direction: ltr !important;
+    }
+
+    .select2-container--default .select2-search--inline .select2-search__field::placeholder {
+      text-align: left !important;
+      color: var(--text-muted) !important;
+      opacity: 0.7;
+    }
+
+    /* Forzar alineación en todos los niveles */
+    .select2-container--default .select2-selection--multiple *,
+    .select2-container--default .select2-search--inline * {
+      text-align: left !important;
+      direction: ltr !important;
     }
   </style>
 

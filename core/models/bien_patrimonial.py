@@ -101,7 +101,14 @@ class BienPatrimonial(models.Model):
 
     servicios = models.CharField(max_length=200, blank=True, verbose_name="Servicios")
     observaciones = models.TextField(blank=True, null=True, verbose_name="Observaciones")
-    siem = models.BooleanField(null=True, blank=True, default=None, verbose_name="SIEM")
+    # SIEM (Si/No)
+    siem = models.CharField(
+        max_length=2,
+        choices=[("Si", "Si"), ("No", "No")],
+        null=True,
+        blank=True,
+        verbose_name="SIEM"
+    )
 
     # --- Campos de BAJA ---
     fecha_baja = models.DateField(
@@ -112,6 +119,14 @@ class BienPatrimonial(models.Model):
     )
     descripcion_baja = models.TextField(
         blank=True, verbose_name="Descripción de baja"
+    )
+
+    # --- Auditoría ---
+    fecha_registro = models.DateTimeField(
+        auto_now_add=True,
+        null=True,
+        blank=True,
+        verbose_name="Fecha de Registro en Sistema"
     )
 
     class Meta:

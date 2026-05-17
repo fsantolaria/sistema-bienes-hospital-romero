@@ -26,7 +26,7 @@
   <table>
     <thead>
       <tr>
-        <th>ID</th>
+        <th>Clave</th>
         <th>Descripción</th>
         <th>Servicios</th>
         <th>Estado</th>
@@ -38,7 +38,7 @@
     <tbody>
       {% for b in bienes %}
       <tr>
-        <td class="text-nowrap">{{ b.pk }}</td>
+        <td class="text-nowrap">{{ b.clave_unica|default:"—" }}</td>
         <td>{{ b.descripcion|default:"—" }}</td>
         <td class="text-nowrap">{{ b.servicios|default:"—" }}</td>
         <td class="text-nowrap">{{ b.get_estado_display|default:b.estado|default:"—" }}</td>
