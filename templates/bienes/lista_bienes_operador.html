@@ -100,8 +100,8 @@
                 {% for b in bienes %}
                 <tr>
                     <td class="text-nowrap">{{ b.clave_unica }}</td>
-                    <td class="text-nowrap">{{ b.numero_identificacion|default:"—" }}</td>
-                    <td style="min-width:260px;">{{ b.descripcion }}</td>
+                    <td style="max-width:120px;">{{ b.numero_identificacion|default:"—" }}</td>
+                    <td style="min-width:180px; max-width:250px;">{{ b.descripcion }}</td>
                     <td class="text-center">{{ b.cantidad }}</td>
                     <td class="text-nowrap">{{ b.expediente.numero_expediente|default:"—" }}</td>
                     <td class="text-nowrap">
@@ -150,8 +150,8 @@
                             {% endif %}
                         {% endwith %}
                     </td>
-                    <td class="text-nowrap">{{ b.servicios|default:"—" }}</td>
-                    <td style="min-width:220px;">{{ b.observaciones|default:"—" }}</td>
+                    <td style="min-width:120px; max-width:180px;">{{ b.servicios|default:"—" }}</td>
+                    <td style="min-width:150px; max-width:200px;">{{ b.observaciones|default:"—" }}</td>
                     <td class="text-nowrap">{{ b.siem|default:"—" }}</td>
                     <td class="text-end">
                         {% if b.valor_adquisicion %}
