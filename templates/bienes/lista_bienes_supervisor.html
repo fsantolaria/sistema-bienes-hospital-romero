@@ -1,162 +1,177 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Lista de Bienes — Supervisor{% endblock %}
-
 {% block content %}
-<div class="container-fluid mt-4">
-
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <div>
-      <h4 class="mb-0">
-        <i class="bi bi-list-ul me-2 text-primary"></i>Lista de Bienes Patrimoniales
-      </h4>
-      <small class="text-muted">Vista de solo lectura · Rol: Supervisor</small>
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="m-0">Lista de Bienes</h3>
+    <div class="d-flex gap-2">
+      <a class="btn-inst-danger" href="{% url 'lista_baja_bienes' %}">
+        <i class="fa-solid fa-trash me-1"></i> Lista de bajas
+      </a>
+      <a class="btn btn-warning text-dark" href="#" style="pointer-events:none; opacity:.8;" aria-disabled="true">
+        <i class="bi bi-eye me-1"></i> Solo lectura
+      </a>
     </div>
-    <span class="badge bg-warning text-dark px-3 py-2">
-      <i class="bi bi-eye me-1"></i> Solo lectura
-    </span>
   </div>
 
-  <form id="filtros-form" method="get" class="card border-0 shadow-sm p-3 mb-3">
-    <div class="row g-2 align-items-end">
-      <div class="col-md-4">
-        <label class="form-label small text-muted mb-1">Buscar</label>
-        <div class="input-group">
-          <span class="input-group-text"><i class="bi bi-search"></i></span>
-          <input type="text" name="q" value="{{ q }}" class="form-control auto-submit"
-                 placeholder="Clave, descripción, serie…">
+  <form id="filtros-form" method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-md-4">
+      <label class="form-label">Buscar</label>
+      <input type="search" name="q" value="{{ q }}" class="form-control auto-submit"
+             placeholder="Descripción, ID, servicio...">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Ordenar</label>
+      <select name="orden" class="form-select auto-submit">
+        <option value="-fecha">Más recientes</option>
+        <option value="fecha">Más antiguos</option>
+        <option value="-precio">Precio ↓</option>
+        <option value="precio">Precio ↑</option>
+      </select>
+    </div>
+    <div class="col-auto d-flex align-items-end gap-2">
+      <button class="btn-inst-filter" type="button"
+              data-bs-toggle="collapse" data-bs-target="#filtrosBox"
+              aria-expanded="false" aria-controls="filtrosBox">
+        <i class="fas fa-sliders-h"></i> Filtros
+      </button>
+      <a class="btn-inst-clear" href="{% url 'lista_bienes_supervisor' %}">
+        <i class="fas fa-times"></i> Limpiar
+      </a>
+    </div>
+
+    <div class="col-12 collapse mt-3" id="filtrosBox">
+      <div class="row g-2">
+        <div class="col-md-3">
+          <label class="form-label">Estado</label>
+          <select name="f_estado" class="form-select auto-submit">
+            <option value="">Todos</option>
+            <option value="ACTIVO"        {% if request.GET.f_estado == "ACTIVO" %}selected{% endif %}>Activo</option>
+            <option value="BAJA"          {% if request.GET.f_estado == "BAJA" %}selected{% endif %}>Baja</option>
+            <option value="INACTIVO"      {% if request.GET.f_estado == "INACTIVO" %}selected{% endif %}>Inactivo</option>
+            <option value="MANTENIMIENTO" {% if request.GET.f_estado == "MANTENIMIENTO" %}selected{% endif %}>Mantenimiento</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Origen</label>
+          <select name="f_origen" class="form-select auto-submit">
+            <option value="">Todos</option>
+            <option value="COMPRA"        {% if request.GET.f_origen == "COMPRA" %}selected{% endif %}>Compra</option>
+            <option value="DONACION"      {% if request.GET.f_origen == "DONACION" %}selected{% endif %}>Donación</option>
+            <option value="TRANSFERENCIA" {% if request.GET.f_origen == "TRANSFERENCIA" %}selected{% endif %}>Transferencia</option>
+            <option value="OMISION"       {% if request.GET.f_origen == "OMISION" %}selected{% endif %}>Omisión</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Desde (Alta)</label>
+          <input type="date" name="f_desde" value="{{ request.GET.f_desde }}" class="form-control auto-submit">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Hasta (Alta)</label>
+          <input type="date" name="f_hasta" value="{{ request.GET.f_hasta }}" class="form-control auto-submit">
         </div>
       </div>
-      <div class="col-md-2">
-        <label class="form-label small text-muted mb-1">Estado</label>
-        <select name="f_estado" class="form-select auto-submit">
-          <option value="">Todos</option>
-          <option value="ACTIVO" {% if request.GET.f_estado == "ACTIVO" %}selected{% endif %}>Activo</option>
-          <option value="BAJA" {% if request.GET.f_estado == "BAJA" %}selected{% endif %}>Baja</option>
-          <option value="INACTIVO" {% if request.GET.f_estado == "INACTIVO" %}selected{% endif %}>Inactivo</option>
-          <option value="MANTENIMIENTO" {% if request.GET.f_estado == "MANTENIMIENTO" %}selected{% endif %}>Mantenimiento</option>
-        </select>
-      </div>
-      <div class="col-md-2">
-        <label class="form-label small text-muted mb-1">Origen</label>
-        <select name="f_origen" class="form-select auto-submit">
-          <option value="">Todos</option>
-          <option value="COMPRA" {% if request.GET.f_origen == "COMPRA" %}selected{% endif %}>Compra</option>
-          <option value="DONACION" {% if request.GET.f_origen == "DONACION" %}selected{% endif %}>Donación</option>
-          <option value="TRANSFERENCIA" {% if request.GET.f_origen == "TRANSFERENCIA" %}selected{% endif %}>Transferencia</option>
-          <option value="OMISION" {% if request.GET.f_origen == "OMISION" %}selected{% endif %}>Omisión</option>
-        </select>
-      </div>
-      <div class="col-md-2">
-        <label class="form-label small text-muted mb-1">Desde</label>
-        <input type="date" name="f_desde" value="{{ request.GET.f_desde }}" class="form-control auto-submit">
-      </div>
-      <div class="col-md-2">
-        <label class="form-label small text-muted mb-1">Hasta</label>
-        <input type="date" name="f_hasta" value="{{ request.GET.f_hasta }}" class="form-control auto-submit">
-      </div>
-      <div class="col-12 d-flex gap-2">
-        <button type="submit" class="btn btn-primary btn-sm px-4">
-          <i class="bi bi-filter me-1"></i>Filtrar
-        </button>
-        <a href="{% url 'lista_bienes_supervisor' %}" class="btn btn-outline-secondary btn-sm">
-          <i class="bi bi-x-circle me-1"></i>Limpiar
-        </a>
-        <a href="{% url 'lista_baja_bienes' %}" class="btn btn-danger btn-sm px-4 ms-auto">
-          <i class="bi bi-trash me-1"></i> Ver bienes de baja
-        </a>
-      </div>
+    </div>
+
+    <div class="col-12 mt-2" style="font-family: var(--font-roboto); color: var(--secondary-gris); font-size: 14px;">
+      {% if q %}Mostrando resultados para: <strong>{{ q }}</strong> · {% endif %}
+      Mostrando {{ page_obj.paginator.count }} bienes en total
     </div>
   </form>
-  <div id="bienes-container">
 
-
-  <div class="card border-0 shadow-sm">
-    <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
-        <thead class="table-light">
-          <tr>
-            <th>Fecha alta</th>
-            <th>Clave única</th>
-            <th>Descripción</th>
-            <th>Servicios</th>
-            <th>Origen</th>
-            <th>Estado</th>
-            <th>Valor</th>
-            <th>Expediente</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for bien in bienes %}
-          <tr>
-            <td class="text-nowrap">
-              {% if bien.fecha_adquisicion %}{{ bien.fecha_adquisicion|date:"d/m/Y" }}{% else %}<span class="text-muted">—</span>{% endif %}
-            </td>
-            <td><code class="text-primary">{{ bien.clave_unica|default:"—" }}</code></td>
-            <td>
-              <div class="fw-semibold">{{ bien.descripcion|default:"—"|truncatechars:60 }}</div>
-              {% if bien.numero_serie %}<small class="text-muted">Serie: {{ bien.numero_serie }}</small>{% endif %}
-            </td>
-            <td>{{ bien.servicios|default:"—" }}</td>
-            <td>
-              {% if bien.origen %}
-                <span class="badge bg-light text-dark border">{{ bien.get_origen_display|default:bien.origen }}</span>
-              {% else %}<span class="text-muted">—</span>{% endif %}
-            </td>
-            <td>
-              {% if bien.estado == "ACTIVO" %}<span class="badge bg-success">Activo</span>
-              {% elif bien.estado == "BAJA" %}<span class="badge bg-danger">Baja</span>
-              {% elif bien.estado == "INACTIVO" %}<span class="badge bg-secondary">Inactivo</span>
-              {% elif bien.estado == "MANTENIMIENTO" %}<span class="badge bg-warning text-dark">Mantenimiento</span>
-              {% else %}<span class="text-muted">—</span>{% endif %}
-            </td>
-            <td class="text-end text-nowrap">
-              {% if bien.valor_adquisicion %}${{ bien.valor_adquisicion|floatformat:0 }}{% else %}<span class="text-muted">—</span>{% endif %}
-            </td>
-            <td>
-              {% if bien.expediente %}<small>{{ bien.expediente.numero_expediente }}</small>{% else %}<span class="text-muted">—</span>{% endif %}
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="8" class="text-center text-muted py-5">
-              <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-              No se encontraron bienes con los filtros aplicados.
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
-    {% if is_paginated %}
-    <div class="card-footer bg-white d-flex justify-content-between align-items-center">
-      <small class="text-muted">
-        Página {{ page_obj.number }} de {{ paginator.num_pages }}
-        · {{ paginator.count }} resultado{% if paginator.count != 1 %}s{% endif %}
-      </small>
-      <nav>
-        <ul class="pagination pagination-sm mb-0">
-          {% if prev_page %}<li class="page-item"><a class="page-link" href="?page={{ prev_page }}&{{ querystring }}"><i class="bi bi-chevron-left"></i></a></li>{% endif %}
-          {% for p in page_range %}
-            {% if p == "…" %}<li class="page-item disabled"><span class="page-link">…</span></li>
-            {% elif p == page_obj.number %}<li class="page-item active"><span class="page-link">{{ p }}</span></li>
-            {% else %}<li class="page-item"><a class="page-link" href="?page={{ p }}&{{ querystring }}">{{ p }}</a></li>
-            {% endif %}
-          {% endfor %}
-          {% if next_page %}<li class="page-item"><a class="page-link" href="?page={{ next_page }}&{{ querystring }}"><i class="bi bi-chevron-right"></i></a></li>{% endif %}
-        </ul>
-      </nav>
-    </div>
-    {% endif %}
+  <div class="table-responsive">
+    <table class="table table-sm table-bordered align-middle">
+      <thead class="table-light text-center">
+        <tr>
+          <th>Fecha Alta</th>
+          <th>Clave Única</th>
+          <th>Descripción</th>
+          <th>Servicios</th>
+          <th>Origen</th>
+          <th>Estado</th>
+          <th>Valor</th>
+          <th>Expediente</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for bien in bienes %}
+        <tr>
+          <td class="text-nowrap">
+            {% if bien.fecha_adquisicion %}{{ bien.fecha_adquisicion|date:"d/m/Y" }}{% else %}<span class="text-muted">—</span>{% endif %}
+          </td>
+          <td class="text-nowrap"><code class="text-primary">{{ bien.clave_unica|default:"—" }}</code></td>
+          <td style="min-width:260px;">
+            <div class="fw-semibold">{{ bien.descripcion|default:"—"|truncatechars:60 }}</div>
+            {% if bien.numero_serie %}<small class="text-muted">Serie: {{ bien.numero_serie }}</small>{% endif %}
+          </td>
+          <td>{{ bien.servicios|default:"—" }}</td>
+          <td class="text-nowrap">
+            {% if bien.origen %}
+              <span class="badge bg-light text-dark border">{{ bien.get_origen_display|default:bien.origen }}</span>
+            {% else %}<span class="text-muted">—</span>{% endif %}
+          </td>
+          <td class="text-nowrap">
+            {% if bien.estado == "ACTIVO" %}<span class="badge bg-success">Activo</span>
+            {% elif bien.estado == "BAJA" %}<span class="badge bg-danger">Baja</span>
+            {% elif bien.estado == "INACTIVO" %}<span class="badge bg-secondary">Inactivo</span>
+            {% elif bien.estado == "MANTENIMIENTO" %}<span class="badge bg-warning text-dark">Mantenimiento</span>
+            {% else %}<span class="text-muted">—</span>{% endif %}
+          </td>
+          <td class="text-end text-nowrap">
+            {% if bien.valor_adquisicion %}${{ bien.valor_adquisicion|floatformat:0 }}{% else %}<span class="text-muted">—</span>{% endif %}
+          </td>
+          <td>
+            {% if bien.expediente %}<small>{{ bien.expediente.numero_expediente }}</small>{% else %}<span class="text-muted">—</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center text-muted py-5">
+            No se encontraron bienes con los filtros aplicados.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 
+  {% if is_paginated %}
+  <div class="pagination-container">
+    <nav aria-label="Paginación de bienes">
+      <ul class="pagination pagination-sm">
+        {% with qs_pref=querystring|default_if_none:""|add:"&" %}
+        <li class="page-item {% if not prev_page %}disabled{% endif %}">
+          <a class="page-link" href="?{{ qs_pref }}page=1">Primera</a>
+        </li>
+        <li class="page-item {% if not prev_page %}disabled{% endif %}">
+          <a class="page-link" href="{% if prev_page %}?{{ qs_pref }}page={{ prev_page }}{% else %}#{% endif %}">Anterior</a>
+        </li>
+        {% for num in page_range %}
+          {% if num == '…' %}
+            <li class="page-item disabled"><span class="page-link">…</span></li>
+          {% elif num == page_obj.number %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% else %}
+            <li class="page-item"><a class="page-link" href="?{{ qs_pref }}page={{ num }}">{{ num }}</a></li>
+          {% endif %}
+        {% endfor %}
+        <li class="page-item {% if not next_page %}disabled{% endif %}">
+          <a class="page-link" href="{% if next_page %}?{{ qs_pref }}page={{ next_page }}{% else %}#{% endif %}">Siguiente</a>
+        </li>
+        <li class="page-item {% if not next_page %}disabled{% endif %}">
+          <a class="page-link" href="?{{ qs_pref }}page={{ paginator.num_pages }}">Última</a>
+        </li>
+        {% endwith %}
+      </ul>
+    </nav>
   </div>
+  {% endif %}
 
   <div class="alert alert-warning d-flex gap-2 align-items-center mt-3" role="alert">
     <i class="bi bi-lock-fill"></i>
     <span>Como <strong>supervisor</strong>, solo podés visualizar los bienes. Las acciones de alta, edición o baja requieren permisos de administrador.</span>
   </div>
-
 </div>
 {% endblock %}
 
@@ -164,72 +179,22 @@
 <script>
 (function () {
   const form = document.querySelector('#filtros-form');
-  const container = document.querySelector('#bienes-container');
-  if (!form || !container) return;
-
-  const updateList = (url) => {
-    container.style.opacity = '0.5';
-    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-      .then(response => response.text())
-      .then(html => {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const newContent = doc.querySelector('#bienes-container').innerHTML;
-        container.innerHTML = newContent;
-        container.style.opacity = '1';
-        window.history.pushState({}, '', url);
-        if (window.initFloatingScrollbar) window.initFloatingScrollbar();
-      })
-      .catch(err => {
-        console.error('Error en fetch:', err);
-        container.style.opacity = '1';
-      });
-  };
-
-  const handleFormSubmit = (e) => {
-    if (e) e.preventDefault();
-    const formData = new FormData(form);
-    const params = new URLSearchParams(formData);
-    const url = `${window.location.pathname}?${params.toString()}`;
-    updateList(url);
-  };
-
+  if (!form) return;
+  const requestSubmit = () => (form.requestSubmit ? form.requestSubmit() : form.submit());
   const debounce = (fn, ms) => {
     let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn.apply(null, args), ms); };
   };
-  const debouncedSubmit = debounce(handleFormSubmit, 400);
-
-  const ensurePageReset = () => {
-    let pageInput = form.querySelector('input[name="page"]');
-    if (!pageInput) {
-      pageInput = document.createElement('input');
-      pageInput.type = 'hidden';
-      pageInput.name = 'page';
-      form.appendChild(pageInput);
-    }
-    pageInput.value = '1';
-  };
-
+  const debouncedSubmit = debounce(requestSubmit, 400);
   form.querySelectorAll('.auto-submit').forEach(el => {
-    const tag = el.tagName;
+    const tag  = el.tagName;
     const type = (el.type || '').toLowerCase();
     if (tag === 'SELECT' || (tag === 'INPUT' && (type === 'date' || type === 'checkbox' || type === 'radio'))) {
-      el.addEventListener('change', () => { ensurePageReset(); handleFormSubmit(); });
+      el.addEventListener('change', () => requestSubmit());
     }
     if (tag === 'INPUT' && (type === 'text' || type === 'search')) {
-      el.addEventListener('input', () => { ensurePageReset(); debouncedSubmit(); });
-    }
-  });
-
-  form.addEventListener('submit', handleFormSubmit);
-
-  document.addEventListener('click', (e) => {
-    const link = e.target.closest('.pagination .page-link');
-    if (link && link.getAttribute('href') && link.getAttribute('href') !== '#') {
-      e.preventDefault();
-      updateList(link.href);
+      el.addEventListener('input', () => debouncedSubmit());
     }
   });
 })();
 </script>
-{% endblock %}
+{% endblock %}

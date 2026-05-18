@@ -370,31 +370,25 @@ def alta_operadores(request):
     if not perms["es_admin"]:
         messages.error(request, "No tienes permisos para acceder a esta página")
         return redirect("home_operador")
+
     if request.method == "POST":
-        nombre = " ".join((request.POST.get("nombre") or "").strip().split())
-        apellido = " ".join((request.POST.get("apellido") or "").strip().split())
-        pais = (request.POST.get("pais") or "").strip()
-        dni = (request.POST.get("dni") or "").strip()
-        email = (request.POST.get("email") or "").strip()
-        estado = (request.POST.get("estado") or "habilitado").strip()
-        password = (request.POST.get("password") or "").strip()
- 
         form = OperadorForm(request.POST)
         if not form.is_valid():
             return render(
                 request,
                 "alta_operadores.html",
-                {"usar_operador_model": False, "form": form},
+                {**perms, "usar_operador_model": False, "form": form},
             )
  
-        if not nombre or not apellido:
-            messages.error(request, "Debés completar nombre y apellido.")
-            return render(
-                request,
-                "alta_operadores.html",
-                {"usar_operador_model": False, "form": form},
-            )
+        nombre = form.cleaned_data.get("nombre")
+        apellido = form.cleaned_data.get("apellido")
+        pais = form.cleaned_data.get("pais")
+        numero_doc = form.cleaned_data.get("dni")
+        email = form.cleaned_data.get("email")
+        estado = form.cleaned_data.get("estado")
+        password = form.cleaned_data.get("password")
  
+<<<<<<< HEAD
         numero_doc = form.cleaned_data["dni"]
 
         nombre   = (request.POST.get("nombre") or "").strip()
@@ -405,6 +399,9 @@ def alta_operadores(request):
         password = (request.POST.get("password") or "").strip()
  
         # Validación DNI duplicado
+=======
+        # Validación extra de DNI (aunque el form ya debería hacerlo, aquí manejamos el modelo Usuario directamente)
+>>>>>>> 460541cab0c2ac93ed6c01188c0b1d55721668a3
         if numero_doc and Usuario.objects.filter(numero_doc=numero_doc).exists():
             messages.error(request, f"Ya existe un operador con el DNI {numero_doc}.")
             return redirect("alta_operadores")
@@ -415,7 +412,7 @@ def alta_operadores(request):
             return render(
                 request,
                 "alta_operadores.html",
-                {"usar_operador_model": False, "form": form},
+                {**perms, "usar_operador_model": False, "form": form},
             )
  
         username = base_username
@@ -468,7 +465,7 @@ def alta_operadores(request):
             return render(
                 request,
                 "alta_operadores.html",
-                {"usar_operador_model": False, "form": form},
+                {**perms, "usar_operador_model": False, "form": form},
             )
  
         Notificacion.objects.create(
@@ -499,14 +496,6 @@ def editar_operador(request, pk):
     operador = get_object_or_404(Operador, pk=pk, is_staff=False)
  
     if request.method == "POST":
-        nombre = " ".join((request.POST.get("nombre") or "").strip().split())
-        apellido = " ".join((request.POST.get("apellido") or "").strip().split())
-        email = (request.POST.get("email") or "").strip()
-        estado = (request.POST.get("estado") or "habilitado").strip()
-        pais = (request.POST.get("pais") or "").strip()
-        dni = (request.POST.get("dni") or "").strip()
-        tipo_usuario = (request.POST.get("tipo_usuario") or "empleado").strip()
-        password = (request.POST.get("password") or "").strip()
  
         form = OperadorForm(request.POST, operador_pk=operador.pk)
         if not form.is_valid():
@@ -514,69 +503,54 @@ def editar_operador(request, pk):
             ctx.update({"operador": operador, "usar_operador_model": False, "form": form})
             return render(request, "editar_operadores.html", ctx)
  
-        numero_doc = form.cleaned_data["dni"]
- 
-        if not nombre or not apellido:
-            messages.error(request, "Debés completar nombre y apellido.")
-            ctx = permisos_context(request.user)
-            ctx.update({"operador": operador, "usar_operador_model": False, "form": form})
-            return render(request, "editar_operadores.html", ctx)
+        nombre = form.cleaned_data.get("nombre")
+        apellido = form.cleaned_data.get("apellido")
+        email = form.cleaned_data.get("email")
+        estado = form.cleaned_data.get("estado")
+        pais = form.cleaned_data.get("pais")
+        numero_doc = form.cleaned_data.get("dni")
+        tipo_usuario = form.cleaned_data.get("tipo_usuario")
+        password = form.cleaned_data.get("password")
  
         hubo_cambio = False
  
         if operador.first_name != nombre:
             operador.first_name = nombre
             hubo_cambio = True
-        else:
-            operador.first_name = nombre
  
         if operador.last_name != apellido:
             operador.last_name = apellido
             hubo_cambio = True
-        else:
-            operador.last_name = apellido
  
         email_normalizado = email or None
         if operador.email != email_normalizado:
             operador.email = email_normalizado
             hubo_cambio = True
-        else:
-            operador.email = email_normalizado
  
         is_active_nuevo = estado == "habilitado"
         if operador.is_active != is_active_nuevo:
             operador.is_active = is_active_nuevo
             hubo_cambio = True
-        else:
-            operador.is_active = is_active_nuevo
  
         if hasattr(operador, "estado"):
             if operador.estado != estado:
                 operador.estado = estado
                 hubo_cambio = True
-            else:
-                operador.estado = estado
  
         if hasattr(operador, "pais"):
             if operador.pais != pais:
                 operador.pais = pais
                 hubo_cambio = True
-            else:
-                operador.pais = pais
  
         if hasattr(operador, "numero_doc"):
             if operador.numero_doc != numero_doc:
                 operador.numero_doc = numero_doc
                 hubo_cambio = True
-            else:
-                operador.numero_doc = numero_doc
  
         if hasattr(operador, "tipo_usuario"):
             if operador.tipo_usuario != tipo_usuario:
                 operador.tipo_usuario = tipo_usuario
                 hubo_cambio = True
-            else:
-                operador.tipo_usuario = tipo_usuario
  
  
         if password:
@@ -1949,6 +1923,11 @@ def lista_baja_bienes(request):
 
     q = (request.GET.get("q") or "").strip()
     orden = request.GET.get("orden") or "-fecha_baja"
+
+    # Supervisores: solo lectura; admins: lectura + acciones
+    perms = permisos_context(request.user)
+    es_supervisor = perms.get('es_supervisor', False)
+
     bienes_baja = BienPatrimonial.objects.select_related("expediente").filter(estado="BAJA")
  
     if q:
@@ -2104,9 +2083,15 @@ def dar_baja_bienes_seleccionados(request):
 @transaction.atomic
 def restablecer_bien(request, pk):
     perms = permisos_context(request.user)
-    if not perms["es_admin"]:
+    if not perms.get("es_admin", False):
         messages.error(request, "No tienes permisos para restablecer bienes.")
         return redirect("lista_baja_bienes")
+
+    # Seguridad extra: el supervisor no debe poder restaurar aunque manipule el frontend
+    if getattr(request.user, "tipo_usuario", None) == "supervisor" and not request.user.is_superuser:
+        messages.error(request, "Como supervisor solo podés visualizar los bienes.")
+        return redirect("lista_bienes_supervisor")
+
  
     bien = get_object_or_404(BienPatrimonial, pk=pk)
     bien.estado = "ACTIVO"
@@ -2136,9 +2121,15 @@ def restablecer_bien(request, pk):
 @transaction.atomic
 def restablecer_bienes_seleccionados(request):
     perms = permisos_context(request.user)
-    if not perms["es_admin"]:
+    if not perms.get("es_admin", False):
         messages.error(request, "No tienes permisos para restablecer bienes.")
         return redirect("lista_baja_bienes")
+
+    # Seguridad extra: el supervisor no debe poder restaurar aunque manipule el frontend
+    if getattr(request.user, "tipo_usuario", None) == "supervisor" and not request.user.is_superuser:
+        messages.error(request, "Como supervisor solo podés visualizar los bienes.")
+        return redirect("lista_bienes_supervisor")
+
  
     pks = request.POST.getlist("bienes_seleccionados_restaurar")
     if not pks:

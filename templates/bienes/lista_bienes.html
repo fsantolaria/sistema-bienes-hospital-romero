@@ -11,28 +11,19 @@
     border-top: 1.5px solid #dc3545 !important;
     border-bottom: 1.5px solid #dc3545 !important;
   }
-  tr.seleccionado-baja td:first-child {
-    border-left: 1.5px solid #dc3545 !important;
-  }
-  tr.seleccionado-baja td:last-child {
-    border-right: 1.5px solid #dc3545 !important;
-  }
+  tr.seleccionado-baja td:first-child { border-left: 1.5px solid #dc3545 !important; }
+  tr.seleccionado-baja td:last-child  { border-right: 1.5px solid #dc3545 !important; }
 
-  .selectable-row td {
-    cursor: pointer;
-  }
+  .selectable-row td { cursor: pointer; }
   .selectable-row td a,
   .selectable-row td button,
   .selectable-row td input,
   .selectable-row td select,
-  .selectable-row td textarea {
-    cursor: default;
-  }
+  .selectable-row td textarea { cursor: default; }
 
   .baja-multiple-panel {
     position: fixed;
-    bottom: 1rem;
-    right: 1rem;
+    bottom: 1rem; right: 1rem;
     z-index: 1080;
     width: min(360px, calc(100% - 2rem));
     background: #fff;
@@ -41,125 +32,69 @@
     box-shadow: 0 18px 45px rgba(0,0,0,0.18);
     overflow: hidden;
     transform: translateY(16px);
-    opacity: 0;
-    visibility: hidden;
+    opacity: 0; visibility: hidden;
     transition: transform .22s ease, opacity .22s ease, visibility .22s ease;
   }
-  .baja-multiple-panel--visible {
-    transform: translateY(0);
-    opacity: 1;
-    visibility: visible;
-  }
+  .baja-multiple-panel--visible { transform: translateY(0); opacity: 1; visibility: visible; }
   .baja-multiple-panel::before {
     content: '';
     position: absolute;
-    top: -8px;
-    right: 22px;
+    top: -8px; right: 22px;
     border-width: 0 8px 8px 8px;
     border-style: solid;
     border-color: transparent transparent #fff transparent;
   }
-  .baja-multiple-panel__body {
-    padding: 16px 18px;
-  }
-  .baja-multiple-panel__title {
-    margin: 0 0 8px;
-    font-size: 16px;
-    font-weight: 700;
-  }
-  .baja-multiple-panel__text {
-    margin: 0;
-    color: #444;
-    font-size: 14px;
-    line-height: 1.5;
-  }
-  .baja-multiple-panel__actions {
-    padding: 12px 16px 16px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    background: #f8f9fa;
-  }
-  .baja-multiple-panel__button {
-    padding: 10px 16px;
-    border-radius: 8px;
-    border: none;
-    font-weight: 600;
-  }
-  .baja-multiple-panel__button--confirm {
-    background: #dc3545;
-    color: #fff;
-  }
-  .baja-multiple-panel__button--cancel {
-    background: transparent;
-    color: #495057;
-    border: 1px solid #ced4da;
-  }
-  .baja-multiple-panel__button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  .baja-multiple-panel__button--confirm:disabled {
-    background: #ccc;
-  }
+  .baja-multiple-panel__body    { padding: 16px 18px; }
+  .baja-multiple-panel__title   { margin: 0 0 8px; font-size: 16px; font-weight: 700; }
+  .baja-multiple-panel__text    { margin: 0; color: #444; font-size: 14px; line-height: 1.5; }
+  .baja-multiple-panel__actions { padding: 12px 16px 16px; display: flex; justify-content: flex-end; gap: 10px; background: #f8f9fa; }
+  .baja-multiple-panel__button  { padding: 10px 16px; border-radius: 8px; border: none; font-weight: 600; }
+  .baja-multiple-panel__button--confirm { background: #dc3545; color: #fff; }
+  .baja-multiple-panel__button--cancel  { background: transparent; color: #495057; border: 1px solid #ced4da; }
+  .baja-multiple-panel__button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .baja-multiple-panel__button--confirm:disabled { background: #ccc; }
 
-  /* Estilos para modo de selección múltiple */
-  .tabla-selection-mode {
-    position: relative;
-  }
+  .tabla-selection-mode { position: relative; }
   .tabla-selection-mode::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(220, 53, 69, 0.03) 0%, rgba(0, 0, 0, 0.02) 100%);
+    background: linear-gradient(135deg, rgba(220,53,69,0.03) 0%, rgba(0,0,0,0.02) 100%);
     pointer-events: none;
     border-radius: inherit;
   }
-  .tabla-selection-mode .table {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(248, 249, 250, 0.8) 100%);
-  }
-  .tabla-selection-mode .table tbody tr:not(.seleccionado-baja) {
-    opacity: 0.65;
-    background-color: rgba(255, 255, 255, 0.6);
-  }
-  .tabla-selection-mode .table tbody tr:not(.seleccionado-baja) td {
-    color: #666;
-  }
-  .tabla-selection-mode .table tbody tr.seleccionado-baja {
-    opacity: 1;
-  }
-  .tabla-selection-mode .table thead {
-    background: linear-gradient(180deg, #fff 0%, #f8f9fa 100%);
-  }
-
+  .tabla-selection-mode .table { background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,249,250,0.8) 100%); }
+  .tabla-selection-mode .table tbody tr:not(.seleccionado-baja) { opacity: 0.65; background-color: rgba(255,255,255,0.6); }
+  .tabla-selection-mode .table tbody tr:not(.seleccionado-baja) td { color: #666; }
+  .tabla-selection-mode .table tbody tr.seleccionado-baja { opacity: 1; }
+  .tabla-selection-mode .table thead { background: linear-gradient(180deg, #fff 0%, #f8f9fa 100%); }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-3">
-    <h3 class="m-0">Lista de Bienes</h3>
-  <!-- BÚSQUEDA + BOTONES -->
+  <h3 class="m-0">Lista de Bienes</h3>
+
   <form id="filtros-form" method="get" class="row g-2 align-items-end mb-3">
     <input type="hidden" name="baja_multiple" id="baja-multiple-hidden" value="{% if request.GET.baja_multiple == '1' %}1{% endif %}">
     <input type="hidden" name="baja_selected_ids" id="baja-selected-hidden" value="{{ request.GET.baja_selected_ids|default_if_none:'' }}">
+
     <div class="col-md-4">
       <label class="form-label">Buscar</label>
       <input type="search" name="q" value="{{ q }}" class="form-control auto-submit"
              placeholder="Descripción, ID, servicio...">
     </div>
-
     <div class="col-md-2">
       <label class="form-label">Ordenar</label>
       <select name="orden" class="form-select auto-submit">
-        <option value="-fecha"  {% if request.GET.orden == "-fecha" %}selected{% endif %}>Más recientes</option>
-        <option value="fecha"   {% if request.GET.orden == "fecha" %}selected{% endif %}>Más antiguos</option>
-        <option value="-precio" {% if request.GET.orden == "-precio" %}selected{% endif %}>Precio ↓</option>
-        <option value="precio"  {% if request.GET.orden == "precio" %}selected{% endif %}>Precio ↑</option>
+        <option value="-fecha"    {% if request.GET.orden == "-fecha" %}selected{% endif %}>Más recientes</option>
+        <option value="fecha"     {% if request.GET.orden == "fecha" %}selected{% endif %}>Más antiguos</option>
+        <option value="-precio"   {% if request.GET.orden == "-precio" %}selected{% endif %}>Precio ↓</option>
+        <option value="precio"    {% if request.GET.orden == "precio" %}selected{% endif %}>Precio ↑</option>
         <option value="servicios" {% if request.GET.orden == "servicios" %}selected{% endif %}>Servicios (A-Z)</option>
       </select>
     </div>
 
-    <!-- BOTONES PRINCIPALES (Filtros movido al inicio, se removió botón Buscar) -->
     <div class="col-auto d-flex align-items-end gap-2">
       <button class="btn-inst-filter" type="button"
               data-bs-toggle="collapse" data-bs-target="#filtrosBox"
@@ -179,21 +114,18 @@
       {% endif %}
     </div>
 
-    <!-- CONTROLES DERECHA -->
     <div class="col ms-auto d-flex align-items-end justify-content-end gap-2">
       {% if es_admin %}
       <button type="button" id="btn-abrir-baja-multiple"
               class="btn btn-warning text-dark d-inline-flex align-items-center justify-content-center"
-              style="height: 38px; font-weight: 700; font-size: 14px; border-radius: 6px; padding: 0 16px; border: none;"
+              style="height:38px; font-weight:700; font-size:14px; border-radius:6px; padding:0 16px; border:none;"
               title="Seleccionar bienes para dar de baja">
         <i class="fas fa-level-down-alt me-2"></i> Baja múltiple
       </button>
       {% endif %}
-
-      <a class="btn-inst-nav" href="{% url 'lista_baja_bienes' %}" title="Ver bienes dados de baja">
+      <a class="btn-inst-danger" href="{% url 'lista_baja_bienes' %}" title="Ver bienes dados de baja">
         <i class="fa-solid fa-trash me-2"></i> Lista de bajas
       </a>
-
       {% if not es_supervisor %}
       <button type="submit" id="btn-confirm-eliminar"
               form="form-eliminar-bienes"
@@ -203,232 +135,195 @@
       {% endif %}
     </div>
 
-    <!-- FILTROS -->
     <div class="col-12 collapse mt-3" id="filtrosBox">
       <div class="row g-2">
         <div class="col-md-3">
           <label class="form-label">Origen</label>
           <select name="f_origen" class="form-select auto-submit">
             <option value="">Todos</option>
-            <option value="COMPRA" {% if request.GET.f_origen == "COMPRA" %}selected{% endif %}>Compra</option>
-            <option value="DONACION" {% if request.GET.f_origen == "DONACION" %}selected{% endif %}>Donación</option>
-            <option value="OMISION" {% if request.GET.f_origen == "OMISION" %}selected{% endif %}>Omisión</option>
+            <option value="COMPRA"        {% if request.GET.f_origen == "COMPRA" %}selected{% endif %}>Compra</option>
+            <option value="DONACION"      {% if request.GET.f_origen == "DONACION" %}selected{% endif %}>Donación</option>
+            <option value="OMISION"       {% if request.GET.f_origen == "OMISION" %}selected{% endif %}>Omisión</option>
             <option value="TRANSFERENCIA" {% if request.GET.f_origen == "TRANSFERENCIA" %}selected{% endif %}>Transferencia</option>
           </select>
         </div>
-
         <div class="col-md-3">
           <label class="form-label">Estado</label>
           <select name="f_estado" class="form-select auto-submit">
             <option value="">Todos</option>
-            <option value="ACTIVO" {% if request.GET.f_estado == "ACTIVO" %}selected{% endif %}>Activo</option>
-            <option value="INACTIVO" {% if request.GET.f_estado == "INACTIVO" %}selected{% endif %}>Inactivo</option>
+            <option value="ACTIVO"        {% if request.GET.f_estado == "ACTIVO" %}selected{% endif %}>Activo</option>
+            <option value="INACTIVO"      {% if request.GET.f_estado == "INACTIVO" %}selected{% endif %}>Inactivo</option>
             <option value="MANTENIMIENTO" {% if request.GET.f_estado == "MANTENIMIENTO" %}selected{% endif %}>Mantenimiento</option>
-            <option value="BAJA" {% if request.GET.f_estado == "BAJA" %}selected{% endif %}>Baja</option>
+            <option value="BAJA"          {% if request.GET.f_estado == "BAJA" %}selected{% endif %}>Baja</option>
           </select>
         </div>
-
         <div class="col-md-3">
           <label class="form-label">Desde (Alta)</label>
           <input type="date" name="f_desde" class="form-control auto-submit" value="{{ request.GET.f_desde }}">
         </div>
-
         <div class="col-md-3">
           <label class="form-label">Hasta (Alta)</label>
           <input type="date" name="f_hasta" class="form-control auto-submit" value="{{ request.GET.f_hasta }}">
         </div>
       </div>
     </div>
+  </form>
 
-    <!-- TOTAL -->
-    </form>
-    <div id="bienes-container">
-      <div class="col-12 mt-2" style="font-family: var(--font-roboto); color: var(--secondary-gris); font-size: 14px;">
-        {% if q %}Mostrando resultados para: <strong>{{ q }}</strong> · {% endif %}
-        Mostrando {{ page_obj.paginator.count }} bienes en total
-      </div>
+  <div id="bienes-container">
+    <div class="col-12 mt-2" style="font-family: var(--font-roboto); color: var(--secondary-gris); font-size: 14px;">
+      {% if q %}Mostrando resultados para: <strong>{{ q }}</strong> · {% endif %}
+      Mostrando {{ page_obj.paginator.count }} bienes en total
+    </div>
 
-  <!-- TABLA DE BIENES -->
-  <form id="form-eliminar-bienes" method="post" action="{% url 'eliminar_bienes_seleccionados' %}">
-    {% csrf_token %}
-    <div class="table-responsive">
-      <table id="tabla-bienes" class="table table-sm table-bordered align-middle">
-        <thead class="table-light text-center">
-          <tr>
-            <th class="seleccion-col d-none" style="width:36px;">
-              <input type="checkbox" id="select-all" class="form-check-input">
-            </th>
-            <th>Clave Única</th>
-            <th>N° ID</th>
-            <th>Descripción</th>
-            <th>Cantidad</th>
-            <th>Expediente</th>
-            <th>N° Compra</th>
-            <th>Cuenta Código</th>
-            <th>Nomenclatura</th>
-            <th>N° Serie</th>
-            <th>Origen</th>
-            <th>Estado</th>
-            <th>Servicios</th>
-            <th>Observaciones</th>
-            <th>SIEM</th>
-            <th>Precio</th>
-            <th>Fecha Alta</th>
-            {% if not es_supervisor %}
-            <th>Acciones</th>
-            {% endif %}
-          </tr>
-        </thead>
-        <tbody>
-          {% for b in bienes %}
-          <tr>
-            <td class="text-center seleccion-col d-none">
-              <input type="checkbox" class="form-check-input chk-bien" name="seleccionados" value="{{ b.pk }}" data-descripcion="{{ b.descripcion|escapejs }}">
-            </td>
-
-            <td class="text-nowrap">{{ b.clave_unica }}</td>
-            <td class="text-nowrap">{{ b.numero_identificacion|default:"—" }}</td>
-            <td style="min-width:260px;">{{ b.descripcion }}</td>
-            <td class="text-center">{{ b.cantidad }}</td>
-            <td class="text-nowrap">{{ b.expediente.numero_expediente|default:"—" }}</td>
-            <td class="text-nowrap">
-              {% if b.numero_compra %}
-                {{ b.numero_compra }}
-              {% elif b.expediente.numero_compra %}
-                {{ b.expediente.numero_compra }}
-              {% else %}
-                —
-              {% endif %}
-            </td>
-            <td class="text-nowrap">{{ b.cuenta_codigo|default:"—" }}</td>
-            <td class="text-nowrap">{{ b.nomenclatura_bienes|default:"—" }}</td>
-            <td class="text-nowrap">{{ b.numero_serie|default:"—" }}</td>
-            <td class="text-nowrap">
-              {% with label=b.get_origen_display|default:b.origen|default:"—" %}
-                {% if b.origen == "COMPRA" %}
-                  <span class="badge bg-primary">{{ label }}</span>
-                {% elif b.origen == "DONACION" %}
-                  <span class="badge bg-success">{{ label }}</span>
-                {% elif b.origen == "OMISION" %}
-                  <span class="badge bg-secondary">{{ label }}</span>
-                {% elif b.origen == "TRANSFERENCIA" %}
-                  <span class="badge bg-info text-white">{{ label }}</span>
-                {% elif b.origen == "__NULL__" or not b.origen %}
-                  <span class="text-muted">{{ label }}</span>
-                {% else %}
-                  <span class="badge bg-light text-dark">{{ label }}</span>
-                {% endif %}
-              {% endwith %}
-            </td>
-            <td class="text-nowrap">
-              {% with label=b.get_estado_display|default:b.estado|default:"—" %}
-                {% if b.estado == "ACTIVO" %}
-                  <span class="badge bg-success">{{ label }}</span>
-                {% elif b.estado == "INACTIVO" %}
-                  <span class="badge bg-secondary">{{ label }}</span>
-                {% elif b.estado == "MANTENIMIENTO" %}
-                  <span class="badge bg-info text-dark">{{ label }}</span>
-                {% elif b.estado == "BAJA" %}
-                  <span class="badge bg-danger text-white">{{ label }}</span>
-                {% elif b.estado == "__NULL__" or not b.estado %}
-                  <span class="text-muted">{{ label }}</span>
-                {% else %}
-                  <span class="badge bg-light text-dark">{{ label }}</span>
-                {% endif %}
-              {% endwith %}
-            </td>
-            <td class="text-nowrap">{{ b.servicios|default:"—" }}</td>
-            <td style="min-width:220px;">{{ b.observaciones|default:"—" }}</td>
-            <td class="text-nowrap">
-              {{ b.siem|default:"—" }}
-            </td>
-            <td class="text-end">
-              {% if b.valor_adquisicion %}
-                ${{ b.valor_adquisicion|floatformat:0|intcomma }}
-              {% else %}
-                —
-              {% endif %}
-            </td>
-            <td class="text-nowrap">
-              {% if b.fecha_adquisicion %}
-                {{ b.fecha_adquisicion|date:"d/m/Y" }}
-              {% else %}
-                —
-              {% endif %}
-            </td>
-
-            {% if not es_supervisor %}
-            <td class="text-center text-nowrap">
-              <a class="btn btn-sm btn-info" href="{% url 'editar_bien' b.pk %}" title="Editar">
-                <i class="fas fa-pen"></i>
-              </a>
+    <form id="form-eliminar-bienes" method="post" action="{% url 'eliminar_bienes_seleccionados' %}">
+      {% csrf_token %}
+      <div class="table-responsive">
+        <table id="tabla-bienes" class="table table-sm table-bordered align-middle">
+          <thead class="table-light text-center">
+            <tr>
+              <th class="seleccion-col d-none" style="width:36px;">
+                <input type="checkbox" id="select-all" class="form-check-input">
+              </th>
+              <th>Clave Única</th>
+              <th>N° ID</th>
+              <th>Descripción</th>
+              <th>Cantidad</th>
+              <th>Expediente</th>
+              <th>N° Compra</th>
+              <th>Cuenta Código</th>
+              <th>Nomenclatura</th>
+              <th>N° Serie</th>
+              <th>Origen</th>
+              <th>Estado</th>
+              <th>Servicios</th>
+              <th>Observaciones</th>
+              <th>SIEM</th>
+              <th>Precio</th>
+              <th>Fecha Alta</th>
+              {% if not es_supervisor %}<th>Acciones</th>{% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in bienes %}
+            <tr>
+              <td class="text-center seleccion-col d-none">
+                <input type="checkbox" class="form-check-input chk-bien" name="seleccionados" value="{{ b.pk }}" data-descripcion="{{ b.descripcion|escapejs }}">
+              </td>
+              <td class="text-nowrap">{{ b.clave_unica }}</td>
+              <td class="text-nowrap">{{ b.numero_identificacion|default:"—" }}</td>
+              <td style="min-width:260px;">{{ b.descripcion }}</td>
+              <td class="text-center">{{ b.cantidad }}</td>
+              <td class="text-nowrap">{{ b.expediente.numero_expediente|default:"—" }}</td>
+              <td class="text-nowrap">
+                {% if b.numero_compra %}{{ b.numero_compra }}
+                {% elif b.expediente.numero_compra %}{{ b.expediente.numero_compra }}
+                {% else %}—{% endif %}
+              </td>
+              <td class="text-nowrap">{{ b.cuenta_codigo|default:"—" }}</td>
+              <td class="text-nowrap">{{ b.nomenclatura_bienes|default:"—" }}</td>
+              <td class="text-nowrap">{{ b.numero_serie|default:"—" }}</td>
+              <td class="text-nowrap">
+                {% with label=b.get_origen_display|default:b.origen|default:"—" %}
+                  {% if b.origen == "COMPRA" %}<span class="badge bg-primary">{{ label }}</span>
+                  {% elif b.origen == "DONACION" %}<span class="badge bg-success">{{ label }}</span>
+                  {% elif b.origen == "OMISION" %}<span class="badge bg-secondary">{{ label }}</span>
+                  {% elif b.origen == "TRANSFERENCIA" %}<span class="badge bg-info text-white">{{ label }}</span>
+                  {% elif b.origen == "__NULL__" or not b.origen %}<span class="text-muted">{{ label }}</span>
+                  {% else %}<span class="badge bg-light text-dark">{{ label }}</span>
+                  {% endif %}
+                {% endwith %}
+              </td>
+              <td class="text-nowrap">
+                {% with label=b.get_estado_display|default:b.estado|default:"—" %}
+                  {% if b.estado == "ACTIVO" %}<span class="badge bg-success">{{ label }}</span>
+                  {% elif b.estado == "INACTIVO" %}<span class="badge bg-secondary">{{ label }}</span>
+                  {% elif b.estado == "MANTENIMIENTO" %}<span class="badge bg-info text-dark">{{ label }}</span>
+                  {% elif b.estado == "BAJA" %}<span class="badge bg-danger text-white">{{ label }}</span>
+                  {% elif b.estado == "__NULL__" or not b.estado %}<span class="text-muted">{{ label }}</span>
+                  {% else %}<span class="badge bg-light text-dark">{{ label }}</span>
+                  {% endif %}
+                {% endwith %}
+              </td>
+              <td class="text-nowrap">{{ b.servicios|default:"—" }}</td>
+              <td style="min-width:220px;">{{ b.observaciones|default:"—" }}</td>
+              <td class="text-nowrap">{{ b.siem|default:"—" }}</td>
+              <td class="text-end">
+                {% if b.valor_adquisicion %}${{ b.valor_adquisicion|floatformat:0|intcomma }}{% else %}—{% endif %}
+              </td>
+              <td class="text-nowrap">
+                {% if b.fecha_adquisicion %}{{ b.fecha_adquisicion|date:"d/m/Y" }}{% else %}—{% endif %}
+              </td>
+              {% if not es_supervisor %}
+              <td class="text-center text-nowrap">
+                <a class="btn btn-sm btn-info" href="{% url 'editar_bien' b.pk %}" title="Editar">
+                  <i class="fas fa-pen"></i>
+                </a>
                 {% if es_admin %}
                 <button type="button" class="btn btn-sm btn-danger ms-1 btn-dar-baja"
-                     data-pk="{{ b.pk }}"
-                     data-action="{% url 'dar_baja_bien' b.pk %}"
-                     data-descripcion="{{ b.descripcion|escapejs }}"
-                     title="Dar de baja">
-                 <i class="fas fa-trash"></i>
+                        data-pk="{{ b.pk }}"
+                        data-action="{% url 'dar_baja_bien' b.pk %}"
+                        data-descripcion="{{ b.descripcion|escapejs }}"
+                        title="Dar de baja">
+                  <i class="fas fa-trash"></i>
                 </button>
                 {% else %}
-                <a href="#"
-                  class="btn btn-sm btn-danger ms-1 btn-dar-baja"
-                  data-pk="{{ b.pk }}"
-                  data-action="{% url 'dar_baja_bien' b.pk %}"
-                  data-descripcion="{{ b.descripcion|escapejs }}"
-                  data-bs-toggle="offcanvas"
-                  data-bs-target="#offcanvasDarBaja"
-                  title="Dar de baja">
+                <a href="#" class="btn btn-sm btn-danger ms-1 btn-dar-baja"
+                   data-pk="{{ b.pk }}"
+                   data-action="{% url 'dar_baja_bien' b.pk %}"
+                   data-descripcion="{{ b.descripcion|escapejs }}"
+                   data-bs-toggle="offcanvas"
+                   data-bs-target="#offcanvasDarBaja"
+                   title="Dar de baja">
                   <i class="fas fa-trash"></i>
                 </a>
                 {% endif %}
-            </td>
+              </td>
+              {% endif %}
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="{% if not es_supervisor %}18{% else %}17{% endif %}" class="text-center text-muted py-4">
+                No hay bienes para mostrar.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </form>
+
+    {% if is_paginated %}
+    <div class="pagination-container">
+      <nav aria-label="Paginación de bienes">
+        <ul class="pagination pagination-sm">
+          {% with qs_pref=querystring|default_if_none:""|add:"&" %}
+          <li class="page-item {% if not prev_page %}disabled{% endif %}">
+            <a class="page-link" href="?{{ qs_pref }}page=1">Primera</a>
+          </li>
+          <li class="page-item {% if not prev_page %}disabled{% endif %}">
+            <a class="page-link" href="{% if prev_page %}?{{ qs_pref }}page={{ prev_page }}{% else %}#{% endif %}">Anterior</a>
+          </li>
+          {% for num in page_range %}
+            {% if num == '…' %}
+              <li class="page-item disabled"><span class="page-link">…</span></li>
+            {% elif num == page_obj.number %}
+              <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% else %}
+              <li class="page-item"><a class="page-link" href="?{{ qs_pref }}page={{ num }}">{{ num }}</a></li>
             {% endif %}
-          </tr>
-          {% empty %}
-          <tr><td colspan="{% if not es_supervisor %}18{% else %}17{% endif %}" class="text-center text-muted py-4">No hay bienes para mostrar.</td></tr>
           {% endfor %}
-        </tbody>
-      </table>
+          <li class="page-item {% if not next_page %}disabled{% endif %}">
+            <a class="page-link" href="{% if next_page %}?{{ qs_pref }}page={{ next_page }}{% else %}#{% endif %}">Siguiente</a>
+          </li>
+          <li class="page-item {% if not next_page %}disabled{% endif %}">
+            <a class="page-link" href="?{{ qs_pref }}page={{ paginator.num_pages }}">Última</a>
+          </li>
+          {% endwith %}
+        </ul>
+      </nav>
     </div>
-  </form>
-
-  <!-- PAGINACIÓN -->
-  {% if is_paginated %}
-  <div class="pagination-container">
-    <nav aria-label="Paginación de bienes">
-      <ul class="pagination pagination-sm">
-        {% with qs_pref=querystring|default_if_none:""|add:"&" %}
-        <li class="page-item {% if not prev_page %}disabled{% endif %}">
-          <a class="page-link" href="?{{ qs_pref }}page=1">Primera</a>
-        </li>
-        <li class="page-item {% if not prev_page %}disabled{% endif %}">
-          <a class="page-link" href="{% if prev_page %}?{{ qs_pref }}page={{ prev_page }}{% else %}#{% endif %}">Anterior</a>
-        </li>
-
-        {% for num in page_range %}
-          {% if num == '…' %}
-            <li class="page-item disabled"><span class="page-link">…</span></li>
-          {% elif num == page_obj.number %}
-            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-          {% else %}
-            <li class="page-item"><a class="page-link" href="?{{ qs_pref }}page={{ num }}">{{ num }}</a></li>
-          {% endif %}
-        {% endfor %}
-
-        <li class="page-item {% if not next_page %}disabled{% endif %}">
-          <a class="page-link" href="{% if next_page %}?{{ qs_pref }}page={{ next_page }}{% else %}#{% endif %}">Siguiente</a>
-        </li>
-        <li class="page-item {% if not next_page %}disabled{% endif %}">
-          <a class="page-link" href="?{{ qs_pref }}page={{ paginator.num_pages }}">Última</a>
-        </li>
-        {% endwith %}
-      </ul>
-    </nav>
+    {% endif %}
   </div>
-  {% endif %}
-  </div>
-
 
   {% include 'bienes/includes/offcanvas_dar_baja.html' %}
 
@@ -448,89 +343,55 @@
 {% block extra_js %}
 <script>
 (function () {
-  // Selección múltiple
-  const btnEliminar = document.getElementById('btn-confirm-eliminar');
-  const selectAll  = document.getElementById('select-all');
-
-  // Preparar OFFCANVAS
-  const esAdmin = {% if es_admin %}true{% else %}false{% endif %};
-  const btnBajaMultiple = document.getElementById('btn-abrir-baja-multiple');
-  let bajaSelectionMode = false;
-
-  const getSelectedItems = () => {
-    return Array.from(selectedIdSet).map(pk => ({
-      pk,
-      desc: selectedItemDescriptions.get(pk) || ''
-    }));
-  };
-
-  const bajaPanel = document.getElementById('baja-multiple-panel');
-  const bajaCount = document.getElementById('baja-multiple-count');
-  const btnCancelarBaja = document.getElementById('btn-cancelar-baja-multiple');
-  const btnConfirmarBaja = document.getElementById('btn-confirmar-baja-multiple');
-
-  const updateBajaPanel = () => {
-    if (!bajaPanel || !bajaCount) return;
-    const selectedItems = getSelectedItems();
-    const count = selectedItems.length;
-    bajaCount.textContent = count;
-    // Mostrar panel cuando está en modo selección, sin importar la cantidad
-    bajaPanel.classList.toggle('baja-multiple-panel--visible', bajaSelectionMode);
-    // Habilitar botón Confirmar solo si hay 2+ items
-    if (btnConfirmarBaja) {
-      btnConfirmarBaja.disabled = count < 2;
-    }
-  };
-
-  const hiddenBajaInput = document.getElementById('baja-multiple-hidden');
-  const hiddenSelectedIdsInput = document.getElementById('baja-selected-hidden');
-
-  const LS_KEY_BAJA_MULTI = 'bienesABajaMultiple_v1';
+  const esAdmin           = {% if es_admin %}true{% else %}false{% endif %};
+  const btnBajaMultiple   = document.getElementById('btn-abrir-baja-multiple');
+  const bajaPanel         = document.getElementById('baja-multiple-panel');
+  const bajaCount         = document.getElementById('baja-multiple-count');
+  const btnCancelarBaja   = document.getElementById('btn-cancelar-baja-multiple');
+  const btnConfirmarBaja  = document.getElementById('btn-confirmar-baja-multiple');
+  const hiddenBajaInput   = document.getElementById('baja-multiple-hidden');
+  const hiddenSelectedIds = document.getElementById('baja-selected-hidden');
+  const LS_KEY            = 'bienesABajaMultiple_v1';
+  let bajaSelectionMode   = false;
 
   const loadPersistedSelection = () => {
     try {
-      const raw = localStorage.getItem(LS_KEY_BAJA_MULTI);
+      const raw = localStorage.getItem(LS_KEY);
       if (!raw) return { ids: new Set(), descriptions: new Map() };
       const saved = JSON.parse(raw);
-      if (!saved || typeof saved !== 'object') return { ids: new Set(), descriptions: new Map() };
       const ids = Array.isArray(saved.ids) ? new Set(saved.ids.map(String)) : new Set();
       const descriptions = saved.descriptions && typeof saved.descriptions === 'object'
         ? new Map(Object.entries(saved.descriptions).map(([k, v]) => [String(k), String(v)]))
         : new Map();
       return { ids, descriptions };
-    } catch (e) {
-      return { ids: new Set(), descriptions: new Map() };
-    }
+    } catch (e) { return { ids: new Set(), descriptions: new Map() }; }
   };
 
   const persistSelection = () => {
     try {
-      const payload = {
+      localStorage.setItem(LS_KEY, JSON.stringify({
         ids: Array.from(selectedIdSet),
         descriptions: Object.fromEntries(selectedItemDescriptions)
-      };
-      localStorage.setItem(LS_KEY_BAJA_MULTI, JSON.stringify(payload));
-    } catch (e) {
-      // noop
-    }
+      }));
+    } catch (e) {}
   };
 
-  const selectedPersisted = loadPersistedSelection();
-  const selectedIdSet = selectedPersisted.ids;
-  const selectedItemDescriptions = selectedPersisted.descriptions;
+  const persisted               = loadPersistedSelection();
+  const selectedIdSet           = persisted.ids;
+  const selectedItemDescriptions= persisted.descriptions;
 
+  const getSelectedItems = () => Array.from(selectedIdSet).map(pk => ({ pk, desc: selectedItemDescriptions.get(pk) || '' }));
   const syncHiddenInputs = () => {
-    if (hiddenSelectedIdsInput) {
-      hiddenSelectedIdsInput.value = Array.from(selectedIdSet).join(',');
-    }
-    if (hiddenBajaInput) {
-      hiddenBajaInput.value = bajaSelectionMode ? '1' : '';
-    }
+    if (hiddenSelectedIds) hiddenSelectedIds.value = Array.from(selectedIdSet).join(',');
+    if (hiddenBajaInput)   hiddenBajaInput.value   = bajaSelectionMode ? '1' : '';
   };
+  const saveSelectionState = () => { syncHiddenInputs(); persistSelection(); };
 
-  const saveSelectionState = () => {
-    syncHiddenInputs();
-    persistSelection();
+  const updateBajaPanel = () => {
+    if (!bajaPanel || !bajaCount) return;
+    bajaCount.textContent = selectedIdSet.size;
+    bajaPanel.classList.toggle('baja-multiple-panel--visible', bajaSelectionMode);
+    if (btnConfirmarBaja) btnConfirmarBaja.disabled = selectedIdSet.size < 2;
   };
 
   const updateSelectionUI = () => {
@@ -538,175 +399,116 @@
       const id = String(chk.value);
       const selected = selectedIdSet.has(id);
       chk.checked = selected;
-      if (selected && chk.dataset.descripcion) {
-        selectedItemDescriptions.set(id, chk.dataset.descripcion);
-      }
+      if (selected && chk.dataset.descripcion) selectedItemDescriptions.set(id, chk.dataset.descripcion);
       const tr = chk.closest('tr');
-      if (!tr) return;
-      tr.classList.toggle('seleccionado-baja', selected);
+      if (tr) tr.classList.toggle('seleccionado-baja', selected);
     });
-
-    const currentSelectAll = document.getElementById('select-all');
-    if (currentSelectAll) {
-      const all = Array.from(document.querySelectorAll('.chk-bien'));
-      currentSelectAll.checked = all.length > 0 && all.every(chk => chk.checked);
-    }
-
+    const sa = document.getElementById('select-all');
+    if (sa) { const all = Array.from(document.querySelectorAll('.chk-bien')); sa.checked = all.length > 0 && all.every(c => c.checked); }
     saveSelectionState();
     updateBajaPanel();
   };
 
   const setBajaSelectionMode = active => {
     bajaSelectionMode = active;
-    if (hiddenBajaInput) {
-      hiddenBajaInput.value = active ? '1' : '';
-    }
-    const tableContainer = document.querySelector('.table-responsive');
-    if (tableContainer) {
-      tableContainer.classList.toggle('tabla-selection-mode', active);
-    }
+    if (hiddenBajaInput) hiddenBajaInput.value = active ? '1' : '';
+    const tc = document.querySelector('.table-responsive');
+    if (tc) tc.classList.toggle('tabla-selection-mode', active);
     if (!active) {
-      selectedIdSet.clear();
-      selectedItemDescriptions.clear();
-      saveSelectionState();
+      selectedIdSet.clear(); selectedItemDescriptions.clear(); saveSelectionState();
       document.querySelectorAll('.chk-bien').forEach(chk => {
         chk.checked = false;
         const tr = chk.closest('tr');
         if (tr) tr.classList.remove('seleccionado-baja');
       });
-      const currentSelectAll = document.getElementById('select-all');
-      if (currentSelectAll) currentSelectAll.checked = false;
+      const sa = document.getElementById('select-all'); if (sa) sa.checked = false;
     }
     document.querySelectorAll('#tabla-bienes tbody tr').forEach(tr => tr.classList.toggle('selectable-row', active));
     updateSelectionUI();
   };
 
-  const tableBody = document.querySelector('#tabla-bienes tbody');
+  window.__bajaIsModeActive   = () => bajaSelectionMode;
+  window.setBajaSelectionMode = setBajaSelectionMode;
+  window.refreshBajaSelection = () => {
+    if (!bajaSelectionMode) return;
+    const tc = document.querySelector('.table-responsive');
+    if (tc) tc.classList.add('tabla-selection-mode');
+    document.querySelectorAll('#tabla-bienes tbody tr').forEach(tr => tr.classList.add('selectable-row'));
+    restoreSelectedRows();
+  };
 
-  // Delegación para Select All
+  document.addEventListener('click', function(event) {
+    if (!bajaSelectionMode) return;
+    const row = event.target.closest('#tabla-bienes tbody tr');
+    if (!row) return;
+    if (event.target.closest('a, button, input, select, textarea, label')) return;
+    const checkbox = row.querySelector('.chk-bien');
+    if (!checkbox) return;
+    const nextChecked = !checkbox.checked;
+    checkbox.checked = nextChecked;
+    const id = String(checkbox.value);
+    if (nextChecked) { selectedIdSet.add(id); if (checkbox.dataset.descripcion) selectedItemDescriptions.set(id, checkbox.dataset.descripcion); }
+    else             { selectedIdSet.delete(id); selectedItemDescriptions.delete(id); }
+    updateSelectionUI();
+  });
+
   document.addEventListener('change', e => {
     if (e.target.id === 'select-all') {
-      const isChecked = e.target.checked;
       document.querySelectorAll('.chk-bien').forEach(chk => {
         const id = String(chk.value);
-        if (isChecked) {
-          selectedIdSet.add(id);
-          if (chk.dataset.descripcion) selectedItemDescriptions.set(id, chk.dataset.descripcion);
-        } else {
-          selectedIdSet.delete(id);
-          selectedItemDescriptions.delete(id);
-        }
+        if (e.target.checked) { selectedIdSet.add(id); if (chk.dataset.descripcion) selectedItemDescriptions.set(id, chk.dataset.descripcion); }
+        else                  { selectedIdSet.delete(id); selectedItemDescriptions.delete(id); }
       });
       updateSelectionUI();
     }
   });
 
   document.addEventListener('change', e => {
-    if (e.target.classList && e.target.classList.contains('chk-bien')) {
-      const id = String(e.target.value);
-      if (e.target.checked) {
-        selectedIdSet.add(id);
-        if (e.target.dataset.descripcion) selectedItemDescriptions.set(id, e.target.dataset.descripcion);
-      } else {
-        selectedIdSet.delete(id);
-        selectedItemDescriptions.delete(id);
-      }
-      updateSelectionUI();
-    }
-  });
-
-  const toggleRowSelection = (event) => {
-    if (!bajaSelectionMode) return;
-    const row = event.target.closest('#tabla-bienes tbody tr');
-    if (!row) return;
-    if (event.target.closest('a, button, input, select, textarea, label')) return;
-
-    const checkbox = row.querySelector('.chk-bien');
-    if (!checkbox) return;
-    const nextChecked = !checkbox.checked;
-    checkbox.checked = nextChecked;
-    const id = String(checkbox.value);
-    if (nextChecked) {
-      selectedIdSet.add(id);
-      if (checkbox.dataset.descripcion) selectedItemDescriptions.set(id, checkbox.dataset.descripcion);
-    } else {
-      selectedIdSet.delete(id);
-      selectedItemDescriptions.delete(id);
-    }
+    if (!e.target.classList.contains('chk-bien')) return;
+    const id = String(e.target.value);
+    if (e.target.checked) { selectedIdSet.add(id); if (e.target.dataset.descripcion) selectedItemDescriptions.set(id, e.target.dataset.descripcion); }
+    else                  { selectedIdSet.delete(id); selectedItemDescriptions.delete(id); }
     updateSelectionUI();
-  };
-
-  document.addEventListener('click', toggleRowSelection);
-
-  // Función global para refrescar tras AJAX
-  window.refreshBajaSelection = () => {
-    if (bajaSelectionMode) {
-      const tableContainer = document.querySelector('.table-responsive');
-      if (tableContainer) tableContainer.classList.add('tabla-selection-mode');
-      document.querySelectorAll('#tabla-bienes tbody tr').forEach(tr => tr.classList.add('selectable-row'));
-      restoreSelectedRows();
-    }
-  };
+  });
 
   if (btnBajaMultiple) {
     btnBajaMultiple.addEventListener('click', function() {
-      // If not in selection mode, enable it. If already in selection mode:
-      // - keep it active when there are selected items (don't hide the panel)
-      // - allow disabling only when nothing is selected
-      if (!bajaSelectionMode) {
-        setBajaSelectionMode(true);
-      } else {
-        if (selectedIdSet.size > 0) {
-          // keep active and refresh UI (do not close panel)
-          updateBajaPanel();
-        } else {
-          setBajaSelectionMode(false);
-        }
-      }
+      if (!bajaSelectionMode) { setBajaSelectionMode(true); }
+      else { selectedIdSet.size > 0 ? updateBajaPanel() : setBajaSelectionMode(false); }
     });
   }
 
   if (btnCancelarBaja) {
     btnCancelarBaja.addEventListener('click', function() {
-      // Clear selection state and persisted storage then restore UI to normal
       setBajaSelectionMode(false);
-      try { localStorage.removeItem(LS_KEY_BAJA_MULTI); } catch (err) {}
-      if (hiddenSelectedIdsInput) hiddenSelectedIdsInput.value = '';
+      try { localStorage.removeItem(LS_KEY); } catch (err) {}
+      if (hiddenSelectedIds) hiddenSelectedIds.value = '';
     });
   }
 
   const filtrosForm = document.querySelector('#filtros-form');
-  if (filtrosForm) {
-    filtrosForm.addEventListener('submit', saveSelectionState);
-  }
+  if (filtrosForm) filtrosForm.addEventListener('submit', saveSelectionState);
 
   const restoreSelectedRows = () => {
-    let ids = [];
-    if (hiddenSelectedIdsInput && hiddenSelectedIdsInput.value) {
-      ids = hiddenSelectedIdsInput.value.split(',').map(id => id.trim()).filter(Boolean);
-    } else {
-      ids = Array.from(selectedIdSet);
-    }
+    let ids = (hiddenSelectedIds && hiddenSelectedIds.value)
+      ? hiddenSelectedIds.value.split(',').map(id => id.trim()).filter(Boolean)
+      : Array.from(selectedIdSet);
     if (!ids.length) return;
     ids.forEach(id => {
       selectedIdSet.add(id);
-      const checkbox = document.querySelector(`.chk-bien[value="${id}"]`);
-      if (checkbox) {
-        checkbox.checked = true;
-        if (checkbox.dataset.descripcion) selectedItemDescriptions.set(id, checkbox.dataset.descripcion);
-        const tr = checkbox.closest('tr');
-        if (tr) tr.classList.add('seleccionado-baja');
+      const chk = document.querySelector(`.chk-bien[value="${id}"]`);
+      if (chk) {
+        chk.checked = true;
+        if (chk.dataset.descripcion) selectedItemDescriptions.set(id, chk.dataset.descripcion);
+        const tr = chk.closest('tr'); if (tr) tr.classList.add('seleccionado-baja');
       }
     });
-    saveSelectionState();
-    updateSelectionUI();
+    saveSelectionState(); updateSelectionUI();
   };
 
-  // Restaurar modo baja múltiple si viene desde la URL o si hay IDs seleccionados guardados
   const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('baja_multiple') === '1' || selectedIdSet.size > 0 || (hiddenSelectedIdsInput && hiddenSelectedIdsInput.value)) {
-    setBajaSelectionMode(true);
-    restoreSelectedRows();
+  if (urlParams.get('baja_multiple') === '1' || selectedIdSet.size > 0 || (hiddenSelectedIds && hiddenSelectedIds.value)) {
+    setBajaSelectionMode(true); restoreSelectedRows();
   }
 
   if (btnConfirmarBaja) {
@@ -717,58 +519,45 @@
       if (form) form.action = "{% url 'dar_baja_bienes_seleccionados' %}";
       buildBajaTable(selectedItems.map(item => [item.pk, item.desc]));
       const offcanvasEl = document.getElementById('offcanvasDarBaja');
-      if (offcanvasEl) {
-        const offcanvas = bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl);
-        offcanvas.show();
-      }
+      if (offcanvasEl) bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl).show();
     });
   }
-document.addEventListener('click', function(e) {
-  const btn = e.target.closest('.btn-dar-baja');
-  if (!btn) return;
-  if (bajaSelectionMode) {
+
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.btn-dar-baja');
+    if (!btn) return;
+    if (bajaSelectionMode) {
+      e.preventDefault(); e.stopPropagation();
+      alert('Desactivá Baja múltiple para dar de baja individual.');
+      return;
+    }
     e.preventDefault();
-    e.stopPropagation();
-    alert('Desactivá Baja múltiple para dar de baja individual.');
-    return;
-  }
-  e.preventDefault();
-  const form = document.getElementById('form-dar-baja');
-  if (form) form.action = btn.getAttribute('data-action') || '';
-  buildBajaTable([[btn.getAttribute('data-pk'), btn.getAttribute('data-descripcion') || '']]);
-  const offcanvasEl = document.getElementById('offcanvasDarBaja');
-  if (offcanvasEl) {
-    const offcanvas = bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl);
-    offcanvas.show();
-  }
-});
+    const form = document.getElementById('form-dar-baja');
+    if (form) form.action = btn.getAttribute('data-action') || '';
+    buildBajaTable([[btn.getAttribute('data-pk'), btn.getAttribute('data-descripcion') || '']]);
+    const offcanvasEl = document.getElementById('offcanvasDarBaja');
+    if (offcanvasEl) bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl).show();
+  });
 
   function buildBajaTable(items) {
     const container = document.getElementById('tabla-bienes-baja');
-    const select = document.getElementById('bienes_seleccionados_baja');
+    const select    = document.getElementById('bienes_seleccionados_baja');
     if (!container || !select) return;
-
-    const hoy = new Date().toISOString().slice(0,10);
-    
+    const hoy = new Date().toISOString().slice(0, 10);
     select.innerHTML = '';
     let html = `
-      <table class="table table-sm table-striped table-hover align-middle mb-0" style="border-collapse: collapse;">
-        <thead>
-          <tr>
-            <th style="padding-left: 12px;">ID / Nombre</th>
-            <th style="width: 160px;">Fecha Baja <span class="text-danger">*</span></th>
-            <th>Expediente</th>
-            <th style="padding-right: 12px;">Motivo <span class="text-danger">*</span></th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
-
+      <table class="table table-sm table-striped table-hover align-middle mb-0" style="border-collapse:collapse;">
+        <thead><tr>
+          <th style="padding-left:12px;">ID / Nombre</th>
+          <th style="width:160px;">Fecha Baja <span class="text-danger">*</span></th>
+          <th>Expediente</th>
+          <th style="padding-right:12px;">Motivo <span class="text-danger">*</span></th>
+        </tr></thead><tbody>`;
     items.forEach(([pk, desc]) => {
       select.innerHTML += `<option value="${pk}" selected></option>`;
       html += `
         <tr>
-          <td style="padding-left: 12px;"><small><strong>#${pk}</strong><br>${desc}</small></td>
+          <td style="padding-left:12px;"><small><strong>#${pk}</strong><br>${desc}</small></td>
           <td>
             <div class="input-group input-group-sm input-group-baja">
               <span class="input-group-text text-secondary"><i class="fas fa-calendar-alt"></i></span>
@@ -776,11 +565,9 @@ document.addEventListener('click', function(e) {
             </div>
           </td>
           <td><input type="text" class="form-control form-control-sm custom-input-baja" name="expediente_baja_${pk}" placeholder="Ej: EX-2025..."></td>
-          <td style="padding-right: 12px;"><input type="text" class="form-control form-control-sm custom-input-baja" name="descripcion_baja_${pk}" placeholder="Motivo, destino..." required></td>
-        </tr>
-      `;
+          <td style="padding-right:12px;"><input type="text" class="form-control form-control-sm custom-input-baja" name="descripcion_baja_${pk}" placeholder="Motivo, destino..." required></td>
+        </tr>`;
     });
-
     html += `</tbody></table>`;
     container.innerHTML = html;
   }
@@ -790,35 +577,28 @@ document.addEventListener('click', function(e) {
     formDarBaja.addEventListener('submit', function() {
       if (formDarBaja.checkValidity()) {
         setBajaSelectionMode(false);
-        try { localStorage.removeItem(LS_KEY_BAJA_MULTI); } catch (err) {}
-        if (hiddenSelectedIdsInput) {
-          hiddenSelectedIdsInput.value = '';
-        }
+        try { localStorage.removeItem(LS_KEY); } catch (err) {}
+        if (hiddenSelectedIds) hiddenSelectedIds.value = '';
       }
     });
   }
 
-  // When deleting selected items (form-eliminar-bienes), clear selection and persistence
   const formEliminar = document.getElementById('form-eliminar-bienes');
   if (formEliminar) {
     formEliminar.addEventListener('submit', function() {
-      try { localStorage.removeItem(LS_KEY_BAJA_MULTI); } catch (err) {}
-      selectedIdSet.clear();
-      selectedItemDescriptions.clear();
+      try { localStorage.removeItem(LS_KEY); } catch (err) {}
+      selectedIdSet.clear(); selectedItemDescriptions.clear();
       setBajaSelectionMode(false);
-      if (hiddenSelectedIdsInput) hiddenSelectedIdsInput.value = '';
+      if (hiddenSelectedIds) hiddenSelectedIds.value = '';
     });
   }
 
-  // Clear persisted selection when navigating to another tab (visibility change)
-  // Do NOT apply on search filter to preserve accumulated selection while filtering
   window.addEventListener('visibilitychange', function() {
     if (document.hidden && bajaSelectionMode) {
-      try { localStorage.removeItem(LS_KEY_BAJA_MULTI); } catch (err) {}
-      selectedIdSet.clear();
-      selectedItemDescriptions.clear();
+      try { localStorage.removeItem(LS_KEY); } catch (err) {}
+      selectedIdSet.clear(); selectedItemDescriptions.clear();
       setBajaSelectionMode(false);
-      if (hiddenSelectedIdsInput) hiddenSelectedIdsInput.value = '';
+      if (hiddenSelectedIds) hiddenSelectedIds.value = '';
     }
   });
 })();
@@ -849,13 +629,13 @@ document.addEventListener('click', function(e) {
   </div>`;
 
   document.addEventListener('DOMContentLoaded', function(){
-    const wrapper = document.createElement('div');
+    const wrapper   = document.createElement('div');
     wrapper.innerHTML = modalHtml;
     document.body.appendChild(wrapper.firstElementChild);
 
-    const modal = document.getElementById('confirmDeleteBienModal');
-    const bienNombre = document.getElementById('confirmDeleteBienNombre');
-    const form = document.getElementById('confirmDeleteBienForm');
+    const modal     = document.getElementById('confirmDeleteBienModal');
+    const bienNombre= document.getElementById('confirmDeleteBienNombre');
+    const form      = document.getElementById('confirmDeleteBienForm');
     const btnCancel = document.getElementById('confirmDeleteBienCancel');
 
     document.body.addEventListener('click', function(e){
@@ -863,147 +643,92 @@ document.addEventListener('click', function(e) {
       if (!btn) return;
       const action = btn.getAttribute('data-action');
       const nombre = btn.getAttribute('data-bien') || 'este bien';
-      const pk = btn.getAttribute('data-pk');
+      const pk     = btn.getAttribute('data-pk');
       if (!action || !pk) return;
-
       bienNombre.textContent = nombre;
       form.setAttribute('action', action);
       form.setAttribute('data-pk', pk);
       form.setAttribute('data-nombre', nombre);
       modal.style.display = 'flex';
-      const submitBtn = form.querySelector('button[type=submit]');
-      if (submitBtn) submitBtn.focus();
+      const submitBtn = form.querySelector('button[type=submit]'); if (submitBtn) submitBtn.focus();
     });
 
-   form.addEventListener('submit', function(e){
-  e.preventDefault();
-  const pk = form.getAttribute('data-pk');
-  const nombre = form.getAttribute('data-nombre');
-  const action = form.getAttribute('action');
-  modal.style.display = 'none';
-  const formDarBaja = document.getElementById('form-dar-baja');
-  if (formDarBaja) formDarBaja.action = action;
-  buildBajaTable([[pk, nombre]]);
-  const offcanvasEl = document.getElementById('offcanvasDarBaja');
-  if (offcanvasEl) {
-    const offcanvas = bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl);
-    offcanvas.show();
-  }
-});
-    btnCancel.addEventListener('click', function(){
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      const pk     = form.getAttribute('data-pk');
+      const nombre = form.getAttribute('data-nombre');
+      const action = form.getAttribute('action');
       modal.style.display = 'none';
+      const formDarBaja = document.getElementById('form-dar-baja');
+      if (formDarBaja) formDarBaja.action = action;
+      buildBajaTable([[pk, nombre]]);
+      const offcanvasEl = document.getElementById('offcanvasDarBaja');
+      if (offcanvasEl) bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl).show();
     });
 
-    modal.addEventListener('click', function(ev){
-      if (ev.target === modal) {
-        modal.style.display = 'none';
-      }
-    });
-
-    document.addEventListener('keydown', function(ev){
-      if (ev.key === 'Escape' && modal.style.display === 'flex') {
-        modal.style.display = 'none';
-      }
-    });
+    btnCancel.addEventListener('click', () => { modal.style.display = 'none'; });
+    modal.addEventListener('click', ev => { if (ev.target === modal) modal.style.display = 'none'; });
+    document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && modal.style.display === 'flex') modal.style.display = 'none'; });
   });
 })();
 </script>
 
-<!-- Autosubmit de filtros (AJAX) -->
 <script>
 (function () {
-  const form = document.querySelector('#filtros-form');
+  const form      = document.querySelector('#filtros-form');
   const container = document.querySelector('#bienes-container');
   if (!form || !container) return;
 
   const updateList = (url) => {
-    // Mostrar un estado de carga opcional si se desea
     container.style.opacity = '0.5';
-    
-    fetch(url, {
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest'
-      }
-    })
-    .then(response => response.text())
-    .then(html => {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-      const newContent = doc.querySelector('#bienes-container').innerHTML;
-      container.innerHTML = newContent;
-      container.style.opacity = '1';
-      
-      // Actualizar la URL en el navegador
-      window.history.pushState({}, '', url);
-      
-      // Re-inicializar comportamientos si es necesario
-      if (window.refreshBajaSelection) window.refreshBajaSelection();
-      if (window.initFloatingScrollbar) window.initFloatingScrollbar();
-    })
-    .catch(err => {
-      console.error('Error en fetch:', err);
-      container.style.opacity = '1';
-    });
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(r => r.text())
+      .then(html => {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        container.innerHTML = doc.querySelector('#bienes-container').innerHTML;
+        container.style.opacity = '1';
+        window.history.pushState({}, '', url);
+        if (typeof window.setBajaSelectionMode === 'function') {
+          const keep = typeof window.__bajaIsModeActive === 'function' ? window.__bajaIsModeActive() : false;
+          window.setBajaSelectionMode(keep);
+        }
+        if (typeof window.refreshBajaSelection === 'function')  window.refreshBajaSelection();
+        if (typeof window.initFloatingScrollbar === 'function') window.initFloatingScrollbar();
+      })
+      .catch(err => { console.error('Error en fetch:', err); container.style.opacity = '1'; });
   };
 
   const handleFormSubmit = (e) => {
     if (e) e.preventDefault();
-    const formData = new FormData(form);
-    const params = new URLSearchParams(formData);
-    const url = `${window.location.pathname}?${params.toString()}`;
-    updateList(url);
+    updateList(`${window.location.pathname}?${new URLSearchParams(new FormData(form)).toString()}`);
   };
 
-  // Debounce para texto/búsqueda
-  const debounce = (fn, ms) => {
-    let t;
-    return (...args) => {
-      clearTimeout(t);
-      t = setTimeout(() => fn.apply(null, args), ms);
-    };
-  };
+  const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
   const debouncedSubmit = debounce(handleFormSubmit, 400);
 
   const ensurePageReset = () => {
-    let pageInput = form.querySelector('input[name="page"]');
-    if (!pageInput) {
-      pageInput = document.createElement('input');
-      pageInput.type = 'hidden';
-      pageInput.name = 'page';
-      form.appendChild(pageInput);
-    }
-    pageInput.value = '1';
+    let pi = form.querySelector('input[name="page"]');
+    if (!pi) { pi = document.createElement('input'); pi.type = 'hidden'; pi.name = 'page'; form.appendChild(pi); }
+    pi.value = '1';
   };
 
-  // Escuchar cambios en campos de auto-submit
   form.querySelectorAll('.auto-submit').forEach(el => {
-    const tag = el.tagName;
+    const tag  = el.tagName;
     const type = (el.type || '').toLowerCase();
-
     if (tag === 'SELECT' || (tag === 'INPUT' && (type === 'date' || type === 'checkbox' || type === 'radio'))) {
-      el.addEventListener('change', () => {
-        ensurePageReset();
-        handleFormSubmit();
-      });
+      el.addEventListener('change', () => { ensurePageReset(); handleFormSubmit(); });
     }
-
     if (tag === 'INPUT' && (type === 'text' || type === 'search')) {
-      el.addEventListener('input', () => {
-        ensurePageReset();
-        debouncedSubmit();
-      });
+      el.addEventListener('input', () => { ensurePageReset(); debouncedSubmit(); });
     }
   });
 
-  // Interceptar el submit real del form por si acaso
   form.addEventListener('submit', handleFormSubmit);
 
-  // Delegación para clics en paginación
   document.addEventListener('click', (e) => {
     const link = e.target.closest('.pagination .page-link');
     if (link && link.getAttribute('href') && link.getAttribute('href') !== '#') {
-      e.preventDefault();
-      updateList(link.href);
+      e.preventDefault(); updateList(link.href);
     }
   });
 })();
