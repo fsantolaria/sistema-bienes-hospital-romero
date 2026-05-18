@@ -408,8 +408,8 @@ def alta_operadores(request):
             i += 1
             username = f"{base_username}{i}"
  
-        is_active = estado == "habilitado"
- 
+        is_active = (estado or "habilitado") == "habilitado"
+
         operador = Operador(
             numero_doc=numero_doc,
             username=username,
@@ -514,10 +514,11 @@ def editar_operador(request, pk):
             operador.email = email_normalizado
             hubo_cambio = True
  
-        is_active_nuevo = estado == "habilitado"
-        if operador.is_active != is_active_nuevo:
-            operador.is_active = is_active_nuevo
-            hubo_cambio = True
+        if estado:
+            is_active_nuevo = estado == "habilitado"
+            if operador.is_active != is_active_nuevo:
+                operador.is_active = is_active_nuevo
+                hubo_cambio = True
  
         if hasattr(operador, "estado"):
             if operador.estado != estado:
