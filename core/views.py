@@ -388,20 +388,7 @@ def alta_operadores(request):
         estado = form.cleaned_data.get("estado")
         password = form.cleaned_data.get("password")
  
-<<<<<<< HEAD
-        numero_doc = form.cleaned_data["dni"]
-
-        nombre   = (request.POST.get("nombre") or "").strip()
-        apellido = (request.POST.get("apellido") or "").strip()
-        pais     = (request.POST.get("pais") or "").strip()
-        email    = (request.POST.get("email") or "").strip()
-        estado   = (request.POST.get("estado") or "habilitado").strip()
-        password = (request.POST.get("password") or "").strip()
- 
-        # Validación DNI duplicado
-=======
         # Validación extra de DNI (aunque el form ya debería hacerlo, aquí manejamos el modelo Usuario directamente)
->>>>>>> 460541cab0c2ac93ed6c01188c0b1d55721668a3
         if numero_doc and Usuario.objects.filter(numero_doc=numero_doc).exists():
             messages.error(request, f"Ya existe un operador con el DNI {numero_doc}.")
             return redirect("alta_operadores")
@@ -734,12 +721,14 @@ def reportes_pdf(request):
         "bienes": bienes,
         "rango_desc": rango_desc,
         "generado_en": now,
+        "usuario": request.user,
+        "servicios_seleccionados": servicios_seleccionados,
         **permisos_context(request.user),
     }
- 
+
     try:
         from weasyprint import HTML, CSS
- 
+
         html_str = render_to_string("reportes_pdf.html", ctx, request=request)
         pdf_bytes = HTML(
             string=html_str,
@@ -1430,7 +1419,14 @@ def lista_bienes(request):
 def lista_bienes_operador(request):
     qs = BienPatrimonial.objects.select_related("expediente").exclude(estado="BAJA")
     qs, q = _filtrar_bienes(request, qs)
-    return _paginar_bienes(request, qs, "bienes/lista_bienes_operador.html", {"q": q})
+    return _paginar_bienes(request, qs, "bienes/lista_bienes_operador.html", {
+        "q": q,
+        "orden":    request.GET.get("orden") or "-fecha",
+        "f_origen": request.GET.get("f_origen") or "",
+        "f_estado": request.GET.get("f_estado") or "",
+        "f_desde":  request.GET.get("f_desde") or "",
+        "f_hasta":  request.GET.get("f_hasta") or "",
+    })
  
  
 @login_required
@@ -1759,8 +1755,8 @@ def carga_masiva_bienes(request):
                             serv_raw = s(get_first(row, ["servicios", "servicio", "sector"]) or servicio_archivo)
                             servicios = (serv_raw if serv_raw else "NO")[:200]
  
-                            siem_raw = get_first(row, ["siem", "estado siem"])
-                            siem_val = "Si" if siem_raw else "No"
+                            siem_raw = (get_first(row, ["siem", "estado siem"]) or "").strip().lower()
+                            siem_val = "Si" if siem_raw and siem_raw not in ("no", "0", "false", "n") else "No"
  
                             fecha_alta = parse_date_any(get_first(row, ["fecha alta", "fecha de alta"])) or date.today()
                             fecha_baja = parse_date_any(get_first(row, ["fecha de baja"]))
