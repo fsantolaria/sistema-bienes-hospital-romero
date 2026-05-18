@@ -244,18 +244,10 @@
               {% endif %}
             {% endwith %}
           </td>
-<<<<<<< HEAD
-          <td class="text-nowrap">{{ b.servicios|default:"—" }}</td>
-          <td style="min-width:220px;">{{ b.observaciones|default:"—" }}</td>
-          <td class="text-nowrap">{{ b.siem|default:"—" }}</td>
-          <td style="min-width:220px;">{{ b.descripcion_baja|default:"—" }}</td>
-=======
           <td style="min-width:120px; max-width:180px;">{{ b.servicios|default:"—" }}</td>
           <td style="min-width:150px; max-width:200px;">{{ b.observaciones|default:"—" }}</td>
           <td class="text-nowrap">{{ b.siem|default:"—" }}</td>
           <td style="min-width:150px; max-width:200px;">{{ b.descripcion_baja|default:"—" }}</td>
-
->>>>>>> 6c98e3ed7588ddd928c13d78fe108c9671e37420
           <td class="text-end">
             {% if b.valor_adquisicion %}${{ b.valor_adquisicion|floatformat:0|intcomma }}{% else %}—{% endif %}
           </td>
