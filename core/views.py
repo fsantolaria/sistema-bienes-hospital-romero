@@ -2022,7 +2022,6 @@ def lista_baja_bienes(request):
 @require_POST
 def dar_baja_bien(request, pk):
     bien = get_object_or_404(BienPatrimonial, pk=pk)
-    print("DAR BAJA POST:", dict(request.POST))
     fecha_baja = parse_date(request.POST.get("fecha_baja") or "") or date.today()
     expediente_baja = (
         request.POST.get(f"expediente_baja_{pk}")
@@ -2045,7 +2044,6 @@ def dar_baja_bien(request, pk):
         bien.descripcion_baja = descripcion_baja
         update_fields.append("descripcion_baja")
     bien.save(update_fields=update_fields)
-    print("GUARDADO:", bien.pk, bien.estado, bien.fecha_baja, bien.expediente_baja, bien.descripcion_baja)
     nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
     msg_baja = f"Se dio de baja el bien '{nombre_bien}' (Clave: {bien.clave_unica})."
     crear_notificacion_admins(msg_baja)
