@@ -271,8 +271,7 @@ def home_supervisor(request):
 # ============================
 # OPERADORES
 # ============================
-
-Operador = get_user_model()
+Operador = Usuario
 
 
 @login_required
