@@ -1,23 +1,24 @@
 body {
-    background-color: #f0f2f5;
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    color: #000;
+    background-color: var(--bg-main);
+    font-family: var(--font-roboto);
+    color: var(--text-main);
 }
 
 .alta-header {
-    background-color: #00a4c6;
-    border: 1px solid #00a4c6;
-    border-radius: 6px;
+    background-color: var(--primary-turquesa);
+    color: #FFFFFF;
+    padding: 20px;
+    border-radius: 10px 10px 0 0;
+    margin: 20px auto 0;
     max-width: 800px;
-    margin: 20px auto;
-    padding: 10px;
     text-align: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .alta-header h2 {
     font-size: 24px;
     font-weight: bold;
-    color: #000;
+    color: #fff;
     margin: 0;
 }
 
@@ -74,57 +75,56 @@ body {
     0% {
         opacity: 1;
     }
+
     90% {
         opacity: 1;
     }
+
     100% {
         opacity: 0;
     }
 }
 
 .form-alta {
-    background-color: #fff;
-    border: 2px solid #0097c2;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+    background-color: var(--bg-card);
+    padding: 30px;
+    border-radius: 0 0 10px 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin: 0 auto 40px;
     max-width: 800px;
-    margin: 15px auto 30px auto;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+    border: 1px solid var(--border-color);
 }
 
 .form-section {
-    border: 1px solid #ccc;
+    border: 1px solid var(--border-color);
     border-radius: 10px;
     padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 15px;
-    background-color: #fff;
+    background-color: var(--bg-card);
 }
 
 .section-title {
-    background-color: #00a4c6;
-    color: #000;
-    font-weight: 600;
-    font-size: 16px;
-    padding: 8px 12px;
-    border-radius: 6px 6px 0 0;
-    margin: -20px -20px 15px -20px;
+    font-size: 18px;
+    color: var(--primary-turquesa);
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--primary-turquesa);
+    padding-bottom: 5px;
+    font-family: var(--font-encode);
 }
 
 .form-group-item {
     display: flex;
     align-items: center;
-    background-color: #f8f8f8;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 5px 10px;
+    background-color: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px 15px;
     width: 100%;
     position: relative;
     flex-wrap: wrap;
+    transition: border-color 0.2s;
 }
 
 .form-group-item label {
@@ -132,7 +132,7 @@ body {
     margin-right: 15px;
     font-size: 14px;
     font-weight: 600;
-    color: #000;
+    color: var(--secondary-gris);
     flex-shrink: 0;
 }
 
@@ -141,10 +141,11 @@ body {
 .form-group-item textarea {
     flex-grow: 1;
     padding: 8px 12px;
-    border: 1px solid #bbb;
+    border: 1px solid var(--secondary-gris);
     border-radius: 6px;
     font-size: 14px;
-    color: #000;
+    color: var(--text-main);
+    background-color: var(--input-bg);
     box-sizing: border-box;
     height: 44px;
     line-height: 1.2;
@@ -152,52 +153,32 @@ body {
 }
 
 .form-group-item.campo-error {
-    border: 2px solid #dc3545;
+    border: 2px solid #ee5544;
     background-color: #fff5f5;
+}
+
+[data-theme="dark"] .form-group-item.campo-error {
+    background-color: #3b2a2a;
 }
 
 .form-group-item.campo-error input,
 .form-group-item.campo-error select {
-    border-color: #dc3545;
+    border-color: #ee5544;
 }
 
 .form-group-item .text-error {
     width: 100%;
     display: block;
-    color: #dc3545;
-    font-size: 12px;
+    color: #ee5544;
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.85rem;
     margin-top: 6px;
     margin-left: 180px;
     padding-left: 15px;
     font-weight: 500;
 }
 
-.input-container {
-    position: relative;
-    flex-grow: 1;
-}
 
-.form-group-item label {
-    width: 180px;
-    margin-right: 15px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #000;
-}
-
-.form-group-item input,
-.form-group-item select,
-.form-group-item textarea {
-    flex-grow: 1;
-    padding: 8px 12px;
-    border: 1px solid #bbb;
-    border-radius: 6px;
-    font-size: 14px;
-    color: #000;
-    box-sizing: border-box;
-    height: 44px;
-    line-height: 1.2;
-}
 
 .input-container {
     position: relative;
@@ -217,6 +198,37 @@ body {
     transform: translateY(-50%);
     color: #666;
     pointer-events: none;
+}
+
+.password-wrapper {
+    position: relative;
+    flex-grow: 1;
+}
+
+.password-wrapper input {
+    width: 100%;
+    padding-right: 44px;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 6px;
+    color: #888;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: color 0.2s;
+}
+
+.toggle-password:hover {
+    color: var(--primary-turquesa);
 }
 
 .form-group-item textarea {
@@ -263,7 +275,7 @@ body {
 }
 
 .form-buttons .btn-success {
-    background-color: #28a745 !important;
+    background-color: var(--primary-turquesa) !important;
     color: #fff !important;
     border: 0;
 }
@@ -275,23 +287,59 @@ body {
 }
 
 @media (max-width: 768px) {
+    .view {
+        padding: 10px;
+    }
+
+    .alta-header {
+        margin: 10px auto;
+        padding: 15px;
+    }
+
+    .alta-header h2 {
+        font-size: 20px;
+    }
+
+    .form-alta {
+        padding: 15px;
+        margin: 10px auto;
+        border-radius: 8px;
+    }
+
     .form-group-item {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch;
+        padding: 12px;
     }
 
     .form-group-item label {
         width: 100%;
         margin-right: 0;
         margin-bottom: 8px;
+        font-size: 13px;
+    }
+
+    .form-group-item input,
+    .form-group-item select,
+    .form-group-item textarea {
+        width: 100%;
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+
+    .form-group-item .text-error {
+        margin-left: 0;
+        padding-left: 0;
     }
 
     .form-buttons {
-        gap: 15px;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
     }
 
     .form-buttons .btn {
-        width: 100%;
-        max-width: 260px;
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
     }
 }

@@ -19,7 +19,8 @@ if not User.objects.filter(username='admin').exists():
         username='admin',
         email='admin@hospital.com',
         password=DEFAULT_PASSWORD,
-        tipo_usuario='admin'
+        tipo_usuario='admin',
+        numero_doc='admin_doc'
     )
     print(f"¡Usuario administrador creado exitosamente! Usuario: admin / Contraseña: {DEFAULT_PASSWORD}")
 else:

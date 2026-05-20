@@ -137,7 +137,7 @@ body::after { bottom: 0; }
 .login-button:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 14px rgba(0,0,0,0.18);
-    background-color: #00a4c6;
+    background-color: #00aec3;
 }
 
 .login-button:active {

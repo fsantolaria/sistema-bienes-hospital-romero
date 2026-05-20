@@ -20,7 +20,7 @@ body {
     align-items: center;
     padding: 12px 24px;
     background-color: #fff;
-    border-bottom: 1px solid #00a4c6;
+    border-bottom: 1px solid #00aec3;
     height: 70px;
 }
 
@@ -51,7 +51,7 @@ body {
 
 .material-symbols-outlined {
     font-size: 28px;
-    color: #0087a3;
+    color: #00aec3;
     cursor: pointer;
     transition: color 0.3s ease;
 }

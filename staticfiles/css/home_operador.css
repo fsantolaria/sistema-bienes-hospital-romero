@@ -20,7 +20,7 @@ body {
     align-items: center;
     padding: 12px 24px;
     background-color: #fff;
-    border-bottom: 1px solid #00a4c6;
+    border-bottom: 1px solid #00aec3;
     height: 70px;
 }
 
@@ -49,7 +49,7 @@ body {
 
 .material-symbols-outlined {
     font-size: 28px;
-    color: #0087a3;
+    color: #00aec3;
     cursor: pointer;
     transition: color 0.3s ease;
 }
@@ -67,7 +67,7 @@ body {
 }
 
 .logout-link .material-symbols-outlined {
-    color: #0087a3;
+    color: #00aec3;
     transition: color 0.3s ease;
 }
 
@@ -84,7 +84,7 @@ body {
 /* -------- Panel lateral -------- */
 .left-panel {
     width: 280px;
-    background-color: #00a4c6;
+    background-color: #00aec3;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -125,7 +125,7 @@ body {
 }
 
 .menu-button {
-    background-color: #00a4c6;
+    background-color: #00aec3;
     color: #000000;
     padding: 18px;
     border: none;
@@ -141,7 +141,7 @@ body {
 }
 
 .menu-button:hover {
-    background-color: #0087a3;
+    background-color: #00aec3;
     transform: translateY(-2px);
 }
 
