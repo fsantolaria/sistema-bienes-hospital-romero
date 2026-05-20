@@ -64,22 +64,22 @@
             </div>
           </div>
 
-          <!-- Cuenta Código, Nomenclatura, Servicios (33%) -->
-          <div class="col-md-4">
+          <!-- Cuenta Código, Servicios (50%) -->
+          <div class="col-md-6">
             <div class="form-group-item {% if form.cuenta_codigo.errors %}campo-error{% endif %}">
               <label for="{{ form.cuenta_codigo.id_for_label }}">Cuenta Código</label>
               {{ form.cuenta_codigo }}
               {% for e in form.cuenta_codigo.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
             </div>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-4 d-none">
             <div class="form-group-item {% if form.nomenclatura_bienes.errors %}campo-error{% endif %}">
               <label for="{{ form.nomenclatura_bienes.id_for_label }}">Nomenclatura</label>
               {{ form.nomenclatura_bienes }}
               {% for e in form.nomenclatura_bienes.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
             </div>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-6">
             <div class="form-group-item {% if form.servicios.errors %}campo-error{% endif %}">
               <label for="{{ form.servicios.id_for_label }}">Servicios / Sector</label>
               <div style="display:flex; gap:8px; align-items:center; width:100%;">

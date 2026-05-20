@@ -84,7 +84,7 @@
                     <th>Expediente</th>
                     <th>N° Compra</th>
                     <th>Cuenta Código</th>
-                    <th>Nomenclatura</th>
+                    <th class="d-none">Nomenclatura</th>
                     <th>N° Serie</th>
                     <th>Origen</th>
                     <th>Estado</th>
@@ -114,7 +114,7 @@
                       {% endif %}
                     </td>
                     <td class="text-nowrap">{{ b.cuenta_codigo|default:"—" }}</td>
-                    <td class="text-nowrap">{{ b.nomenclatura_bienes|default:"—" }}</td>
+                    <td class="text-nowrap d-none">{{ b.nomenclatura_bienes|default:"—" }}</td>
                     <td class="text-nowrap">{{ b.numero_serie|default:"—" }}</td>
                     <td class="text-nowrap">
                         {% with label=b.get_origen_display|default:b.origen|default:"—" %}
