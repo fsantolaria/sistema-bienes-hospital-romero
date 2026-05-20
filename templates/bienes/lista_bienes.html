@@ -574,14 +574,10 @@
 
   const formDarBaja = document.getElementById('form-dar-baja');
   if (formDarBaja) {
-    formDarBaja.addEventListener('submit', function() {
-      if (formDarBaja.checkValidity()) {
-        setBajaSelectionMode(false);
-        try { localStorage.removeItem(LS_KEY); } catch (err) {}
-        if (hiddenSelectedIds) hiddenSelectedIds.value = '';
-      }
-    });
+    // Mantener estado e inputs para que el POST llegue con los pks dinámicos.
   }
+
+
 
   const formEliminar = document.getElementById('form-eliminar-bienes');
   if (formEliminar) {

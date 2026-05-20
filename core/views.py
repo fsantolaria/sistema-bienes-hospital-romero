@@ -719,12 +719,62 @@ def reportes_pdf(request):
         )
 
 
+    # Historial: agregar también los movimientos registrados en LogActividad
+    # (BAJA / RESTABLECIMIENTO) para reflejar ambas acciones en el reporte.
+    # Nota: el reporte original se basa en estado/fechas del bien; aquí lo enriquecemos.
+    from core.models.log_actividad import LogActividad
+
+    # Para que el histórico se refleje correctamente,
+    # filtramos logs por la fecha del evento.
+    if scope in ("24h", "12h", "6h"):
+        horas = {"24h": 24, "12h": 12, "6h": 6}[scope]
+        logs_hoy = LogActividad.objects.filter(
+            accion__in=["BAJA", "RESTABLECIMIENTO"],
+            fecha__gte=now - timedelta(hours=horas),
+        )
+    else:
+        logs_hoy = LogActividad.objects.filter(
+            accion__in=["BAJA", "RESTABLECIMIENTO"],
+        )
+
+
+    # Construimos una lista de filas para la plantilla (ordenada por fecha del movimiento).
+    # Para que también aparezcan los bienes restablecidos, mostramos los logs
+    # en el mismo rango que el reporte, independientemente del estado actual del bien.
+    movimientos = []
+
+    for b in bienes:
+        movimientos.append({
+            "tipo": "bien",
+            "bien": b,
+            "fecha_orden": b.fecha_baja or b.fecha_adquisicion or b.fecha_registro or timezone.now(),
+        })
+
+    for l in logs_hoy:
+        # Tomamos datos del bien actual vinculado al evento (si existiera por migración)
+        # y si no, igual mostramos el mensaje/acción.
+        bien_obj = getattr(l, 'bien', None)
+        movimientos.append({
+            "tipo": "log",
+            "log": l,
+            "mensaje": l.mensaje,
+            "fecha_orden": l.fecha,
+            "bien": bien_obj,
+        })
+
+
+    movimientos.sort(key=lambda x: x.get("fecha_orden") or timezone.now())
+    movimientos = movimientos[::-1]
+
+
     ctx = {
         "bienes": bienes,
+        "movimientos": movimientos,
         "rango_desc": rango_desc,
         "generado_en": now,
         **permisos_context(request.user),
     }
+
  
     try:
         from weasyprint import HTML, CSS
@@ -1050,6 +1100,9 @@ def agregar_servicio(request):
  
 @login_required
 def reportes_view(request):
+    # Nota: este reporte debe reflejar el historial de cambios (alta/baja/restablecimiento)
+    # usando LogActividad como fuente de verdad.
+
     scope = (request.GET.get("scope") or "24h").lower()
     now = timezone.now()
  
