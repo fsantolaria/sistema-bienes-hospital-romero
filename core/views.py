@@ -454,13 +454,20 @@ def alta_operadores(request):
                 {**perms, "usar_operador_model": False, "form": form},
             )
  
+        if operador.tipo_usuario == 'supervisor':
+            msg_creacion = f"Se creó un usuario supervisor '{operador.username}'."
+        else:
+            msg_creacion = f"Se creó el operador '{operador.username}'."
         Notificacion.objects.create(
             usuario=request.user,
-            mensaje=f"Se creó el operador '{operador.username}'.",
+            mensaje=msg_creacion,
             leida=False,
         )
  
-        messages.success(request, f"Operador {nombre} {apellido} creado. Usuario: {operador.username}")
+        if operador.tipo_usuario == 'supervisor':
+            messages.success(request, f"Supervisor {nombre} {apellido} creado. Usuario: {operador.username}")
+        else:
+            messages.success(request, f"Operador {nombre} {apellido} creado. Usuario: {operador.username}")
         return redirect("operadores")
  
     form = OperadorForm(initial={
@@ -591,18 +598,26 @@ def eliminar_operador(request, pk):
  
     identificador = operador.username
     nombre_completo = f"{operador.first_name} {operador.last_name}".strip()
+    es_supervisor = operador.tipo_usuario == 'supervisor'
     operador.delete()
- 
+
     try:
+        if es_supervisor:
+            msg_elim = f"Se eliminó un usuario supervisor '{identificador}'."
+        else:
+            msg_elim = f"Se eliminó el operador '{identificador}'."
         Notificacion.objects.create(
             usuario=request.user,
-            mensaje=f"Se eliminó el operador '{identificador}'.",
+            mensaje=msg_elim,
             leida=False,
         )
     except Exception:
         pass
- 
-    messages.success(request, f"Operador '{identificador}' eliminado correctamente.")
+
+    if es_supervisor:
+        messages.success(request, f"Supervisor '{identificador}' eliminado correctamente.")
+    else:
+        messages.success(request, f"Operador '{identificador}' eliminado correctamente.")
     return redirect("operadores")
  
  
