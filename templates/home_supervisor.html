@@ -19,10 +19,12 @@
     <!-- Área central -->
     <section class="home-content">
         <div class="menu-buttons">
-                <!-- Botón Bienes Patrimoniales -->
-                <a href="{% url 'lista_bienes' %}" class="menu-button">
-                    Bienes Patrimoniales
-                </a>
+            <!-- Botón Bienes Patrimoniales -->
+            <a href="{% url 'lista_bienes_supervisor' %}" class="menu-button">
+                Bienes Patrimoniales
+            </a>
+
+
         </div>
     </section>
 </main>
@@ -31,3 +33,4 @@
 {% block extra_js %}
 <script src="{% static 'js/home_admin.js' %}"></script>
 {% endblock %}
+

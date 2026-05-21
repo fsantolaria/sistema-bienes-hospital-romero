@@ -43,7 +43,7 @@ body {
 
 .material-symbols-outlined {
     font-size: 28px;
-    color: #0087a3;
+    color: #00aec3;
     cursor: pointer;
     transition: color 0.3s ease;
 }
@@ -110,7 +110,7 @@ body {
 }
 
 .menu-button:hover {
-    background-color: #0092b3;
+    background-color: #00aec3;
     transform: translateY(-2px);
     box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.3);
 }

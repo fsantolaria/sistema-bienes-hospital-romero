@@ -994,7 +994,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .btn-inst-outline,
 .btn-inst-filter,
 .btn-inst-clear,
-.btn-inst-nav {
+.btn-inst-nav,
+.btn-inst-danger {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1077,6 +1078,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     background-color: #dc3545;
     border-color: #dc3545;
 }
+
+/* Clase específica para acciones de peligro o botones de baja (Rojo) */
+.btn-inst-danger {
+    background-color: #dc3545 !important;
+    color: #ffffff !important;
+    border-color: #dc3545 !important;
+}
+.btn-inst-danger:hover {
+    background-color: #bb2d3b !important;
+    box-shadow: 0 3px 8px rgba(220, 53, 69, 0.35);
+}
+
 .btn-inst-nav--danger:hover,
 .btn-inst-nav--danger:focus {
     background-color: #bb2d3b;

@@ -79,7 +79,7 @@
           <input type="password" id="password" name="password" placeholder="....." required
                  value="{{ form.password.value|default:'' }}">
           <button type="button" class="toggle-password" id="toggle-password" tabindex="-1" aria-label="Mostrar/ocultar contraseña">
-            <i class="fas fa-eye" id="toggle-password-icon"></i>
+            <i class="fas fa-eye-slash" id="toggle-password-icon"></i>
           </button>
         </div>
         <small class="form-text text-muted" style="display: block; margin-top: 5px; font-size: 12px; color: #6c757d;">Mínimo 8 caracteres, mayúscula, minúscula, número y carácter especial (Ej: Lm9!abcd).</small>
@@ -105,12 +105,8 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('form-alta-operador');
-    const submitBtn = form.querySelector('button[type="submit"]');
     const dniInput = document.getElementById('dni');
-    
-    // Validaciones en tiempo real
-    const inputs = form.querySelectorAll('input[required], select[required]');
-    
+
     const validateField = (input) => {
         const groupItem = input.closest('.form-group-item');
         const errorMsg = document.getElementById(`error-${input.id}`);
@@ -120,11 +116,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (input.required && !input.value.trim()) {
             isValid = false;
             message = 'Este campo es obligatorio.';
-        } else if (input.id === 'dni') {
-            if (!/^\d+$/.test(input.value)) {
-                isValid = false;
-                message = 'El DNI debe contener solo números.';
-            } else if (input.value.length < 1 || input.value.length > 8) {
+        } else if (input.id === 'dni' && input.value.trim()) {
+            if (!/^\d{1,8}$/.test(input.value)) {
                 isValid = false;
                 message = 'El DNI debe tener hasta 8 números.';
             }
@@ -135,11 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } else if (input.id === 'password' && input.value.trim()) {
             const val = input.value;
-            const hasUpper = /[A-Z]/.test(val);
-            const hasLower = /[a-z]/.test(val);
-            const hasNumber = /[0-9]/.test(val);
-            const hasSpecial = /[^A-Za-z0-9]/.test(val);
-            if (!(hasUpper && hasLower && hasNumber && hasSpecial && val.length >= 8)) {
+            if (!(/[A-Z]/.test(val) && /[a-z]/.test(val) && /[0-9]/.test(val) && /[^A-Za-z0-9]/.test(val) && val.length >= 8)) {
                 isValid = false;
                 message = 'Formato requerido: 8+ caracteres, con mayúscula, minúscula, número y símbolo (Ej: Lm9!abcd)';
             }
@@ -152,37 +141,23 @@ document.addEventListener('DOMContentLoaded', function() {
             groupItem.classList.remove('campo-error');
             if (errorMsg) errorMsg.textContent = '';
         }
-        
-        checkFormValidity();
+        return isValid;
     };
 
-    const checkFormValidity = () => {
-        let isFormValid = true;
+    // Solo validar al intentar guardar
+    form.addEventListener('submit', function(e) {
+        const inputs = form.querySelectorAll('input[required], select[required]');
+        let formValid = true;
         inputs.forEach(input => {
-            if (input.required && !input.value.trim()) isFormValid = false;
-            if (input.id === 'dni' && (!/^\d{1,8}$/.test(input.value))) isFormValid = false;
-            if (input.closest('.form-group-item').classList.contains('campo-error')) isFormValid = false;
+            if (!validateField(input)) formValid = false;
         });
-        
-        submitBtn.disabled = !isFormValid;
-        submitBtn.style.opacity = isFormValid ? '1' : '0.6';
-        submitBtn.style.cursor = isFormValid ? 'pointer' : 'not-allowed';
-    };
+        if (!formValid) e.preventDefault();
+    });
 
     // Bloquear entrada no numérica en DNI
     dniInput.addEventListener('keypress', function(e) {
-        if (!/\d/.test(e.key)) {
-            e.preventDefault();
-        }
+        if (!/\d/.test(e.key)) e.preventDefault();
     });
-
-    inputs.forEach(input => {
-        input.addEventListener('input', () => validateField(input));
-        input.addEventListener('blur', () => validateField(input));
-    });
-
-    // Validación inicial
-    checkFormValidity();
 
     // Toggle mostrar/ocultar contraseña
     const toggleBtn = document.getElementById('toggle-password');
@@ -192,12 +167,12 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleBtn.addEventListener('click', function() {
         if (passwordInput.type === 'password') {
             passwordInput.type = 'text';
-            toggleIcon.classList.remove('fa-eye');
-            toggleIcon.classList.add('fa-eye-slash');
-        } else {
-            passwordInput.type = 'password';
             toggleIcon.classList.remove('fa-eye-slash');
             toggleIcon.classList.add('fa-eye');
+        } else {
+            passwordInput.type = 'password';
+            toggleIcon.classList.remove('fa-eye');
+            toggleIcon.classList.add('fa-eye-slash');
         }
     });
 });

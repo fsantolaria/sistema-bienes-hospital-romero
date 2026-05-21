@@ -11,32 +11,21 @@
     border-top: 1.5px solid #198754 !important;
     border-bottom: 1.5px solid #198754 !important;
   }
-  tr.seleccionado-restaurar td:first-child {
-    border-left: 1.5px solid #198754 !important;
-  }
-  tr.seleccionado-restaurar td:last-child {
-    border-right: 1.5px solid #198754 !important;
-  }
+  tr.seleccionado-restaurar td:first-child { border-left: 1.5px solid #198754 !important; }
+  tr.seleccionado-restaurar td:last-child  { border-right: 1.5px solid #198754 !important; }
 
-  .tabla-selection-mode {
-    position: relative;
-  }
+  .tabla-selection-mode { position: relative; }
   .tabla-selection-mode::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(25, 135, 84, 0.12) 0%, rgba(0, 0, 0, 0.02) 100%);
+    background: linear-gradient(135deg, rgba(25,135,84,0.12) 0%, rgba(0,0,0,0.02) 100%);
     pointer-events: none;
     border-radius: inherit;
   }
-  .tabla-selection-mode .table tbody tr:not(.seleccionado-restaurar) {
-    opacity: 0.7;
-  }
-  .tabla-selection-mode .table tbody tr:not(.seleccionado-restaurar) td {
-    color: #5a5a5a;
-  }
+  .tabla-selection-mode .table tbody tr:not(.seleccionado-restaurar) { opacity: 0.7; }
+  .tabla-selection-mode .table tbody tr:not(.seleccionado-restaurar) td { color: #5a5a5a; }
 
-  /* Hacer filas seleccionables con cursor de mano y ocultar checkbox en modo restaurar */
   .selectable-row td { cursor: pointer; }
   .selectable-row td a,
   .selectable-row td button,
@@ -44,13 +33,11 @@
   .selectable-row td select,
   .selectable-row td textarea { cursor: default; }
 
-  /* Ocultar visualmente los checkboxes de restaurar cuando la tabla está en modo selección */
   .table-responsive.tabla-selection-mode .chk-restaurar { display: none !important; }
 
   .restaurar-multiple-panel {
     position: fixed;
-    bottom: 1rem;
-    right: 1rem;
+    bottom: 1rem; right: 1rem;
     z-index: 1080;
     width: min(360px, calc(100% - 2rem));
     background: #fff;
@@ -59,74 +46,46 @@
     box-shadow: 0 18px 45px rgba(0,0,0,0.18);
     overflow: hidden;
     transform: translateY(16px);
-    opacity: 0;
-    visibility: hidden;
+    opacity: 0; visibility: hidden;
     transition: transform .22s ease, opacity .22s ease, visibility .22s ease;
   }
-  .restaurar-multiple-panel--visible {
-    transform: translateY(0);
-    opacity: 1;
-    visibility: visible;
-  }
+  .restaurar-multiple-panel--visible { transform: translateY(0); opacity: 1; visibility: visible; }
   .restaurar-multiple-panel::before {
     content: '';
     position: absolute;
-    top: -8px;
-    right: 22px;
+    top: -8px; right: 22px;
     border-width: 0 8px 8px 8px;
     border-style: solid;
     border-color: transparent transparent #fff transparent;
   }
-  .restaurar-multiple-panel__body {
-    padding: 16px 18px;
-  }
-  .restaurar-multiple-panel__title {
-    margin: 0 0 8px;
-    font-size: 16px;
-    font-weight: 700;
-  }
-  .restaurar-multiple-panel__text {
-    margin: 0;
-    color: #444;
-    font-size: 14px;
-    line-height: 1.5;
-  }
-  .restaurar-multiple-panel__actions {
-    padding: 12px 16px 16px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    background: #f8f9fa;
-  }
-  .restaurar-multiple-panel__button {
-    padding: 10px 16px;
-    border-radius: 8px;
-    border: none;
-    font-weight: 600;
-  }
-  .restaurar-multiple-panel__button--confirm {
-    background: #198754;
-    color: #fff;
-  }
-  .restaurar-multiple-panel__button--cancel {
-    background: transparent;
-    color: #495057;
-    border: 1px solid #ced4da;
-  }
-  .restaurar-multiple-panel__button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  .restaurar-multiple-panel__button--confirm:disabled {
-    background: #ccc;
-  }
+  .restaurar-multiple-panel__body    { padding: 16px 18px; }
+  .restaurar-multiple-panel__title   { margin: 0 0 8px; font-size: 16px; font-weight: 700; }
+  .restaurar-multiple-panel__text    { margin: 0; color: #444; font-size: 14px; line-height: 1.5; }
+  .restaurar-multiple-panel__actions { padding: 12px 16px 16px; display: flex; justify-content: flex-end; gap: 10px; background: #f8f9fa; }
+  .restaurar-multiple-panel__button  { padding: 10px 16px; border-radius: 8px; border: none; font-weight: 600; }
+  .restaurar-multiple-panel__button--confirm { background: #198754; color: #fff; }
+  .restaurar-multiple-panel__button--cancel  { background: transparent; color: #495057; border: 1px solid #ced4da; }
+  .restaurar-multiple-panel__button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .restaurar-multiple-panel__button--confirm:disabled { background: #ccc; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-3">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="m-0">Bienes — Dados de Baja</h3>
+<div class="container-fluid py-4">
+  <div class="row g-2 align-items-center mb-3">
+    <div class="col-auto">
+      <h3 class="m-0">Bienes — Dados de Baja</h3>
+    </div>
+    <div class="col ms-auto d-flex align-items-center justify-content-end gap-2 pe-0">
+      <a class="btn-inst-nav" href="{% if es_supervisor %}{% url 'lista_bienes_supervisor' %}{% else %}{% url 'lista_bienes' %}{% endif %}">
+        <i class="fas fa-arrow-left"></i> Volver a lista de bienes
+      </a>
+      {% if es_supervisor %}
+      <a class="btn btn-warning text-dark" href="#" style="pointer-events:none; opacity:.8;" aria-disabled="true">
+        <i class="bi bi-eye me-1"></i> Solo lectura
+      </a>
+      {% endif %}
+    </div>
   </div>
 
   <!-- BÚSQUEDA / ORDEN -->
@@ -136,7 +95,6 @@
       <input type="search" name="q" value="{{ request.GET.q }}" class="form-control auto-submit"
              placeholder="Descripción, ID, servicio...">
     </div>
-
     <div class="col-md-2">
       <label class="form-label">Ordenar</label>
       <select name="orden" class="form-select auto-submit">
@@ -146,7 +104,6 @@
         <option value="precio"      {% if request.GET.orden == "precio" %}selected{% endif %}>Precio ↑</option>
       </select>
     </div>
-
     <div class="col-auto d-flex align-items-end gap-2">
       <button class="btn-inst-filter" type="button"
               data-bs-toggle="collapse" data-bs-target="#filtrosBox"
@@ -156,52 +113,40 @@
       <a class="btn-inst-clear" href="{% url 'lista_baja_bienes' %}">
         <i class="fas fa-times"></i> Limpiar
       </a>
-    </div>
-
-    <!-- CONTROLES DERECHA -->
-    <div class="col ms-auto d-flex align-items-end justify-content-end gap-2">
       {% if es_admin %}
-      <button class="btn btn-success d-inline-flex align-items-center justify-content-center" 
-              style="height: 38px; font-weight: 700; font-size: 14px; border-radius: 6px; padding: 0 16px; border: none;"
+      <button class="btn btn-success d-inline-flex align-items-center justify-content-center"
+              style="height:38px; font-weight:700; font-size:14px; border-radius:6px; padding:0 16px; border:none; white-space: nowrap;"
               type="button" id="btn-top-restaurar-multiple">
         <i class="fas fa-undo me-2"></i> Restablecer múltiples bienes
       </button>
       {% endif %}
-
-      <a class="btn-inst-nav" href="{% url 'lista_bienes' %}">
-        <i class="fas fa-arrow-left me-2"></i> Volver a lista de bienes
-      </a>
     </div>
-
     <div class="col-12 collapse mt-3" id="filtrosBox">
       <div class="row g-2">
         <div class="col-md-3">
           <label class="form-label">Origen</label>
           <select name="f_origen" class="form-select">
             <option value="">Todos</option>
-            <option value="COMPRA" {% if request.GET.f_origen == "COMPRA" %}selected{% endif %}>Compra</option>
-            <option value="DONACION" {% if request.GET.f_origen == "DONACION" %}selected{% endif %}>Donación</option>
-            <option value="OMISION" {% if request.GET.f_origen == "OMISION" %}selected{% endif %}>Omisión</option>
+            <option value="COMPRA"        {% if request.GET.f_origen == "COMPRA" %}selected{% endif %}>Compra</option>
+            <option value="DONACION"      {% if request.GET.f_origen == "DONACION" %}selected{% endif %}>Donación</option>
+            <option value="OMISION"       {% if request.GET.f_origen == "OMISION" %}selected{% endif %}>Omisión</option>
             <option value="TRANSFERENCIA" {% if request.GET.f_origen == "TRANSFERENCIA" %}selected{% endif %}>Transferencia</option>
           </select>
         </div>
-
         <div class="col-md-3">
           <label class="form-label">Estado</label>
           <select name="f_estado" class="form-select">
             <option value="">Todos</option>
-            <option value="ACTIVO" {% if request.GET.f_estado == "ACTIVO" %}selected{% endif %}>Activo</option>
-            <option value="INACTIVO" {% if request.GET.f_estado == "INACTIVO" %}selected{% endif %}>Inactivo</option>
+            <option value="ACTIVO"        {% if request.GET.f_estado == "ACTIVO" %}selected{% endif %}>Activo</option>
+            <option value="INACTIVO"      {% if request.GET.f_estado == "INACTIVO" %}selected{% endif %}>Inactivo</option>
             <option value="MANTENIMIENTO" {% if request.GET.f_estado == "MANTENIMIENTO" %}selected{% endif %}>Mantenimiento</option>
-            <option value="BAJA" {% if request.GET.f_estado == "BAJA" %}selected{% endif %}>Baja</option>
+            <option value="BAJA"          {% if request.GET.f_estado == "BAJA" %}selected{% endif %}>Baja</option>
           </select>
         </div>
-
         <div class="col-md-3">
           <label class="form-label">Desde (Alta)</label>
           <input type="date" name="f_desde" class="form-control" value="{{ request.GET.f_desde }}">
         </div>
-
         <div class="col-md-3">
           <label class="form-label">Hasta (Alta)</label>
           <input type="date" name="f_hasta" class="form-control" value="{{ request.GET.f_hasta }}">
@@ -215,7 +160,6 @@
     </div>
   </form>
 
-  <!-- Formulario para Restauración Masiva -->
   {% if es_admin %}
   <form id="form-restaurar-multiple" method="post" action="{% url 'restablecer_bienes_seleccionados' %}" class="d-none">
     {% csrf_token %}
@@ -240,7 +184,7 @@
           <th>Expediente Baja</th>
           <th>N° de Compra</th>
           <th>Cuenta Código</th>
-          <th>Nomenclatura de Bienes</th>
+          <th class="d-none">Nomenclatura de Bienes</th>
           <th>N° de Serie</th>
           <th>Origen</th>
           <th>Estado</th>
@@ -268,53 +212,35 @@
           <td style="max-width:120px;">{{ b.numero_identificacion|default:"—" }}</td>
           <td style="min-width:180px; max-width:250px;">{{ b.descripcion }}</td>
           <td class="text-center">{{ b.cantidad }}</td>
-
           <td class="text-nowrap">{{ b.expediente.numero_expediente|default:"—" }}</td>
           <td class="text-nowrap">{{ b.expediente_baja|default:"—" }}</td>
-
           <td class="text-nowrap">
-            {% if b.numero_compra %}
-              {{ b.numero_compra }}
-            {% elif b.expediente.numero_compra %}
-              {{ b.expediente.numero_compra }}
-            {% else %}
-              —
-            {% endif %}
+            {% if b.numero_compra %}{{ b.numero_compra }}
+            {% elif b.expediente.numero_compra %}{{ b.expediente.numero_compra }}
+            {% else %}—{% endif %}
           </td>
           <td class="text-nowrap">{{ b.cuenta_codigo|default:"—" }}</td>
-          <td class="text-nowrap">{{ b.nomenclatura_bienes|default:"—" }}</td>
+          <td class="text-nowrap d-none">{{ b.nomenclatura_bienes|default:"—" }}</td>
           <td class="text-nowrap">{{ b.numero_serie|default:"—" }}</td>
           <td class="text-nowrap">
             {% with label=b.get_origen_display|default:b.origen|default:"—" %}
-              {% if b.origen == "COMPRA" %}
-                <span class="badge bg-primary">{{ label }}</span>
-              {% elif b.origen == "DONACION" %}
-                <span class="badge bg-success">{{ label }}</span>
-              {% elif b.origen == "OMISION" %}
-                <span class="badge bg-secondary">{{ label }}</span>
-              {% elif b.origen == "TRANSFERENCIA" %}
-                <span class="badge bg-info text-white">{{ label }}</span>
-              {% elif b.origen == "__NULL__" or not b.origen %}
-                <span class="text-muted">{{ label }}</span>
-              {% else %}
-                <span class="badge bg-light text-dark">{{ label }}</span>
+              {% if b.origen == "COMPRA" %}<span class="badge bg-primary">{{ label }}</span>
+              {% elif b.origen == "DONACION" %}<span class="badge bg-success">{{ label }}</span>
+              {% elif b.origen == "OMISION" %}<span class="badge bg-secondary">{{ label }}</span>
+              {% elif b.origen == "TRANSFERENCIA" %}<span class="badge bg-info text-white">{{ label }}</span>
+              {% elif b.origen == "__NULL__" or not b.origen %}<span class="text-muted">{{ label }}</span>
+              {% else %}<span class="badge bg-light text-dark">{{ label }}</span>
               {% endif %}
             {% endwith %}
           </td>
           <td class="text-nowrap">
             {% with label=b.get_estado_display|default:b.estado|default:"—" %}
-              {% if b.estado == "ACTIVO" %}
-                <span class="badge bg-success">{{ label }}</span>
-              {% elif b.estado == "INACTIVO" %}
-                <span class="badge bg-secondary">{{ label }}</span>
-              {% elif b.estado == "MANTENIMIENTO" %}
-                <span class="badge bg-info text-dark">{{ label }}</span>
-              {% elif b.estado == "BAJA" %}
-                <span class="badge bg-danger text-white">{{ label }}</span>
-              {% elif b.estado == "__NULL__" or not b.estado %}
-                <span class="text-muted">{{ label }}</span>
-              {% else %}
-                <span class="badge bg-light text-dark">{{ label }}</span>
+              {% if b.estado == "ACTIVO" %}<span class="badge bg-success">{{ label }}</span>
+              {% elif b.estado == "INACTIVO" %}<span class="badge bg-secondary">{{ label }}</span>
+              {% elif b.estado == "MANTENIMIENTO" %}<span class="badge bg-info text-dark">{{ label }}</span>
+              {% elif b.estado == "BAJA" %}<span class="badge bg-danger text-white">{{ label }}</span>
+              {% elif b.estado == "__NULL__" or not b.estado %}<span class="text-muted">{{ label }}</span>
+              {% else %}<span class="badge bg-light text-dark">{{ label }}</span>
               {% endif %}
             {% endwith %}
           </td>
@@ -322,13 +248,8 @@
           <td style="min-width:150px; max-width:200px;">{{ b.observaciones|default:"—" }}</td>
           <td class="text-nowrap">{{ b.siem|default:"—" }}</td>
           <td style="min-width:150px; max-width:200px;">{{ b.descripcion_baja|default:"—" }}</td>
-
           <td class="text-end">
-            {% if b.valor_adquisicion %}
-              ${{ b.valor_adquisicion|floatformat:0|intcomma }}
-            {% else %}
-              —
-            {% endif %}
+            {% if b.valor_adquisicion %}${{ b.valor_adquisicion|floatformat:0|intcomma }}{% else %}—{% endif %}
           </td>
           <td class="text-nowrap">
             {% if b.fecha_adquisicion %}{{ b.fecha_adquisicion|date:"d/m/Y" }}{% else %}—{% endif %}
@@ -336,10 +257,9 @@
           <td class="text-nowrap">
             {% if b.fecha_baja %}{{ b.fecha_baja|date:"d/m/Y" }}{% else %}—{% endif %}
           </td>
-
           {% if not es_supervisor %}
           <td class="text-center text-nowrap">
-            <!-- Botones ahora abren modal de confirmación centralizado -->
+            {% if es_admin %}
             <button type="button" class="btn btn-sm btn-success btn-open-confirm btn-toggle-restaurar" title="Restablecer a ACTIVO"
                     data-action="{% url 'restablecer_bien' b.pk %}"
                     data-pk="{{ b.pk }}"
@@ -347,6 +267,9 @@
                     data-message="¿Restablecer este bien a ACTIVO?">
               <i class="fas fa-undo"></i>
             </button>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
           </td>
           {% endif %}
         </tr>
@@ -359,7 +282,6 @@
     </table>
   </div>
 
-  <!-- PAGINACIÓN -->
   {% if is_paginated %}
   <div class="pagination-container">
     <nav aria-label="Paginación de bienes dados de baja">
@@ -371,7 +293,6 @@
         <li class="page-item {% if not prev_page %}disabled{% endif %}">
           <a class="page-link" href="{% if prev_page %}?{{ qs_pref }}page={{ prev_page }}{% else %}#{% endif %}">Anterior</a>
         </li>
-
         {% for num in page_range %}
           {% if num == '…' %}
             <li class="page-item disabled"><span class="page-link">…</span></li>
@@ -381,7 +302,6 @@
             <li class="page-item"><a class="page-link" href="?{{ qs_pref }}page={{ num }}">{{ num }}</a></li>
           {% endif %}
         {% endfor %}
-
         <li class="page-item {% if not next_page %}disabled{% endif %}">
           <a class="page-link" href="{% if next_page %}?{{ qs_pref }}page={{ next_page }}{% else %}#{% endif %}">Siguiente</a>
         </li>
@@ -408,36 +328,23 @@
 {% endblock %}
 
 {% block extra_js %}
-
-<!-- Autosubmit (bajas) -->
 <script>
 (function () {
   const form = document.querySelector('#filtros-form');
   if (!form) return;
-
   const requestSubmit = () => (form.requestSubmit ? form.requestSubmit() : form.submit());
-
   const debounce = (fn, ms) => {
     let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn.apply(null, args), ms); };
   };
   const debouncedSubmit = debounce(requestSubmit, 400);
-
   const ensurePageReset = () => {
-    let pageInput = form.querySelector('input[name="page"]');
-    if (!pageInput) {
-      pageInput = document.createElement('input');
-      pageInput.type = 'hidden';
-      pageInput.name = 'page';
-      form.appendChild(pageInput);
-    }
-    pageInput.value = '1';
+    let pi = form.querySelector('input[name="page"]');
+    if (!pi) { pi = document.createElement('input'); pi.type = 'hidden'; pi.name = 'page'; form.appendChild(pi); }
+    pi.value = '1';
   };
-
-  const autoEls = form.querySelectorAll('.auto-submit');
-  autoEls.forEach(el => {
-    const tag = el.tagName;
+  form.querySelectorAll('.auto-submit').forEach(el => {
+    const tag  = el.tagName;
     const type = (el.type || '').toLowerCase();
-
     if (tag === 'SELECT' || (tag === 'INPUT' && (type === 'date' || type === 'checkbox' || type === 'radio'))) {
       el.addEventListener('change', () => { ensurePageReset(); requestSubmit(); });
     }
@@ -445,27 +352,24 @@
       el.addEventListener('input', () => { ensurePageReset(); debouncedSubmit(); });
     }
   });
-
 })();
-
 </script>
 
 <script>
-// Modal de confirmación reutilizable para restaurar/eliminar bienes
 (function(){
   const modalHtml = `
   <div id="confirmItemModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:2000; align-items:center; justify-content:center;">
     <div style="max-width:480px; width:94%;">
       <div style="background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 18px 50px rgba(0,0,0,0.35);">
-        <div style="background:#00aec3; color:#fff; padding:14px 18px; font-size:18px; font-weight:600;"> <span id="confirmItemTitle">Confirmar</span></div>
+        <div style="background:#00aec3; color:#fff; padding:14px 18px; font-size:18px; font-weight:600;"><span id="confirmItemTitle">Confirmar</span></div>
         <div style="padding:18px; color:#333; background:#fff;">
           <p id="confirmItemMessage" style="margin:0 0 12px;"></p>
         </div>
         <div style="padding:12px 18px 18px; display:flex; gap:10px; justify-content:flex-end; background:#fff;">
-          <button type="button" id="confirmItemCancel" class="btn btn-cancel" style="background:#6c757d; color:#fff; border:1px solid #6c757d; padding:8px 14px; border-radius:6px; box-sizing:border-box;">Cancelar</button>
+          <button type="button" id="confirmItemCancel" style="background:#6c757d; color:#fff; border:1px solid #6c757d; padding:8px 14px; border-radius:6px;">Cancelar</button>
           <form id="confirmItemForm" method="post" style="margin:0;">
             {% csrf_token %}
-            <button type="submit" id="confirmItemSubmit" class="btn btn-delete" style="padding:8px 14px; border-radius:6px; border:1px solid transparent; box-sizing:border-box;">Confirmar</button>
+            <button type="submit" id="confirmItemSubmit" style="padding:8px 14px; border-radius:6px; border:1px solid transparent;">Confirmar</button>
           </form>
         </div>
       </div>
@@ -474,26 +378,24 @@
 
   document.addEventListener('DOMContentLoaded', function(){
     const wrapper = document.createElement('div'); wrapper.innerHTML = modalHtml; document.body.appendChild(wrapper.firstElementChild);
-    const modal = document.getElementById('confirmItemModal');
-    const titleEl = document.getElementById('confirmItemTitle');
-    const msgEl = document.getElementById('confirmItemMessage');
-    const form = document.getElementById('confirmItemForm');
-    const btnCancel = document.getElementById('confirmItemCancel');
-    const submitBtn = document.getElementById('confirmItemSubmit');
-
-    const esAdmin = {% if es_admin %}true{% else %}false{% endif %};
-    const LS_KEY = 'bienesARestablecer';
-    let bienesParaRestaurar = new Map(JSON.parse(localStorage.getItem(LS_KEY)) || []);
-    const btnRestaurarMultiple = document.getElementById('btn-top-restaurar-multiple');
-    const selectBienesRestaurar = document.getElementById('select-bienes-restaurar');
-    const formRestaurarMultiple = document.getElementById('form-restaurar-multiple');
-    const tableBody = document.querySelector('table.table tbody');
-    const restaurarPanel = document.getElementById('restaurar-multiple-panel');
-    const restaurarCount = document.getElementById('restaurar-multiple-count');
-    const btnCancelarRestaurar = document.getElementById('btn-cancelar-restaurar-multiple');
-    const btnConfirmarRestaurar = document.getElementById('btn-confirmar-restaurar-multiple');
-
-    let restaurarSelectionMode = false;
+    const modal              = document.getElementById('confirmItemModal');
+    const titleEl            = document.getElementById('confirmItemTitle');
+    const msgEl              = document.getElementById('confirmItemMessage');
+    const form               = document.getElementById('confirmItemForm');
+    const btnCancel          = document.getElementById('confirmItemCancel');
+    const submitBtn          = document.getElementById('confirmItemSubmit');
+    const esAdmin            = {% if es_admin %}true{% else %}false{% endif %};
+    const LS_KEY             = 'bienesARestablecer';
+    let bienesParaRestaurar  = new Map(JSON.parse(localStorage.getItem(LS_KEY)) || []);
+    const btnRestaurarMultiple   = document.getElementById('btn-top-restaurar-multiple');
+    const selectBienesRestaurar  = document.getElementById('select-bienes-restaurar');
+    const formRestaurarMultiple  = document.getElementById('form-restaurar-multiple');
+    const tableBody              = document.querySelector('table.table tbody');
+    const restaurarPanel         = document.getElementById('restaurar-multiple-panel');
+    const restaurarCount         = document.getElementById('restaurar-multiple-count');
+    const btnCancelarRestaurar   = document.getElementById('btn-cancelar-restaurar-multiple');
+    const btnConfirmarRestaurar  = document.getElementById('btn-confirmar-restaurar-multiple');
+    let restaurarSelectionMode   = false;
 
     function updateModeUI() {
       if (btnRestaurarMultiple) {
@@ -501,20 +403,11 @@
         btnRestaurarMultiple.innerHTML = `<i class="fas fa-undo me-1"></i> Restablecer múltiples bienes${count > 0 ? ` (${count})` : ''}`;
         btnRestaurarMultiple.classList.toggle('active', restaurarSelectionMode);
       }
-
-      // Apply visual selection mode to the table container (same approach as lista_bienes)
       const tableContainer = document.querySelector('.table-responsive');
-      if (tableContainer) {
-        tableContainer.classList.toggle('tabla-selection-mode', restaurarSelectionMode || bienesParaRestaurar.size > 0);
-      }
-
-      // Toggle selectable rows and selection-column visibility
-      document.querySelectorAll('#tabla-bienes, table.table tbody tr').forEach(tr => tr.classList.toggle('selectable-row', restaurarSelectionMode));
+      if (tableContainer) tableContainer.classList.toggle('tabla-selection-mode', restaurarSelectionMode || bienesParaRestaurar.size > 0);
+      document.querySelectorAll('table.table tbody tr').forEach(tr => tr.classList.toggle('selectable-row', restaurarSelectionMode));
       document.querySelectorAll('.seleccion-col').forEach(el => el.classList.toggle('d-none', !restaurarSelectionMode));
-
-      if (restaurarPanel) {
-        restaurarPanel.classList.toggle('restaurar-multiple-panel--visible', restaurarSelectionMode);
-      }
+      if (restaurarPanel) restaurarPanel.classList.toggle('restaurar-multiple-panel--visible', restaurarSelectionMode);
     }
 
     function updateRestaurarMultipleUI() {
@@ -532,67 +425,37 @@
     function updateRowSelectionUI() {
       document.querySelectorAll('.chk-restaurar').forEach(chk => {
         const pk = String(chk.dataset.pk);
-        const selected = bienesParaRestaurar.has(pk);
-        chk.checked = selected;
+        chk.checked = bienesParaRestaurar.has(pk);
         const tr = chk.closest('tr');
-        if (tr) {
-          tr.classList.toggle('seleccionado-restaurar', selected);
-        }
+        if (tr) tr.classList.toggle('seleccionado-restaurar', bienesParaRestaurar.has(pk));
       });
-      if (restaurarCount) {
-        restaurarCount.textContent = bienesParaRestaurar.size;
-      }
-      if (btnConfirmarRestaurar) {
-        btnConfirmarRestaurar.disabled = bienesParaRestaurar.size < 2;
-      }
+      if (restaurarCount) restaurarCount.textContent = bienesParaRestaurar.size;
+      if (btnConfirmarRestaurar) btnConfirmarRestaurar.disabled = bienesParaRestaurar.size < 2;
       updateModeUI();
     }
 
     function toggleRestaurarSelection(pk) {
-      if (bienesParaRestaurar.has(pk)) {
-        bienesParaRestaurar.delete(pk);
-      } else {
-        bienesParaRestaurar.set(pk, true);
-      }
+      bienesParaRestaurar.has(pk) ? bienesParaRestaurar.delete(pk) : bienesParaRestaurar.set(pk, true);
       saveRestaurarState();
     }
 
-    // Renderizar selecciones al cargar la página
-    if (esAdmin) {
-      restaurarSelectionMode = bienesParaRestaurar.size > 0;
-      updateRestaurarMultipleUI();
-      updateRowSelectionUI();
-      updateModeUI();
-    }
+    if (esAdmin) { restaurarSelectionMode = bienesParaRestaurar.size > 0; updateRestaurarMultipleUI(); updateRowSelectionUI(); updateModeUI(); }
 
     if (btnRestaurarMultiple) {
       btnRestaurarMultiple.addEventListener('click', function() {
-        // If not in selection mode, enable it. If already in selection mode:
-        // - keep it active when there are selected items (don't hide the panel)
-        // - allow disabling only when nothing is selected
-        if (!restaurarSelectionMode) {
-          restaurarSelectionMode = true;
-        } else {
-          if (bienesParaRestaurar.size > 0) {
-            // keep active and refresh UI
-            updateRestaurarMultipleUI();
-          } else {
-            restaurarSelectionMode = false;
-          }
-        }
+        if (!restaurarSelectionMode) { restaurarSelectionMode = true; }
+        else { bienesParaRestaurar.size > 0 ? updateRestaurarMultipleUI() : (restaurarSelectionMode = false); }
         updateModeUI();
       });
     }
 
     if (btnCancelarRestaurar) {
       btnCancelarRestaurar.addEventListener('click', function() {
-        // Clear selection state and persisted storage then restore UI to normal
         restaurarSelectionMode = false;
         bienesParaRestaurar.clear();
         try { localStorage.removeItem(LS_KEY); } catch (err) {}
         if (selectBienesRestaurar) selectBienesRestaurar.innerHTML = '';
-        updateRowSelectionUI();
-        updateModeUI();
+        updateRowSelectionUI(); updateModeUI();
       });
     }
 
@@ -604,16 +467,10 @@
     }
 
     document.addEventListener('change', function(e) {
-      if (!esAdmin) return;
-      if (e.target.classList && e.target.classList.contains('chk-restaurar')) {
-        const pk = String(e.target.dataset.pk);
-        if (e.target.checked) {
-          bienesParaRestaurar.set(pk, true);
-        } else {
-          bienesParaRestaurar.delete(pk);
-        }
-        saveRestaurarState();
-      }
+      if (!esAdmin || !e.target.classList.contains('chk-restaurar')) return;
+      const pk = String(e.target.dataset.pk);
+      e.target.checked ? bienesParaRestaurar.set(pk, true) : bienesParaRestaurar.delete(pk);
+      saveRestaurarState();
     });
 
     if (tableBody) {
@@ -642,7 +499,6 @@
           bienesParaRestaurar.forEach((_, pk_val) => {
             selectBienesRestaurar.innerHTML += `<option value="${pk_val}" selected></option>`;
           });
-          // Clear selection mode and persisted state before submitting so UI returns to normal
           bienesParaRestaurar.clear();
           localStorage.removeItem(LS_KEY);
           restaurarSelectionMode = false;
@@ -650,22 +506,17 @@
           formRestaurarMultiple.submit();
         }
       };
-
       btnCancel.textContent = "Cancelar";
       btnCancel.style.background = "#6c757d";
       btnCancel.style.borderColor = "#6c757d";
-
-      submitBtn.classList.remove('btn-delete');
       submitBtn.style.background = '#28a745';
       submitBtn.style.color = '#fff';
-
       modal.style.display = 'flex';
       submitBtn.focus();
     }
 
     function showNormalConfirm(action, title, message, danger) {
-      form.onsubmit = null; // Limpiar handler custom
-
+      form.onsubmit = null;
       titleEl.textContent = title;
       titleEl.parentElement.style.background = "#00aec3";
       msgEl.textContent = message;
@@ -674,14 +525,8 @@
       btnCancel.textContent = "Cancelar";
       btnCancel.style.background = "#6c757d";
       btnCancel.style.borderColor = "#6c757d";
-      if (danger) {
-        submitBtn.classList.remove('btn-delete');
-        submitBtn.style.background = '#e74c3c';
-        submitBtn.style.color = '#fff';
-      } else {
-        submitBtn.style.background = '#28a745';
-        submitBtn.style.color = '#fff';
-      }
+      submitBtn.style.background = danger ? '#e74c3c' : '#28a745';
+      submitBtn.style.color = '#fff';
       modal.style.display = 'flex';
       submitBtn.focus();
     }
@@ -689,44 +534,31 @@
     document.body.addEventListener('click', function(e){
       const btn = e.target.closest('.btn-open-confirm');
       if (!btn) return;
-
-      // If restore-multiple mode is active, block individual restore actions
       if (restaurarSelectionMode) {
-        e.preventDefault();
-        e.stopPropagation();
+        e.preventDefault(); e.stopPropagation();
         try { alert('Desactivá "Restablecer múltiples bienes" para operar individualmente.'); } catch (err) {}
         return;
       }
-
       const action = btn.getAttribute('data-action');
-      const title = btn.getAttribute('data-title') || 'Confirmar';
-      const message = btn.getAttribute('data-message') || '';
-      const danger = btn.getAttribute('data-danger');
       if (!action) return;
-
-      showNormalConfirm(action, title, message, danger);
+      showNormalConfirm(action, btn.getAttribute('data-title') || 'Confirmar', btn.getAttribute('data-message') || '', btn.getAttribute('data-danger'));
     });
 
     function closeModal(){ modal.style.display = 'none'; }
     btnCancel.addEventListener('click', closeModal);
-    document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape' && modal.style.display === 'flex') closeModal(); });
-    modal.addEventListener('click', function(ev){ if (ev.target === modal) closeModal(); });
+    document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && modal.style.display === 'flex') closeModal(); });
+    modal.addEventListener('click', ev => { if (ev.target === modal) closeModal(); });
 
-    // Clear persisted restore-selection when navigating to another tab (visibility change)
-    // Do NOT apply on search filter to preserve accumulated selection while filtering
     window.addEventListener('visibilitychange', function() {
       if (document.hidden && restaurarSelectionMode) {
         try { localStorage.removeItem(LS_KEY); } catch (err) {}
         bienesParaRestaurar.clear();
         restaurarSelectionMode = false;
         if (selectBienesRestaurar) selectBienesRestaurar.innerHTML = '';
-        updateRowSelectionUI();
-        updateModeUI();
+        updateRowSelectionUI(); updateModeUI();
       }
     });
-
   });
 })();
-
 </script>
 {% endblock %}
