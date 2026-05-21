@@ -455,7 +455,7 @@ def alta_operadores(request):
             )
  
         if operador.tipo_usuario == 'supervisor':
-            msg_creacion = f"Se creó un usuario supervisor '{operador.username}'."
+            msg_creacion = f"Se creó usuario supervisor '{operador.username}'."
         else:
             msg_creacion = f"Se creó el operador '{operador.username}'."
         Notificacion.objects.create(
@@ -465,7 +465,7 @@ def alta_operadores(request):
         )
  
         if operador.tipo_usuario == 'supervisor':
-            messages.success(request, f"Supervisor {nombre} {apellido} creado. Usuario: {operador.username}")
+            messages.success(request, f"Se creó usuario supervisor '{operador.username}'.")
         else:
             messages.success(request, f"Operador {nombre} {apellido} creado. Usuario: {operador.username}")
         return redirect("operadores")
@@ -554,12 +554,17 @@ def editar_operador(request, pk):
         if hubo_cambio:
             operador.save()
             # Mensaje de éxito
-            messages.success(request, f"✅ Operador '{operador.username}' actualizado correctamente.", extra_tags='editar')
+            if operador.tipo_usuario == 'supervisor':
+                messages.success(request, f"Se editó usuario supervisor '{operador.username}'.", extra_tags='editar')
+            else:
+                messages.success(request, f"✅ Operador '{operador.username}' actualizado correctamente.", extra_tags='editar')
             try:
-                crear_notificacion(request.user, f"Se editó el operador '{operador.username}'.")
+                if operador.tipo_usuario == 'supervisor':
+                    crear_notificacion(request.user, f"Se editó usuario supervisor '{operador.username}'.")
+                else:
+                    crear_notificacion(request.user, f"Se editó el operador '{operador.username}'.")
             except Exception:
                 pass
-            messages.success(request, f"Operador '{operador.username}' editado correctamente.")
  
         return redirect("operadores")
  
@@ -603,7 +608,7 @@ def eliminar_operador(request, pk):
 
     try:
         if es_supervisor:
-            msg_elim = f"Se eliminó un usuario supervisor '{identificador}'."
+            msg_elim = f"Se eliminó usuario supervisor '{identificador}'."
         else:
             msg_elim = f"Se eliminó el operador '{identificador}'."
         Notificacion.objects.create(
@@ -615,7 +620,7 @@ def eliminar_operador(request, pk):
         pass
 
     if es_supervisor:
-        messages.success(request, f"Supervisor '{identificador}' eliminado correctamente.")
+        messages.success(request, f"Se eliminó usuario supervisor '{identificador}'.")
     else:
         messages.success(request, f"Operador '{identificador}' eliminado correctamente.")
     return redirect("operadores")
