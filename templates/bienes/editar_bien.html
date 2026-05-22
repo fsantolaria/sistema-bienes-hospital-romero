@@ -276,11 +276,11 @@
 
     function togglePrecio() {
       const v = (origen?.value || '').toUpperCase();
-      if (v === 'COMPRA') {
+      const esCompra = v === 'COMPRA' || v === 'COMPRA_MENOR';
+      if (esCompra) {
         grupoPrecio?.classList.remove('d-none');
         if (inputPrecio) inputPrecio.disabled = false;
 
-        // Ajustar a 3 columnas
         colSiem?.classList.remove('col-md-6');
         colSiem?.classList.add('col-md-4');
         colFechaAlta?.classList.remove('col-md-6');
@@ -289,7 +289,6 @@
         grupoPrecio?.classList.add('d-none');
         if (inputPrecio) { inputPrecio.disabled = true; }
 
-        // Ajustar a 2 columnas (expandir)
         colSiem?.classList.remove('col-md-4');
         colSiem?.classList.add('col-md-6');
         colFechaAlta?.classList.remove('col-md-4');

@@ -17,7 +17,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.utils.text import slugify
 from core.models.notificacion import Notificacion
 from core.models.log_actividad import LogActividad
-from core.constants import MAX_NOTIFICACIONES
+from core.constants import MAX_NOTIFICACIONES, ORIGENES_COMPRA
 from django.http import JsonResponse, HttpResponse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.template.loader import render_to_string
@@ -1483,7 +1483,7 @@ def editar_bien(request, pk):
                 if not form.cleaned_data.get("fecha_baja") and not obj.fecha_baja:
                     obj.fecha_baja = date.today()
             origen_nuevo = form.cleaned_data.get("origen") or obj.origen
-            if (origen_nuevo or "").upper() != "COMPRA":
+            if (origen_nuevo or "").upper() not in ORIGENES_COMPRA:
                 obj.valor_adquisicion = None
             if not getattr(obj, "nombre", None):
                 obj.nombre = (obj.descripcion or obj.numero_serie or "SIN NOMBRE")[:200]
@@ -1783,7 +1783,7 @@ def carga_masiva_bienes(request):
                             
                             origen_val = map_origen(origen_txt)
                             estado_val = map_estado(estado_txt)
-                            precio = parse_money(precio_raw) if origen_val == "COMPRA" else None
+                            precio = parse_money(precio_raw) if origen_val in ORIGENES_COMPRA else None
  
                             expediente_obj = None
                             if nro_exp and nro_exp.upper() != "NO":

@@ -5,16 +5,20 @@ Incluye opciones y valores por defecto usados por los modelos y tests.
 
 # Origenes posibles
 ORIGEN_COMPRA = 'COMPRA'
+ORIGEN_COMPRA_MENOR = 'COMPRA_MENOR'
 ORIGEN_DONACION = 'DONACION'
 ORIGEN_TRANSFERENCIA = 'TRANSFERENCIA'
 ORIGEN_OMISION = 'OMISION'
 
 ORIGEN_CHOICES = (
     (ORIGEN_COMPRA, 'Compra'),
+    (ORIGEN_COMPRA_MENOR, 'Compra Menor'),
     (ORIGEN_DONACION, 'Donación'),
     (ORIGEN_TRANSFERENCIA, 'Transferencia'),
     (ORIGEN_OMISION, 'Omisión'),
 )
+
+ORIGENES_COMPRA = {ORIGEN_COMPRA, ORIGEN_COMPRA_MENOR}
 
 # Estados posibles
 ESTADO_ACTIVO = 'ACTIVO'

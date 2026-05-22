@@ -9,6 +9,7 @@ from ..constants import (
     ESTADO_CHOICES,
     ORIGEN_CHOICES,
     ORIGEN_COMPRA,
+    ORIGENES_COMPRA,
     ESTADO_ACTIVO,
 )
 
@@ -156,8 +157,8 @@ class BienPatrimonial(models.Model):
                 {"fecha_adquisicion": "La fecha no puede ser futura"}
             )
 
-        # Si el origen no es COMPRA, no guardamos precio
-        if self.origen != ORIGEN_COMPRA:
+        # Si el origen no es COMPRA ni COMPRA_MENOR, no guardamos precio
+        if self.origen not in ORIGENES_COMPRA:
             self.valor_adquisicion = None
 
         # Si tiene fecha_baja, el estado debería ser BAJA (no obligatorio, pero consistente)

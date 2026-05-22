@@ -258,7 +258,8 @@
 
   function togglePrecio() {
     const v = (origen?.value || '').toUpperCase();
-    if (v === 'COMPRA') {
+    const esCompra = v === 'COMPRA' || v === 'COMPRA_MENOR';
+    if (esCompra) {
       grupoPrecio?.classList.remove('d-none');
       if (inputPrecio) inputPrecio.disabled = false;
       colSiem?.classList.replace('col-md-6', 'col-md-4');
