@@ -2,6 +2,7 @@ from django.contrib.auth import authenticate, login, logout, get_user_model
 import pandas as pd
 from datetime import date, timedelta
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from core.forms import CargaMasivaForm, BienPatrimonialForm, OperadorForm
@@ -288,13 +289,17 @@ def operadores(request):
 
 
 def recuperar_password(request):
-    """Recuperación de contraseña según el rol."""
+    """Recuperación de contraseña: genera token y envía email al usuario y al admin."""
+    import logging
     from django.core.mail import send_mail
     from django.contrib.auth import get_user_model
+    from django.conf import settings
     from core.models.password_reset_token import PasswordResetToken
-    
+
+    logger = logging.getLogger(__name__)
     User = get_user_model()
-    
+    ADMIN_EMAIL = getattr(settings, 'DEFAULT_FROM_EMAIL', '')
+
     if request.method == "POST":
         identificador = (request.POST.get("usuario_o_email") or "").strip()
 
@@ -302,21 +307,54 @@ def recuperar_password(request):
             messages.error(request, "Ingresá tu usuario o email para enviar la solicitud.")
             return render(request, "recuperar_password.html", {"usuario_o_email": identificador})
 
-        # Intentar buscar al usuario para ver si existe (opcional, para dar mejor feedback)
-        try:
-            user = User.objects.get(Q(username=identificador) | Q(email=identificador))
-            rol = getattr(user, 'tipo_usuario', 'usuario')
-            mensaje_notif = f"El usuario '{user.username}' (Rol: {rol}) solicitó recuperación de contraseña."
-        except User.DoesNotExist:
-            # Aunque no exista, damos el mismo mensaje por seguridad, o podemos ser específicos si el cliente lo prefiere.
-            # En este caso, el cliente pidió simplicidad:
-            mensaje_notif = f"Se solicitó recuperación para el identificador desconocido: '{identificador}'"
+        # Buscar usuario por username o email
+        user = User.objects.filter(Q(username=identificador) | Q(email__iexact=identificador)).first()
 
-        from core.views import crear_notificacion_admins
-        crear_notificacion_admins(mensaje_notif)
-        
-        messages.success(request, "Solicitud enviada correctamente. Un administrador revisará tu pedido.")
+        if user is not None:
+            # Generar token de reset
+            token_val = PasswordResetToken.generate_token()
+            PasswordResetToken.objects.filter(user=user, is_used=False).update(is_used=True)
+            reset_token = PasswordResetToken.objects.create(user=user, token=token_val)
+
+            reset_url = request.build_absolute_uri(
+                reverse('resetear_password', args=[reset_token.token])
+            )
+
+            # Enviar email al usuario
+            try:
+                send_mail(
+                    subject="Recuperación de contraseña - Sistema de Bienes",
+                    message=(
+                        f"Hola {user.username},\n\n"
+                        f"Recibimos una solicitud para restablecer tu contraseña.\n\n"
+                        f"Hacé clic en el siguiente enlace (válido por 24 hs):\n{reset_url}\n\n"
+                        f"Si no realizaste esta solicitud, ignorá este mensaje."
+                    ),
+                    from_email=ADMIN_EMAIL,
+                    recipient_list=[user.email],
+                    fail_silently=False,
+                )
+            except Exception as exc:
+                logger.error("Error enviando email al usuario %s: %s", user.username, exc)
+
+            # Notificar al administrador
+            try:
+                send_mail(
+                    subject=f"[Admin] Solicitud de recuperación: {user.username}",
+                    message=(
+                        f"El usuario '{user.username}' (Rol: {getattr(user, 'tipo_usuario', '-')}) "
+                        f"solicitó recuperación de contraseña.\n\nEnlace generado:\n{reset_url}"
+                    ),
+                    from_email=ADMIN_EMAIL,
+                    recipient_list=[ADMIN_EMAIL],
+                    fail_silently=False,
+                )
+            except Exception as exc:
+                logger.error("Error enviando notificación admin: %s", exc)
+
+        messages.success(request, "Recibirás un email con el enlace para restablecer tu contraseña.")
         return redirect("recuperar_password")
+
     return render(request, "recuperar_password.html")
 
 

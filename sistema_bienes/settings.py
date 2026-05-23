@@ -132,6 +132,6 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'desposfrancisco@gmail.com'
-EMAIL_HOST_PASSWORD = 'your-app-password-here'  # Reemplaza con la App Password de Google
+EMAIL_HOST_PASSWORD = 'vrcn qevy bgmz bsgt'  # Reemplaza con la App Password de Google
 DEFAULT_FROM_EMAIL = 'desposfrancisco@gmail.com'
 
