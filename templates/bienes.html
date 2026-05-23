@@ -176,21 +176,9 @@
 
         </div>
 
-        <div class="form-buttons position-relative d-flex justify-content-center gap-3 flex-wrap align-items-center mt-4">
-          {% if es_admin or es_supervisor %}
-          <a href="{% url 'carga_masiva' %}" class="btn btn-gris">
-            <i class="fa-solid fa-upload me-1"></i> Carga masiva
-          </a>
-          <a href="{% url 'lista_baja_bienes' %}" class="btn btn-gris">
-            <i class="fa-solid fa-trash-can me-1"></i> Ver bienes de baja
-          </a>
-          {% endif %}
+        <div class="form-buttons position-relative d-flex justify-content-end gap-3 flex-wrap align-items-center mt-4">
 
-          <a href="{% if es_admin %}{% url 'lista_bienes' %}{% else %}{% url 'lista_bienes_operador' %}{% endif %}" class="btn btn-ver-lista" style="min-width:160px;">
-            <i class="fa-solid fa-list me-1"></i> Ver lista
-          </a>
-
-          <a href="{% if es_admin %}{% url 'home_admin' %}{% else %}{% url 'home_operador' %}{% endif %}" class="btn btn-cancelar" style="min-width:160px;">
+          <a href="{% if es_admin %}{% url 'lista_bienes' %}{% else %}{% url 'lista_bienes_operador' %}{% endif %}" class="btn btn-cancelar" style="min-width:160px;">
             <i class="fa-solid fa-times me-1"></i> Cancelar
           </a>
 
