@@ -52,7 +52,7 @@
 
   <p class="text-muted">Rango: <strong>{{ rango_desc }}</strong></p>
 
-  <!-- Tabla de movimientos (bienes + historial LogActividad) -->
+  <!-- Tabla de bienes reportados -->
   <div class="table-responsive mb-4">
     <table class="table table-striped table-bordered align-middle">
       <thead class="thead-turquesa">
@@ -67,80 +67,28 @@
         </tr>
       </thead>
       <tbody>
-        {% if movimientos %}
-          {% for item in movimientos %}
-            {% if item.tipo == 'bien' %}
-              {% with b=item.bien %}
-              <tr>
-                <td class="text-nowrap">{{ b.pk }}</td>
-                <td style="min-width:240px">{{ b.descripcion|default:"—" }}</td>
-                <td class="text-nowrap">{{ b.servicios|default:"—" }}</td>
-                <td class="text-nowrap">
-{% if b.get_estado_display|default:b.estado|default:""|upper == "ACTIVO" %}
-                    <span class="badge bg-success">{{ b.get_estado_display|default:"ACTIVO" }}</span>
-                  {% elif b.get_estado_display|default:b.estado|default:""|upper == "BAJA" %}
-                    <span class="badge bg-danger text-white">{{ b.get_estado_display|default:"BAJA" }}</span>
-                  {% else %}
-                    <span class="badge bg-secondary">{{ b.get_estado_display|default:b.estado|default:"—" }}</span>
-                  {% endif %}
-
-                </td>
-                <td class="text-nowrap" style="width: 120px; text-align: center;">
-
-                  {% if b.fecha_adquisicion %}{{ b.fecha_adquisicion|date:"d/m/Y" }}{% else %}—{% endif %}
-                </td>
-                <td class="text-nowrap" style="width: 120px; text-align: center;">
-                  {% if b.fecha_baja %}{{ b.fecha_baja|date:"d/m/Y" }}{% else %}—{% endif %}
-                </td>
-                <td class="text-center">
-                  {% if b.valor_adquisicion %}
-                    ${{ b.valor_adquisicion|floatformat:0|intcomma }}
-                  {% else %}—{% endif %}
-                </td>
-              </tr>
-              {% endwith %}
-            {% else %}
-              {% with l=item.log bien=item.bien %}
-              <tr>
-                <td class="text-nowrap">{{ bien.clave_unica|default:"—" }}</td>
-                <td style="min-width:240px">
-                  <div class="fw-semibold">{{ item.mensaje }}</div>
-                  <div class="text-muted" style="font-size:12px;">Acción: {{ l.get_accion_display }}</div>
-                </td>
-                <td class="text-nowrap">{{ bien.servicios|default:"—" }}</td>
-                <td class="text-nowrap">
-{% if bien.get_estado_display|default:""|upper == "ACTIVO" %}
-                    <span class="badge bg-success">{{ bien.get_estado_display|default:"ACTIVO" }}</span>
-                  {% elif bien.get_estado_display|default:""|upper == "BAJA" %}
-                    <span class="badge bg-danger text-white">{{ bien.get_estado_display|default:"BAJA" }}</span>
-                  {% else %}
-                    <span class="badge bg-secondary">{{ bien.get_estado_display|default:bien.estado|default:"—" }}</span>
-                  {% endif %}
-                </td>
-                <td class="text-nowrap" style="width: 120px; text-align: center;">—</td>
-
-                <td class="text-nowrap" style="width: 120px; text-align: center;">{{ l.fecha|date:"d/m/Y" }}</td>
-                <td class="text-center">
-                  {% if bien.valor_adquisicion %}
-                    ${{ bien.valor_adquisicion|floatformat:0|intcomma }}
-                  {% else %}—{% endif %}
-                </td>
-              </tr>
-              {% endwith %}
-            {% endif %}
-
-          {% empty %}
-            <tr>
-              <td colspan="7" class="text-center text-muted py-4">No hay movimientos en {{ rango_desc|lower }}.</td>
-            </tr>
-          {% endfor %}
-        {% else %}
-          {% for b in bienes %}
+        {% for b in bienes %}
           <tr>
             <td class="text-nowrap">{{ b.pk }}</td>
             <td style="min-width:240px">{{ b.descripcion|default:"—" }}</td>
             <td class="text-nowrap">{{ b.servicios|default:"—" }}</td>
-            <td class="text-nowrap">{{ b.get_estado_display|default:b.estado|default:"—" }}</td>
+            <td class="text-nowrap">
+              {% with label=b.get_estado_display|default:b.estado|default:"—" %}
+                {% if b.estado == "ACTIVO" %}
+                  <span class="badge bg-success">{{ label }}</span>
+                {% elif b.estado == "INACTIVO" %}
+                  <span class="badge bg-secondary">{{ label }}</span>
+                {% elif b.estado == "MANTENIMIENTO" %}
+                  <span class="badge bg-info text-dark">{{ label }}</span>
+                {% elif b.estado == "BAJA" %}
+                  <span class="badge bg-danger text-white">{{ label }}</span>
+                {% elif b.estado == "__NULL__" or not b.estado %}
+                  <span class="text-muted">{{ label }}</span>
+                {% else %}
+                  <span class="badge bg-light text-dark">{{ label }}</span>
+                {% endif %}
+              {% endwith %}
+            </td>
             <td class="text-nowrap" style="width: 120px; text-align: center;">
               {% if b.fecha_adquisicion %}{{ b.fecha_adquisicion|date:"d/m/Y" }}{% else %}—{% endif %}
             </td>
@@ -157,8 +105,7 @@
           <tr>
             <td colspan="7" class="text-center text-muted py-4">No hay movimientos en {{ rango_desc|lower }}.</td>
           </tr>
-          {% endfor %}
-        {% endif %}
+        {% endfor %}
       </tbody>
     </table>
   </div>

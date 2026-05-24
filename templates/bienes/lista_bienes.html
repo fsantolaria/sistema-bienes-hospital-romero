@@ -379,6 +379,7 @@
   const persisted               = loadPersistedSelection();
   const selectedIdSet           = persisted.ids;
   const selectedItemDescriptions= persisted.descriptions;
+  let bajaFinalEnviada          = false;
 
   const getSelectedItems = () => Array.from(selectedIdSet).map(pk => ({ pk, desc: selectedItemDescriptions.get(pk) || '' }));
   const syncHiddenInputs = () => {
@@ -392,6 +393,16 @@
     bajaCount.textContent = selectedIdSet.size;
     bajaPanel.classList.toggle('baja-multiple-panel--visible', bajaSelectionMode);
     if (btnConfirmarBaja) btnConfirmarBaja.disabled = selectedIdSet.size < 2;
+  };
+
+  const ocultarPanelBajaMultiple = () => {
+    if (!bajaPanel) return;
+    bajaPanel.classList.remove('baja-multiple-panel--visible');
+  };
+
+  const mostrarPanelBajaMultipleSiCorresponde = () => {
+    if (!bajaSelectionMode || bajaFinalEnviada || selectedIdSet.size === 0) return;
+    updateBajaPanel();
   };
 
   const updateSelectionUI = () => {
@@ -518,6 +529,7 @@
       const form = document.getElementById('form-dar-baja');
       if (form) form.action = "{% url 'dar_baja_bienes_seleccionados' %}";
       buildBajaTable(selectedItems.map(item => [item.pk, item.desc]));
+      ocultarPanelBajaMultiple();
       const offcanvasEl = document.getElementById('offcanvasDarBaja');
       if (offcanvasEl) bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl).show();
     });
@@ -574,7 +586,20 @@
 
   const formDarBaja = document.getElementById('form-dar-baja');
   if (formDarBaja) {
-    // Mantener estado e inputs para que el POST llegue con los pks dinámicos.
+    formDarBaja.addEventListener('submit', function() {
+      bajaFinalEnviada = true;
+      try { localStorage.removeItem(LS_KEY); } catch (err) {}
+      selectedIdSet.clear();
+      selectedItemDescriptions.clear();
+      ocultarPanelBajaMultiple();
+      if (hiddenSelectedIds) hiddenSelectedIds.value = '';
+      if (hiddenBajaInput) hiddenBajaInput.value = '';
+    });
+  }
+
+  const offcanvasDarBaja = document.getElementById('offcanvasDarBaja');
+  if (offcanvasDarBaja) {
+    offcanvasDarBaja.addEventListener('hidden.bs.offcanvas', mostrarPanelBajaMultipleSiCorresponde);
   }
 
 

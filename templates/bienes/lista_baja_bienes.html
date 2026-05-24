@@ -80,11 +80,6 @@
       <a class="btn-inst-nav" href="{% if es_supervisor %}{% url 'lista_bienes_supervisor' %}{% else %}{% url 'lista_bienes' %}{% endif %}">
         <i class="fas fa-arrow-left"></i> Volver a lista de bienes
       </a>
-      {% if es_supervisor %}
-      <a class="btn btn-warning text-dark" href="#" style="pointer-events:none; opacity:.8;" aria-disabled="true">
-        <i class="bi bi-eye me-1"></i> Solo lectura
-      </a>
-      {% endif %}
     </div>
   </div>
 
