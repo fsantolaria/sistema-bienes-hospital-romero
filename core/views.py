@@ -2329,3 +2329,76 @@ def agregar_servicio_ajax(request):
  
     ServicioExtra.objects.create(nombre=nombre)
     return JsonResponse({"ok": True, "nombre": nombre, "mensaje": f"Servicio '{nombre}' agregado correctamente."})
+@login_required
+def editar_servicio_ajax(request):
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
+
+    perms = permisos_context(request.user)
+    if not perms["es_admin"]:
+        return JsonResponse({"ok": False, "error": "Sin permisos."}, status=403)
+
+    import json
+    try:
+        data = json.loads(request.body)
+        nombre_viejo = (data.get("nombre_viejo") or "").strip()
+        nombre_nuevo = (data.get("nombre_nuevo") or "").strip().title()
+    except Exception:
+        return JsonResponse({"ok": False, "error": "Datos inválidos."}, status=400)
+
+    if not nombre_viejo or not nombre_nuevo:
+        return JsonResponse({"ok": False, "error": "Completá ambos campos."})
+
+    if nombre_viejo.lower() == nombre_nuevo.lower():
+        return JsonResponse({"ok": False, "error": "El nombre nuevo es igual al actual."})
+
+    SERVICIOS_FIJOS = [
+        "Apoyo A La Comunidad", "Area Guardia", "Area Limpieza Hospitalaria",
+        "Area Parque Cultural", "Arquitectura", "CAPER", "Camilleros", "Cardiologia",
+        "Charcot", "Cirugia", "Clinica", "Cocina", "Compras", "Conmutador", "Consejeria",
+        "Consultorio De Gastroenterologia", "Consultorio Externo Salud Mental",
+        "Consultorios Externos Pab V", "Contable", "Costurero",
+        "Cud Y Servicios De Consumos Problematicos", "Departamento De Enfermerias Supervision",
+        "Departamento Sistema De Informacion - Samo Turnos Y Estadistica",
+        "Deposito Descartable", "Deposito General", "Dermatologia", "Diagnostico Por Imagenes",
+        "Dira", "Direccion Administrativa", "Direccion Asociada Area Tecnica",
+        "Direccion Asociada Medico Quirurgica", "Direccion Ejecutiva", "Direccion Salud Mental",
+        "Dispositivo Artistico Cultural", "Docencia E Investigacion",
+        "Donacion Fundacion Florencio Perez", "Emergencia", "En Guarda Patrimoniales",
+        "Enfermeria", "Epidemiologia", "Estadistica", "Estadistica Central",
+        "Estadistica Pabellon V", "Esterilizacion", "Farmacia", "Gastroenterologia",
+        "Gerenciamiento De Camas", "Hemoterapia", "Infancias Y Juventudes", "Infectologia",
+        "Informatica", "Infraestructura Y Mantenimiento", "Intendencia", "Jardin Maternal",
+        "Laboratorio", "Lasegue", "Legales", "Limpieza", "Mesa De Entrada",
+        "Neumonologia Y Oftalmologia", "Neurocirugia", "Neuropsicologia", "Odontologia",
+        "Oncologia", "Patologia", "Patrimoniales", "Pediatria Y Neonatologia", "Penfield",
+        "Percial", "Podologia Y Peluqueria", "Polo Educativo", "Pre Alta", "Quirofano",
+        "RRHH", "Recuperacion Clinica", "Registro Civil", "Rehabilitacion Fisica Y Kinesiologia",
+        "Rehabilitacion Salud Mental Direccion", "Reumatologia Y Oftalmologia",
+        "SAC", "SAM", "SAMO Contable", "SAMO Facturacion",
+        "SAP (Servicio De Area Programatica Y Redes De Salud)", "SGU", "Sala De Endoscopia",
+        "Sala F", "Sala G", "Seguridad E Higiene", "Servicio De Psicologia",
+        "Servicio Rehabilitacion Larga Distancia", "Servicio Social", "Sumar",
+        "Tocoginecologia", "Toxicologia", "Traumatologia", "U.T.I.", "UCAC",
+        "Vacunacion", "Vigilancia",
+    ]
+
+    # Validar que el nombre nuevo no exista ya
+    ya_existe_fijo = any(nombre_nuevo.lower() == s.lower() for s in SERVICIOS_FIJOS)
+    ya_existe_extra = ServicioExtra.objects.filter(nombre__iexact=nombre_nuevo).exclude(nombre__iexact=nombre_viejo).exists()
+    if ya_existe_fijo or ya_existe_extra:
+        return JsonResponse({"ok": False, "error": f"El nombre '{nombre_nuevo}' ya existe."})
+
+    # Actualizar todos los bienes que tenían el nombre viejo
+    BienPatrimonial.objects.filter(servicios__iexact=nombre_viejo).update(servicios=nombre_nuevo)
+
+    # Si es un ServicioExtra, renombrarlo. Si es fijo, crear uno nuevo con el nombre nuevo.
+    servicio = ServicioExtra.objects.filter(nombre__iexact=nombre_viejo).first()
+    if servicio:
+        servicio.nombre = nombre_nuevo
+        servicio.save()
+    else:
+        ServicioExtra.objects.create(nombre=nombre_nuevo)
+
+    return JsonResponse({"ok": True, "nombre_viejo": nombre_viejo, "nombre_nuevo": nombre_nuevo,
+                         "mensaje": f"Servicio renombrado a '{nombre_nuevo}' correctamente."})    
