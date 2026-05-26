@@ -409,17 +409,12 @@
   const persisted               = loadPersistedSelection();
   const selectedIdSet           = persisted.ids;
   const selectedItemDescriptions= persisted.descriptions;
-<<<<<<< HEAD
-=======
   let bajaFinalEnviada          = false;
->>>>>>> 50ab2c37271406124748a8075c825a1616e4e453
 
   const getSelectedItems = () => Array.from(selectedIdSet).map(pk => ({ pk, desc: selectedItemDescriptions.get(pk) || '' }));
   const syncHiddenInputs = () => {
     if (hiddenSelectedIds) hiddenSelectedIds.value = Array.from(selectedIdSet).join(',');
     if (hiddenBajaInput)   hiddenBajaInput.value   = bajaSelectionMode ? '1' : '';
-<<<<<<< HEAD
-=======
   };
   const saveSelectionState = () => { syncHiddenInputs(); persistSelection(); };
 
@@ -428,17 +423,8 @@
     bajaCount.textContent = selectedIdSet.size;
     bajaPanel.classList.toggle('baja-multiple-panel--visible', bajaSelectionMode);
     if (btnConfirmarBaja) btnConfirmarBaja.disabled = selectedIdSet.size < 2;
->>>>>>> 50ab2c37271406124748a8075c825a1616e4e453
   };
-  const saveSelectionState = () => { syncHiddenInputs(); persistSelection(); };
 
-<<<<<<< HEAD
-  const updateBajaPanel = () => {
-    if (!bajaPanel || !bajaCount) return;
-    bajaCount.textContent = selectedIdSet.size;
-    bajaPanel.classList.toggle('baja-multiple-panel--visible', bajaSelectionMode);
-    if (btnConfirmarBaja) btnConfirmarBaja.disabled = selectedIdSet.size < 2;
-=======
   const ocultarPanelBajaMultiple = () => {
     if (!bajaPanel) return;
     bajaPanel.classList.remove('baja-multiple-panel--visible');
@@ -447,7 +433,6 @@
   const mostrarPanelBajaMultipleSiCorresponde = () => {
     if (!bajaSelectionMode || bajaFinalEnviada || selectedIdSet.size === 0) return;
     updateBajaPanel();
->>>>>>> 50ab2c37271406124748a8075c825a1616e4e453
   };
 
   const updateSelectionUI = () => {
@@ -636,26 +621,19 @@
         bajaFinalEnviada = true;
         setBajaSelectionMode(false);
         try { localStorage.removeItem(LS_KEY); } catch (err) {}
-<<<<<<< HEAD
-        if (hiddenSelectedIds) hiddenSelectedIds.value = '';
-=======
         selectedIdSet.clear();
         selectedItemDescriptions.clear();
         ocultarPanelBajaMultiple();
         if (hiddenSelectedIds) hiddenSelectedIds.value = '';
         if (hiddenBajaInput) hiddenBajaInput.value = '';
->>>>>>> 50ab2c37271406124748a8075c825a1616e4e453
       }
     });
   }
 
-<<<<<<< HEAD
-=======
   const offcanvasDarBaja = document.getElementById('offcanvasDarBaja');
   if (offcanvasDarBaja) {
     offcanvasDarBaja.addEventListener('hidden.bs.offcanvas', mostrarPanelBajaMultipleSiCorresponde);
   }
->>>>>>> 50ab2c37271406124748a8075c825a1616e4e453
   const formEliminar = document.getElementById('form-eliminar-bienes');
   if (formEliminar) {
     formEliminar.addEventListener('submit', function() {

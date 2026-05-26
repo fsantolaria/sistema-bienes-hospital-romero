@@ -425,14 +425,14 @@ def alta_operadores(request):
         estado = form.cleaned_data.get("estado")
         password = form.cleaned_data.get("password")
  
-<<<<<<< HEAD
+
         # Validación extra de DNI (aunque el form ya debería hacerlo, aquí manejamos el modelo Usuario directamente)
-=======
+
         numero_doc = form.cleaned_data["dni"]
 
  
         # Validación DNI duplicado
->>>>>>> 50ab2c37271406124748a8075c825a1616e4e453
+
         if numero_doc and Usuario.objects.filter(numero_doc=numero_doc).exists():
             messages.error(request, f"Ya existe un operador con el DNI {numero_doc}.")
             return redirect("alta_operadores")
@@ -2367,8 +2367,8 @@ def agregar_servicio_ajax(request):
  
     ServicioExtra.objects.create(nombre=nombre)
     return JsonResponse({"ok": True, "nombre": nombre, "mensaje": f"Servicio '{nombre}' agregado correctamente."})
-<<<<<<< HEAD
-=======
+
+
 @login_required
 def editar_servicio_ajax(request):
     if request.method != "POST":
@@ -2442,4 +2442,4 @@ def editar_servicio_ajax(request):
 
     return JsonResponse({"ok": True, "nombre_viejo": nombre_viejo, "nombre_nuevo": nombre_nuevo,
                          "mensaje": f"Servicio renombrado a '{nombre_nuevo}' correctamente."})
->>>>>>> 50ab2c37271406124748a8075c825a1616e4e453
+
