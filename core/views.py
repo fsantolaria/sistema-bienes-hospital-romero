@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from core.forms import CargaMasivaForm, BienPatrimonialForm, OperadorForm
 from core.models import BienPatrimonial, ArchivoCargaMasiva, ServicioExtra
-from django.db.models import Q, F
+from django.db.models import Q, F, Max
 from django.views.decorators.http import require_POST
 from django.db import transaction, IntegrityError
 from django.core.exceptions import ValidationError
@@ -219,7 +219,7 @@ def bienes(request):
             nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
             msg_carga = f"Se registró el bien '{nombre_bien}' (Clave: {bien.clave_unica}) correctamente."
             crear_notificacion_admins(msg_carga)
-            registrar_log(request.user, 'CARGA', msg_carga)
+            registrar_log(request.user, 'CARGA', msg_carga, bien)
             
             messages.success(request, f"Bien '{nombre_bien}' registrado correctamente.")
             if perms.get("es_admin", False):
@@ -425,7 +425,14 @@ def alta_operadores(request):
         estado = form.cleaned_data.get("estado")
         password = form.cleaned_data.get("password")
  
+<<<<<<< HEAD
         # Validación extra de DNI (aunque el form ya debería hacerlo, aquí manejamos el modelo Usuario directamente)
+=======
+        numero_doc = form.cleaned_data["dni"]
+
+ 
+        # Validación DNI duplicado
+>>>>>>> 50ab2c37271406124748a8075c825a1616e4e453
         if numero_doc and Usuario.objects.filter(numero_doc=numero_doc).exists():
             messages.error(request, f"Ya existe un operador con el DNI {numero_doc}.")
             return redirect("alta_operadores")
@@ -704,39 +711,25 @@ def dar_baja_operador(request, pk):
 # ============================
 # REPORTES
 # ============================
- 
-@login_required
-def reportes_pdf(request):
-    scope = (request.GET.get("scope") or "24h").lower()
-    now = timezone.now()
 
+ACCIONES_REPORTE_BIENES = ["CARGA", "CARGA_MASIVA", "EDICION", "BAJA", "RESTABLECIMIENTO"]
+
+
+def _rango_reportes(scope, now):
     if scope == "24h":
-        since_dt = now - timedelta(hours=24)
-        bienes = BienPatrimonial.objects.select_related("expediente").filter(
-            Q(fecha_registro__gte=since_dt) | Q(fecha_baja__gte=since_dt.date())
-        ).order_by("-fecha_registro", "pk")
-        rango_desc = "Últimas 24 horas"
-    elif scope == "12h":
-        since_dt = now - timedelta(hours=12)
-        bienes = BienPatrimonial.objects.select_related("expediente").filter(
-            Q(fecha_registro__gte=since_dt) | Q(fecha_baja__gte=since_dt.date())
-        ).order_by("-fecha_registro", "pk")
-        rango_desc = "Últimas 12 horas"
-    elif scope == "6h":
-        since_dt = now - timedelta(hours=6)
-        bienes = BienPatrimonial.objects.select_related("expediente").filter(
-            Q(fecha_registro__gte=since_dt) | Q(fecha_baja__gte=since_dt.date())
-        ).order_by("-fecha_registro", "pk")
-        rango_desc = "Últimas 6 horas"
-    else:
-        bienes = BienPatrimonial.objects.select_related("expediente").order_by("-fecha_adquisicion", "pk")
-        rango_desc = "Todos"
+        return now - timedelta(hours=24), "Últimas 24 horas"
+    if scope == "12h":
+        return now - timedelta(hours=12), "Últimas 12 horas"
+    if scope == "6h":
+        return now - timedelta(hours=6), "Últimas 6 horas"
+    return None, "Historial"
 
-    # Filtrado por Servicios (Multi-select)
-    servicios_seleccionados = request.GET.getlist("servicio")
+
+def _filtrar_bienes_reportes(bienes, q, servicios_seleccionados):
     if servicios_seleccionados:
         q_services = Q()
         import unicodedata
+
         def clean_word(w):
             nfkd = unicodedata.normalize('NFKD', w)
             return "".join([c for c in nfkd if not unicodedata.combining(c)]).lower()
@@ -746,7 +739,11 @@ def reportes_pdf(request):
             if "samo" in val.lower():
                 q_services |= Q(servicios__icontains="SAMO") | Q(servicios__icontains="Samo")
             else:
-                words = [clean_word(w) for w in val.split() if len(w) > 2 and w.lower() not in ["de", "la", "el", "los", "las", "del"]]
+                words = [
+                    clean_word(w)
+                    for w in val.split()
+                    if len(w) > 2 and w.lower() not in ["de", "la", "el", "los", "las", "del"]
+                ]
                 if words:
                     q_words = Q()
                     for w in words:
@@ -756,8 +753,6 @@ def reportes_pdf(request):
                     q_services |= Q(servicios__icontains=val)
         bienes = bienes.filter(q_services)
 
-    # Filtrado por búsqueda de texto (q)
-    q = (request.GET.get("q") or "").strip()
     if q:
         bienes = bienes.filter(
             Q(clave_unica__icontains=q)
@@ -773,6 +768,40 @@ def reportes_pdf(request):
             | Q(expediente__numero_expediente__icontains=q)
             | Q(expediente__numero_compra__icontains=q)
         )
+    return bienes
+
+
+def _bienes_reportes_queryset(scope, now, q="", servicios_seleccionados=None):
+    since_dt, rango_desc = _rango_reportes(scope, now)
+    bienes = BienPatrimonial.objects.select_related("expediente").annotate(
+        ultima_accion_reporte=Max(
+            "logs__fecha",
+            filter=Q(logs__accion__in=ACCIONES_REPORTE_BIENES),
+        )
+    )
+
+    if since_dt:
+        bienes = bienes.filter(
+            Q(ultima_accion_reporte__gte=since_dt)
+            | Q(fecha_registro__gte=since_dt)
+            | Q(fecha_baja__gte=since_dt.date())
+        )
+
+    bienes = _filtrar_bienes_reportes(bienes, q, servicios_seleccionados or [])
+    bienes = bienes.order_by(
+        F("ultima_accion_reporte").desc(nulls_last=True),
+        F("fecha_registro").desc(nulls_last=True),
+        "pk",
+    )
+    return bienes, rango_desc
+
+@login_required
+def reportes_pdf(request):
+    scope = (request.GET.get("scope") or "24h").lower()
+    now = timezone.now()
+    servicios_seleccionados = request.GET.getlist("servicio")
+    q = (request.GET.get("q") or "").strip()
+    bienes, rango_desc = _bienes_reportes_queryset(scope, now, q, servicios_seleccionados)
 
 
     ctx = {
@@ -1108,87 +1137,14 @@ def agregar_servicio(request):
  
 @login_required
 def reportes_view(request):
+    # Nota: este reporte debe reflejar el historial de cambios (alta/baja/restablecimiento)
+    # usando LogActividad como fuente de verdad.
+
     scope = (request.GET.get("scope") or "24h").lower()
     now = timezone.now()
- 
-    if scope == "24h":
-        since_dt = now - timedelta(hours=24)
-        bienes = (
-            BienPatrimonial.objects
-            .select_related("expediente")
-            .filter(
-                Q(fecha_registro__gte=since_dt) |
-                Q(fecha_baja__gte=since_dt.date())
-            )
-            .order_by("-fecha_registro", "pk")
-        )
-    elif scope == "12h":
-        since_dt = now - timedelta(hours=12)
-        bienes = (
-            BienPatrimonial.objects
-            .select_related("expediente")
-            .filter(
-                Q(fecha_registro__gte=since_dt) |
-                Q(fecha_baja__gte=since_dt.date())
-            )
-            .order_by("-fecha_registro", "pk")
-        )
-    elif scope == "6h":
-        since_dt = now - timedelta(hours=6)
-        bienes = (
-            BienPatrimonial.objects
-            .select_related("expediente")
-            .filter(
-                Q(fecha_registro__gte=since_dt) |
-                Q(fecha_baja__gte=since_dt.date())
-            )
-            .order_by("-fecha_registro", "pk")
-        )
-    else:
-        bienes = (
-            BienPatrimonial.objects
-            .select_related("expediente")
-            .order_by("-fecha_adquisicion", "pk")
-        )
- 
     servicios_seleccionados = request.GET.getlist("servicio")
-    if servicios_seleccionados:
-        q_services = Q()
-        for s in servicios_seleccionados:
-            val = s.strip()
-            if "samo" in val.lower():
-                q_services |= Q(servicios__icontains="SAMO") | Q(servicios__icontains="Samo")
-            else:
-                import unicodedata
-                def clean_word(w):
-                    nfkd = unicodedata.normalize('NFKD', w)
-                    return "".join([c for c in nfkd if not unicodedata.combining(c)]).lower()
-                words = [clean_word(w) for w in val.split() if len(w) > 2 and w.lower() not in ["de", "la", "el", "los", "las", "del"]]
-                if words:
-                    q_words = Q()
-                    for w in words:
-                        q_words |= Q(servicios__icontains=w)
-                    q_services |= q_words
-                else:
-                    q_services |= Q(servicios__icontains=val)
-        bienes = bienes.filter(q_services)
- 
     q = (request.GET.get("q") or "").strip()
-    if q:
-        bienes = bienes.filter(
-            Q(clave_unica__icontains=q)
-            | Q(descripcion__icontains=q)
-            | Q(observaciones__icontains=q)
-            | Q(numero_identificacion__icontains=q)
-            | Q(servicios__icontains=q)
-            | Q(cuenta_codigo__icontains=q)
-            | Q(nomenclatura_bienes__icontains=q)
-            | Q(numero_serie__icontains=q)
-            | Q(origen__icontains=q)
-            | Q(estado__icontains=q)
-            | Q(expediente__numero_expediente__icontains=q)
-            | Q(expediente__numero_compra__icontains=q)
-        )
+    bienes, rango_desc = _bienes_reportes_queryset(scope, now, q, servicios_seleccionados)
  
     try:
         per_page = int(request.GET.get("per_page") or 20)
@@ -1266,10 +1222,11 @@ def reportes_view(request):
     ]
     extras = list(ServicioExtra.objects.values_list('nombre', flat=True))
     todos_servicios = sorted(set(SERVICIOS_FIJOS + extras))
- 
+
     ctx = permisos_context(request.user)
     ctx.update({
         "bienes": page_obj.object_list,
+        "rango_desc": rango_desc,
         "scope": scope,
         "q": q,
         "servicios_seleccionados": servicios_seleccionados,
@@ -1509,6 +1466,7 @@ def lista_bienes_supervisor(request):
 @login_required
 def editar_bien(request, pk):
     bien = get_object_or_404(BienPatrimonial, pk=pk)
+    estado_anterior = bien.estado
     if request.method == "POST":
         form = BienPatrimonialForm(request.POST, instance=bien)
         if form.is_valid():
@@ -1520,6 +1478,13 @@ def editar_bien(request, pk):
             if (estado_nuevo or "").upper() == "BAJA":
                 if not form.cleaned_data.get("fecha_baja") and not obj.fecha_baja:
                     obj.fecha_baja = date.today()
+            elif (estado_anterior or "").upper() == "BAJA" and (estado_nuevo or "").upper() == "ACTIVO":
+                obj.fecha_adquisicion = date.today()
+                obj.fecha_baja = None
+                if hasattr(obj, "expediente_baja"):
+                    obj.expediente_baja = None
+                if hasattr(obj, "descripcion_baja"):
+                    obj.descripcion_baja = ""
             origen_nuevo = form.cleaned_data.get("origen") or obj.origen
             if (origen_nuevo or "").upper() not in ORIGENES_COMPRA:
                 obj.valor_adquisicion = None
@@ -1527,9 +1492,18 @@ def editar_bien(request, pk):
                 obj.nombre = (obj.descripcion or obj.numero_serie or "SIN NOMBRE")[:200]
             obj.save()
             nombre_bien = getattr(obj, "nombre", None) or getattr(obj, "descripcion", "Sin nombre")
-            msg_edit = f"Se editó el bien '{nombre_bien}' (Clave: {obj.clave_unica})."
+            estado_actual = (obj.estado or "").upper()
+            if (estado_anterior or "").upper() != estado_actual and estado_actual == "BAJA":
+                accion_log = "BAJA"
+                msg_edit = f"Se dio de baja el bien '{nombre_bien}' (Clave: {obj.clave_unica})."
+            elif (estado_anterior or "").upper() == "BAJA" and estado_actual == "ACTIVO":
+                accion_log = "RESTABLECIMIENTO"
+                msg_edit = f"Se restableció el bien '{nombre_bien}' (Clave: {obj.clave_unica}) a ACTIVO."
+            else:
+                accion_log = "EDICION"
+                msg_edit = f"Se editó el bien '{nombre_bien}' (Clave: {obj.clave_unica})."
             crear_notificacion_admins(msg_edit)
-            registrar_log(request.user, 'EDICION', msg_edit)
+            registrar_log(request.user, accion_log, msg_edit, obj)
             
             messages.success(request, f"Bien '{nombre_bien}' editado correctamente.")
             perms = permisos_context(request.user)
@@ -2080,7 +2054,7 @@ def dar_baja_bien(request, pk):
     nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
     msg_baja = f"Se dio de baja el bien '{nombre_bien}' (Clave: {bien.clave_unica})."
     crear_notificacion_admins(msg_baja)
-    registrar_log(request.user, 'BAJA', msg_baja)
+    registrar_log(request.user, 'BAJA', msg_baja, bien)
     
     messages.success(request, f"Bien '{nombre_bien}' dado de baja correctamente.")
     return redirect("lista_bienes")
@@ -2123,6 +2097,12 @@ def dar_baja_bienes_seleccionados(request):
         
         nombre = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
         nombres_bienes.append(nombre)
+        registrar_log(
+            request.user,
+            'BAJA',
+            f"Se dio de baja el bien '{nombre}' (Clave: {bien.clave_unica}).",
+            bien,
+        )
  
     msg_baja_masiva = f"Se dieron de baja {count} bienes mediante selección masiva: {', '.join(nombres_bienes[:5])}{'...' if count > 5 else ''}."
     crear_notificacion_admins(msg_baja_masiva)
@@ -2149,7 +2129,8 @@ def restablecer_bien(request, pk):
  
     bien = get_object_or_404(BienPatrimonial, pk=pk)
     bien.estado = "ACTIVO"
-    update_fields = ["estado"]
+    bien.fecha_adquisicion = date.today()
+    update_fields = ["estado", "fecha_adquisicion"]
     if hasattr(bien, "fecha_baja"):
         bien.fecha_baja = None
         update_fields.append("fecha_baja")
@@ -2164,7 +2145,7 @@ def restablecer_bien(request, pk):
     nombre_bien = getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre")
     msg_rest = f"Se restableció el bien '{nombre_bien}' (Clave: {bien.clave_unica}) a ACTIVO."
     crear_notificacion_admins(msg_rest)
-    registrar_log(request.user, 'RESTABLECIMIENTO', msg_rest)
+    registrar_log(request.user, 'RESTABLECIMIENTO', msg_rest, bien)
     
     messages.success(request, f"Bien '{nombre_bien}' restablecido a ACTIVO.")
     return redirect("lista_bienes")
@@ -2198,6 +2179,7 @@ def restablecer_bienes_seleccionados(request):
     nombres = []
     for bien in bienes:
         bien.estado = "ACTIVO"
+        bien.fecha_adquisicion = date.today()
         if hasattr(bien, "fecha_baja"):
             bien.fecha_baja = None
         if hasattr(bien, "expediente_baja"):
@@ -2207,12 +2189,18 @@ def restablecer_bienes_seleccionados(request):
             
         nombres.append(getattr(bien, "nombre", None) or getattr(bien, "descripcion", "Sin nombre"))
  
-        update_fields = ["estado"]
+        update_fields = ["estado", "fecha_adquisicion"]
         if hasattr(bien, "fecha_baja"): update_fields.append("fecha_baja")
         if hasattr(bien, "expediente_baja"): update_fields.append("expediente_baja")
         if hasattr(bien, "descripcion_baja"): update_fields.append("descripcion_baja")
  
         bien.save(update_fields=update_fields)
+        registrar_log(
+            request.user,
+            'RESTABLECIMIENTO',
+            f"Se restableció el bien '{nombres[-1]}' (Clave: {bien.clave_unica}) a ACTIVO.",
+            bien,
+        )
  
     nombres_str = ", ".join(nombres[:5])
     if count > 5:
@@ -2309,12 +2297,14 @@ def crear_notificacion_admins(mensaje):
     for admin in admins:
         crear_notificacion(admin, mensaje)
 
-def registrar_log(usuario, accion, mensaje):
+def registrar_log(usuario, accion, mensaje, bien=None):
     try:
         LogActividad.objects.create(
             usuario=usuario,
             accion=accion,
-            mensaje=mensaje
+            mensaje=mensaje,
+            bien=bien,
+            bien_clave_unica=getattr(bien, "clave_unica", None),
         )
     except Exception as e:
         print(f"Error al registrar log: {e}")
@@ -2377,3 +2367,79 @@ def agregar_servicio_ajax(request):
  
     ServicioExtra.objects.create(nombre=nombre)
     return JsonResponse({"ok": True, "nombre": nombre, "mensaje": f"Servicio '{nombre}' agregado correctamente."})
+<<<<<<< HEAD
+=======
+@login_required
+def editar_servicio_ajax(request):
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
+
+    perms = permisos_context(request.user)
+    if not perms["es_admin"]:
+        return JsonResponse({"ok": False, "error": "Sin permisos."}, status=403)
+
+    import json
+    try:
+        data = json.loads(request.body)
+        nombre_viejo = (data.get("nombre_viejo") or "").strip()
+        nombre_nuevo = (data.get("nombre_nuevo") or "").strip().title()
+    except Exception:
+        return JsonResponse({"ok": False, "error": "Datos inválidos."}, status=400)
+
+    if not nombre_viejo or not nombre_nuevo:
+        return JsonResponse({"ok": False, "error": "Completá ambos campos."})
+
+    if nombre_viejo.lower() == nombre_nuevo.lower():
+        return JsonResponse({"ok": False, "error": "El nombre nuevo es igual al actual."})
+
+    SERVICIOS_FIJOS = [
+        "Apoyo A La Comunidad", "Area Guardia", "Area Limpieza Hospitalaria",
+        "Area Parque Cultural", "Arquitectura", "CAPER", "Camilleros", "Cardiologia",
+        "Charcot", "Cirugia", "Clinica", "Cocina", "Compras", "Conmutador", "Consejeria",
+        "Consultorio De Gastroenterologia", "Consultorio Externo Salud Mental",
+        "Consultorios Externos Pab V", "Contable", "Costurero",
+        "Cud Y Servicios De Consumos Problematicos", "Departamento De Enfermerias Supervision",
+        "Departamento Sistema De Informacion - Samo Turnos Y Estadistica",
+        "Deposito Descartable", "Deposito General", "Dermatologia", "Diagnostico Por Imagenes",
+        "Dira", "Direccion Administrativa", "Direccion Asociada Area Tecnica",
+        "Direccion Asociada Medico Quirurgica", "Direccion Ejecutiva", "Direccion Salud Mental",
+        "Dispositivo Artistico Cultural", "Docencia E Investigacion",
+        "Donacion Fundacion Florencio Perez", "Emergencia", "En Guarda Patrimoniales",
+        "Enfermeria", "Epidemiologia", "Estadistica", "Estadistica Central",
+        "Estadistica Pabellon V", "Esterilizacion", "Farmacia", "Gastroenterologia",
+        "Gerenciamiento De Camas", "Hemoterapia", "Infancias Y Juventudes", "Infectologia",
+        "Informatica", "Infraestructura Y Mantenimiento", "Intendencia", "Jardin Maternal",
+        "Laboratorio", "Lasegue", "Legales", "Limpieza", "Mesa De Entrada",
+        "Neumonologia Y Oftalmologia", "Neurocirugia", "Neuropsicologia", "Odontologia",
+        "Oncologia", "Patologia", "Patrimoniales", "Pediatria Y Neonatologia", "Penfield",
+        "Percial", "Podologia Y Peluqueria", "Polo Educativo", "Pre Alta", "Quirofano",
+        "RRHH", "Recuperacion Clinica", "Registro Civil", "Rehabilitacion Fisica Y Kinesiologia",
+        "Rehabilitacion Salud Mental Direccion", "Reumatologia Y Oftalmologia",
+        "SAC", "SAM", "SAMO Contable", "SAMO Facturacion",
+        "SAP (Servicio De Area Programatica Y Redes De Salud)", "SGU", "Sala De Endoscopia",
+        "Sala F", "Sala G", "Seguridad E Higiene", "Servicio De Psicologia",
+        "Servicio Rehabilitacion Larga Distancia", "Servicio Social", "Sumar",
+        "Tocoginecologia", "Toxicologia", "Traumatologia", "U.T.I.", "UCAC",
+        "Vacunacion", "Vigilancia",
+    ]
+
+    # Validar que el nombre nuevo no exista ya
+    ya_existe_fijo = any(nombre_nuevo.lower() == s.lower() for s in SERVICIOS_FIJOS)
+    ya_existe_extra = ServicioExtra.objects.filter(nombre__iexact=nombre_nuevo).exclude(nombre__iexact=nombre_viejo).exists()
+    if ya_existe_fijo or ya_existe_extra:
+        return JsonResponse({"ok": False, "error": f"El nombre '{nombre_nuevo}' ya existe."})
+
+    # Actualizar todos los bienes que tenían el nombre viejo
+    BienPatrimonial.objects.filter(servicios__iexact=nombre_viejo).update(servicios=nombre_nuevo)
+
+    # Si es un ServicioExtra, renombrarlo. Si es fijo, crear uno nuevo con el nombre nuevo.
+    servicio = ServicioExtra.objects.filter(nombre__iexact=nombre_viejo).first()
+    if servicio:
+        servicio.nombre = nombre_nuevo
+        servicio.save()
+    else:
+        ServicioExtra.objects.create(nombre=nombre_nuevo)
+
+    return JsonResponse({"ok": True, "nombre_viejo": nombre_viejo, "nombre_nuevo": nombre_nuevo,
+                         "mensaje": f"Servicio renombrado a '{nombre_nuevo}' correctamente."})
+>>>>>>> 50ab2c37271406124748a8075c825a1616e4e453
