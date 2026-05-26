@@ -342,7 +342,7 @@ def recuperar_password(request):
                 send_mail(
                     subject=f"[Admin] Solicitud de recuperación: {user.username}",
                     message=(
-                        f"El usuario '{user.username}' (Rol: {getattr(user, 'tipo_usuario', '-')}) "
+                        f"El usuario '{user.username}' (Rol: {user.get_tipo_usuario_display() if hasattr(user, 'get_tipo_usuario_display') else getattr(user, 'tipo_usuario', '-')}) "
                         f"solicitó recuperación de contraseña.\n\nEnlace generado:\n{reset_url}"
                     ),
                     from_email=ADMIN_EMAIL,
