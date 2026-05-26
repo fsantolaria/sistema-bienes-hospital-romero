@@ -92,6 +92,13 @@
                     title="Agregar nuevo servicio">
                   <i class="fa-solid fa-plus"></i>
                 </button>
+                <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#modalEditarServicio" style="
+                    background-color:#f59e0b; color:white; border:none; border-radius:6px;
+                    padding:8px 12px; height:38px; cursor:pointer;
+                    display:flex; align-items:center; justify-content:center; transition:background-color 0.2s;"
+                    title="Editar servicio">
+                  <i class="fa-solid fa-pen"></i>
+                </button>
                 {% endif %}
               </div>
               {% for e in form.servicios.errors %}<div class="error-msg">{{ e }}</div>{% endfor %}
@@ -176,21 +183,9 @@
 
         </div>
 
-        <div class="form-buttons position-relative d-flex justify-content-center gap-3 flex-wrap align-items-center mt-4">
-          {% if es_admin or es_supervisor %}
-          <a href="{% url 'carga_masiva' %}" class="btn btn-gris">
-            <i class="fa-solid fa-upload me-1"></i> Carga masiva
-          </a>
-          <a href="{% url 'lista_baja_bienes' %}" class="btn btn-gris">
-            <i class="fa-solid fa-trash-can me-1"></i> Ver bienes de baja
-          </a>
-          {% endif %}
+        <div class="form-buttons position-relative d-flex justify-content-end gap-3 flex-wrap align-items-center mt-4">
 
-          <a href="{% if es_admin %}{% url 'lista_bienes' %}{% else %}{% url 'lista_bienes_operador' %}{% endif %}" class="btn btn-ver-lista" style="min-width:160px;">
-            <i class="fa-solid fa-list me-1"></i> Ver lista
-          </a>
-
-          <a href="{% if es_admin %}{% url 'home_admin' %}{% else %}{% url 'home_operador' %}{% endif %}" class="btn btn-cancelar" style="min-width:160px;">
+          <a href="{% if es_admin %}{% url 'lista_bienes' %}{% else %}{% url 'lista_bienes_operador' %}{% endif %}" class="btn btn-cancelar" style="min-width:160px;">
             <i class="fa-solid fa-times me-1"></i> Cancelar
           </a>
 
@@ -229,21 +224,65 @@
         </div>
         <div class="modal-footer" style="border-top:none; padding:16px 20px; background:#f9fafb; display:flex; gap:10px; justify-content:flex-end;">
           <button type="button" class="btn" data-bs-dismiss="modal"
-                  style="font-family:'Encode Sans',sans-serif; font-weight:600; font-size:14px; background:#6c757d; color:#fff; border:none; padding:10px 16px; border-radius:6px; cursor:pointer;"
-                  onmouseover="this.style.backgroundColor='#5a6268';" onmouseout="this.style.backgroundColor='#6c757d';">
+                  style="font-family:'Encode Sans',sans-serif; font-weight:600; font-size:14px; background:#6c757d; color:#fff; border:none; padding:10px 16px; border-radius:6px; cursor:pointer;">
             Cancelar
           </button>
-          <button type="button" id="btn-guardar-servicio"
-                  style="font-family:'Encode Sans',sans-serif; font-weight:700; font-size:14px; background:#00aec3; color:#fff; border:none; padding:10px 18px; border-radius:6px; cursor:pointer;"
-                  onmouseover="this.style.backgroundColor='#008ca1';" onmouseout="this.style.backgroundColor='#00aec3';">
+          <button type="button" class="btn" id="btn-guardar-servicio"
+                  style="font-family:'Encode Sans',sans-serif; font-weight:700; font-size:14px; background:#00aec3; color:#fff; border:none; padding:10px 18px; border-radius:6px; cursor:pointer;">
             Guardar
           </button>
         </div>
       </div>
     </div>
   </div>
+  <!-- Modal Editar Servicio -->
+  <div class="modal fade" id="modalEditarServicio" tabindex="-1" aria-labelledby="modalEditarServicioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+      <div class="modal-content" style="border-radius:12px; overflow:hidden; border:none; box-shadow:0 15px 50px rgba(0,0,0,0.2);">
+        <div class="modal-header" style="background-color:#f59e0b; color:#fff; border-bottom:none; padding:16px 20px;">
+          <h5 class="modal-title" id="modalEditarServicioLabel" style="font-family:'Encode Sans',sans-serif; font-weight:700; font-size:16px; margin:0;">
+            <i class="fa-solid fa-pen me-2"></i> EDITAR NOMBRE
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"
+                  style="box-shadow:none; background:none; border:none; color:white; font-size:20px; cursor:pointer; line-height:1; padding:0;">&times;</button>
+        </div>
+        <div class="modal-body" style="padding:24px 20px; background:#fff;">
+          <div id="modal-editar-mensaje" class="mb-3" style="display:none; border-radius:6px; font-size:14px; padding:10px 12px;"></div>
+          <div class="mb-3">
+            <label style="font-family:'Encode Sans',sans-serif; font-weight:600; font-size:14px; color:#4b5563; margin-bottom:8px; display:block;">
+              Seleccionar servicio/area a modificar
+            </label>
+            <select id="select-servicio-editar" class="form-select" style="font-size:14px; padding:10px 12px; border:1px solid #d1d5db; border-radius:6px;">
+              <option value="">— Seleccionar servicio —</option>
+            </select>
+          </div>
+          <div>
+            <label for="input-nuevo-nombre" style="font-family:'Encode Sans',sans-serif; font-weight:600; font-size:14px; color:#4b5563; margin-bottom:8px; display:block;">
+              Nuevo nombre
+            </label>
+            <input type="text" id="input-nuevo-nombre" class="form-control"
+                  placeholder="Ej: Cardiología Pediátrica"
+                  style="font-family:'Roboto',sans-serif; font-size:14px; padding:10px 12px; border:1px solid #d1d5db; border-radius:6px;"
+                  onfocus="this.style.borderColor='#f59e0b'; this.style.outline='none';"
+                  onblur="this.style.borderColor='#d1d5db';">
+          </div>
+        </div>
+        <div class="modal-footer" style="border-top:none; padding:16px 20px; background:#f9fafb; display:flex; gap:10px; justify-content:flex-end;">
+          <button type="button" class="btn" data-bs-dismiss="modal"
+                  style="font-family:'Encode Sans',sans-serif; font-weight:600; font-size:14px; background:#6c757d; color:#fff; border:none; padding:10px 16px; border-radius:6px; cursor:pointer;">
+            Cancelar
+          </button>
+          <button type="button" id="btn-guardar-edicion"
+                  style="font-family:'Encode Sans',sans-serif; font-weight:700; font-size:14px; background:#f59e0b; color:#fff; border:none; padding:10px 18px; border-radius:6px; cursor:pointer;">
+            Guardar
+          </button>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
   {% endif %}
-
+  
 </div>
 {% endblock %}
 
@@ -258,7 +297,8 @@
 
   function togglePrecio() {
     const v = (origen?.value || '').toUpperCase();
-    if (v === 'COMPRA') {
+    const esCompra = v === 'COMPRA' || v === 'COMPRA_MENOR';
+    if (esCompra) {
       grupoPrecio?.classList.remove('d-none');
       if (inputPrecio) inputPrecio.disabled = false;
       colSiem?.classList.replace('col-md-6', 'col-md-4');
@@ -333,6 +373,71 @@ document.getElementById('btn-guardar-servicio').addEventListener('click', functi
         document.getElementById('input-nuevo-servicio').value = '';
         msgDiv.style.display = 'none';
         bootstrap.Modal.getInstance(document.getElementById('modalAgregarServicio')).hide();
+      }, 1200);
+    } else {
+      msgDiv.style.display = 'block';
+      msgDiv.className = 'alert alert-danger';
+      msgDiv.textContent = data.error;
+    }
+  });
+});
+  // Cargar opciones en el select de editar
+document.getElementById('modalEditarServicio').addEventListener('show.bs.modal', function() {
+  const select = document.getElementById('select-servicio-editar');
+  const selectPrincipal = document.getElementById('id_servicios');
+  select.innerHTML = '<option value="">— Seleccionar servicio —</option>';
+  if (selectPrincipal) {
+    for (let i = 1; i < selectPrincipal.options.length; i++) {
+      const opt = document.createElement('option');
+      opt.value = selectPrincipal.options[i].value;
+      opt.textContent = selectPrincipal.options[i].text;
+      select.appendChild(opt);
+    }
+  }
+});
+
+document.getElementById('btn-guardar-edicion').addEventListener('click', function() {
+  const nombreViejo = document.getElementById('select-servicio-editar').value;
+  const nombreNuevo = document.getElementById('input-nuevo-nombre').value.trim();
+  const msgDiv = document.getElementById('modal-editar-mensaje');
+
+  if (!nombreViejo) {
+    msgDiv.style.display = 'block';
+    msgDiv.className = 'alert alert-warning';
+    msgDiv.textContent = 'Seleccioná un servicio.';
+    return;
+  }
+  if (!nombreNuevo) {
+    msgDiv.style.display = 'block';
+    msgDiv.className = 'alert alert-warning';
+    msgDiv.textContent = 'Ingresá el nuevo nombre.';
+    return;
+  }
+
+  fetch("{% url 'editar_servicio_ajax' %}", {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+    body: JSON.stringify({ nombre_viejo: nombreViejo, nombre_nuevo: nombreNuevo })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      msgDiv.style.display = 'block';
+      msgDiv.className = 'alert alert-success';
+      msgDiv.textContent = data.mensaje;
+      const selectPrincipal = document.getElementById('id_servicios');
+      for (let i = 0; i < selectPrincipal.options.length; i++) {
+        if (selectPrincipal.options[i].value === data.nombre_viejo) {
+          selectPrincipal.options[i].value = data.nombre_nuevo;
+          selectPrincipal.options[i].textContent = data.nombre_nuevo;
+          break;
+        }
+      }
+      setTimeout(() => {
+        document.getElementById('input-nuevo-nombre').value = '';
+        document.getElementById('select-servicio-editar').value = '';
+        msgDiv.style.display = 'none';
+        bootstrap.Modal.getInstance(document.getElementById('modalEditarServicio')).hide();
       }, 1200);
     } else {
       msgDiv.style.display = 'block';

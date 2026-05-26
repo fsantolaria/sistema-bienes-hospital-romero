@@ -13,7 +13,6 @@ INSTALLED_APPS += ['debug_toolbar', 'django_extensions']
 MIDDLEWARE += ['debug_toolbar.middleware.DebugToolbarMiddleware']
 INTERNAL_IPS = ['127.0.0.1']
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 HOSPITAL_NAME = "Gestión de Bienes Patrimoniales - Hospital Melchor Romero (Desarrollo)"
 

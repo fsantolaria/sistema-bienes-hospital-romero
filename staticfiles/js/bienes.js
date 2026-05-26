@@ -79,7 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function togglePrecioInline() {
     if (!selOrigenInline || !celdaPrecioInline || !inputPrecioInline) return;
     const v = (selOrigenInline.value || '').toUpperCase();
-    if (v === 'COMPRA') {
+    if (v === 'COMPRA' || v === 'COMPRA_MENOR') {
       celdaPrecioInline.style.display = '';
       inputPrecioInline.disabled = false;
     } else {
@@ -98,8 +98,9 @@ document.addEventListener("DOMContentLoaded", () => {
   function togglePrecioModal() {
     if (!selOrigenModal || !inputPrecioModal) return;
     const v = (selOrigenModal.value || '').toUpperCase();
-    inputPrecioModal.disabled = (v !== 'COMPRA');
-    if (v !== 'COMPRA') inputPrecioModal.value = '';
+    const esCompra = v === 'COMPRA' || v === 'COMPRA_MENOR';
+    inputPrecioModal.disabled = !esCompra;
+    if (!esCompra) inputPrecioModal.value = '';
   }
   togglePrecioModal();
   on(selOrigenModal, 'change', togglePrecioModal);

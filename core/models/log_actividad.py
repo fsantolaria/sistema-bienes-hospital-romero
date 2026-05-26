@@ -23,6 +23,21 @@ class LogActividad(models.Model):
     mensaje = models.TextField(verbose_name="Mensaje/Detalle")
     fecha = models.DateTimeField(auto_now_add=True, verbose_name="Fecha y Hora")
 
+    # Bien asociado al evento (para que los reportes respeten el historial)
+    bien = models.ForeignKey(
+        'core.BienPatrimonial',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='logs',
+    )
+    bien_clave_unica = models.CharField(
+        max_length=200,
+        null=True,
+        blank=True,
+        verbose_name='Clave Única del Bien',
+    )
+
     class Meta:
         verbose_name = "Log de Actividad"
         verbose_name_plural = "Logs de Actividad"

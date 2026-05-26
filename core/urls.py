@@ -37,6 +37,7 @@ urlpatterns = [
     path("reportes/registro-pdf/", views.registro_pdf, name="registro_pdf"),
     path('servicios/agregar/', views.agregar_servicio, name='agregar_servicio'),
     path('servicios/agregar-ajax/', views.agregar_servicio_ajax, name='agregar_servicio_ajax'),
+    path('servicios/editar-ajax/', views.editar_servicio_ajax, name='editar_servicio_ajax'),
 
     # ===== Bienes =====
     path('bienes/<int:pk>/editar/', views.editar_bien, name='editar_bien'),
@@ -47,7 +48,9 @@ urlpatterns = [
     # Listas
     path('lista-bienes/', views.lista_bienes, name='lista_bienes'),
     path('lista-bienes-operador/', views.lista_bienes_operador, name='lista_bienes_operador'),
+    path('lista-bienes-supervisor/', views.lista_bienes_supervisor, name='lista_bienes_supervisor'),
     path('bienes/bajas/', views.lista_baja_bienes, name='lista_baja_bienes'),
+
 
     # Acciones sobre bajas
     path('bienes/<int:pk>/dar-baja/', views.dar_baja_bien, name='dar_baja_bien'),

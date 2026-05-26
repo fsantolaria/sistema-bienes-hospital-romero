@@ -15,11 +15,11 @@ validate_password(DEFAULT_PASSWORD)
 # Crear admin si no existe
 if not User.objects.filter(username='admin').exists():
     User.objects.create_superuser(
+        numero_doc='00000000',
         username='admin',
         email='admin@hospital.com',
         password=DEFAULT_PASSWORD,
-        tipo_usuario='admin',
-        numero_doc='admin_doc'
+        tipo_usuario='admin'
     )
     print(f"¡Usuario administrador creado exitosamente! Usuario: admin / Contraseña: {DEFAULT_PASSWORD}")
 else:

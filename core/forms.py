@@ -7,6 +7,7 @@ from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
 from core.models import BienPatrimonial
 from core.models.expediente import Expediente
+from core.constants import ORIGENES_COMPRA
 from datetime import date
 
 
@@ -226,8 +227,8 @@ class BienPatrimonialForm(forms.ModelForm):
             self.add_error("numero_expediente", "Si informás N° de compra, debés indicar el N° de Expediente.")
 
 
-        # Precio: si el origen no es COMPRA, ignorar precio
-        if cleaned.get("origen") and cleaned["origen"] != "COMPRA":
+        # Precio: si el origen no es COMPRA ni COMPRA_MENOR, ignorar precio
+        if cleaned.get("origen") and cleaned["origen"] not in ORIGENES_COMPRA:
             cleaned["valor_adquisicion"] = None
 
         estado = cleaned.get("estado")
