@@ -337,20 +337,21 @@ def recuperar_password(request):
             except Exception as exc:
                 logger.error("Error enviando email al usuario %s: %s", user.username, exc)
 
-            # Notificar al administrador
-            try:
-                send_mail(
-                    subject=f"[Admin] Solicitud de recuperación: {user.username}",
-                    message=(
-                        f"El usuario '{user.username}' (Rol: {user.get_tipo_usuario_display() if hasattr(user, 'get_tipo_usuario_display') else getattr(user, 'tipo_usuario', '-')}) "
-                        f"solicitó recuperación de contraseña.\n\nEnlace generado:\n{reset_url}"
-                    ),
-                    from_email=ADMIN_EMAIL,
-                    recipient_list=[ADMIN_EMAIL],
-                    fail_silently=False,
-                )
-            except Exception as exc:
-                logger.error("Error enviando notificación admin: %s", exc)
+            # Notificar al administrador solo si es distinto al usuario que resetea
+            if user.email.lower() != ADMIN_EMAIL.lower():
+                try:
+                    send_mail(
+                        subject=f"[Admin] Solicitud de recuperación: {user.username}",
+                        message=(
+                            f"El usuario '{user.username}' (Rol: {user.get_tipo_usuario_display() if hasattr(user, 'get_tipo_usuario_display') else getattr(user, 'tipo_usuario', '-')}) "
+                            f"solicitó recuperación de contraseña.\n\nEnlace generado:\n{reset_url}"
+                        ),
+                        from_email=ADMIN_EMAIL,
+                        recipient_list=[ADMIN_EMAIL],
+                        fail_silently=False,
+                    )
+                except Exception as exc:
+                    logger.error("Error enviando notificación admin: %s", exc)
 
         messages.success(request, "Recibirás un email con el enlace para restablecer tu contraseña.")
         return redirect("recuperar_password")
