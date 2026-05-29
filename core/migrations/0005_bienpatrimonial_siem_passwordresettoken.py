@@ -12,22 +12,4 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='bienpatrimonial',
-            name='siem',
-            field=models.DateField(blank=True, null=True, verbose_name='SIEM'),
-        ),
-        migrations.CreateModel(
-            name='PasswordResetToken',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('token', models.CharField(max_length=255, unique=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('is_used', models.BooleanField(default=False)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='password_reset_tokens', to=settings.AUTH_USER_MODEL)),
-            ],
-            options={
-                'db_table': 'core_password_reset_token',
-            },
-        ),
     ]

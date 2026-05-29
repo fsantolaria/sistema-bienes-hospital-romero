@@ -8,9 +8,11 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('core', '0004_logactividad_passwordresettoken_servicioextra_and_more'),
+        ('core', '0014_logactividad_remove_operador_usuario_and_more'),
     ]
 
     operations = [
+        # AlterField for origen and tipo_usuario are handled by Branch A (0015).
         migrations.AddField(
             model_name='logactividad',
             name='bien',
@@ -20,15 +22,5 @@ class Migration(migrations.Migration):
             model_name='logactividad',
             name='bien_clave_unica',
             field=models.CharField(blank=True, max_length=200, null=True, verbose_name='Clave Única del Bien'),
-        ),
-        migrations.AlterField(
-            model_name='bienpatrimonial',
-            name='origen',
-            field=models.CharField(choices=[('COMPRA', 'Compra'), ('COMPRA_MENOR', 'Compra Menor'), ('DONACION', 'Donación'), ('TRANSFERENCIA', 'Transferencia'), ('OMISION', 'Omisión')], default='COMPRA', max_length=15, verbose_name='Origen'),
-        ),
-        migrations.AlterField(
-            model_name='usuario',
-            name='tipo_usuario',
-            field=models.CharField(choices=[('admin', 'Administrador'), ('supervisor', 'Supervisor'), ('empleado', 'Empleado Hospital'), ('operador', 'Operador')], default='empleado', max_length=10),
         ),
     ]

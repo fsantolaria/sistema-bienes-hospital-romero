@@ -23,6 +23,8 @@ def rebuild_all(apps, schema_editor):
     from django.db import connection
     with connection.cursor() as cursor:
         cursor.execute("PRAGMA foreign_keys = OFF")
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        existing_tables = {row[0] for row in cursor.fetchall()}
         try:
             # ── core_usuario_groups ──────────────────────────────────────────
             cursor.execute("""
@@ -110,26 +112,27 @@ def rebuild_all(apps, schema_editor):
             cursor.execute('CREATE INDEX "core_notificacion_usuario_id_f14c4107" ON "core_notificacion" ("usuario_id")')
 
             # ── core_operador ─────────────────────────────────────────────────
-            cursor.execute("""
-                CREATE TABLE "core_operador_new" (
-                    "id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
-                    "nombre_completo" varchar(200) NOT NULL,
-                    "telefono" varchar(20) NOT NULL,
-                    "direccion" varchar(300) NOT NULL,
-                    "fecha_creacion" datetime NOT NULL,
-                    "fecha_actualizacion" datetime NOT NULL,
-                    "usuario_id" varchar(50) NOT NULL UNIQUE REFERENCES "core_usuario" ("numero_doc") DEFERRABLE INITIALLY DEFERRED,
-                    "dni" varchar(20) NULL UNIQUE
-                )
-            """)
-            cursor.execute("""
-                INSERT INTO "core_operador_new" (id, nombre_completo, telefono, direccion, fecha_creacion, fecha_actualizacion, usuario_id, dni)
-                SELECT o.id, o.nombre_completo, o.telefono, o.direccion, o.fecha_creacion, o.fecha_actualizacion, u.numero_doc, o.dni
-                FROM "core_operador" o
-                JOIN "core_usuario" u ON u.id = o.usuario_id
-            """)
-            cursor.execute('DROP TABLE "core_operador"')
-            cursor.execute('ALTER TABLE "core_operador_new" RENAME TO "core_operador"')
+            if 'core_operador' in existing_tables:
+                cursor.execute("""
+                    CREATE TABLE "core_operador_new" (
+                        "id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        "nombre_completo" varchar(200) NOT NULL,
+                        "telefono" varchar(20) NOT NULL,
+                        "direccion" varchar(300) NOT NULL,
+                        "fecha_creacion" datetime NOT NULL,
+                        "fecha_actualizacion" datetime NOT NULL,
+                        "usuario_id" varchar(50) NOT NULL UNIQUE REFERENCES "core_usuario" ("numero_doc") DEFERRABLE INITIALLY DEFERRED,
+                        "dni" varchar(20) NULL UNIQUE
+                    )
+                """)
+                cursor.execute("""
+                    INSERT INTO "core_operador_new" (id, nombre_completo, telefono, direccion, fecha_creacion, fecha_actualizacion, usuario_id, dni)
+                    SELECT o.id, o.nombre_completo, o.telefono, o.direccion, o.fecha_creacion, o.fecha_actualizacion, u.numero_doc, o.dni
+                    FROM "core_operador" o
+                    JOIN "core_usuario" u ON u.id = o.usuario_id
+                """)
+                cursor.execute('DROP TABLE "core_operador"')
+                cursor.execute('ALTER TABLE "core_operador_new" RENAME TO "core_operador"')
 
             # ── core_archivocargamasiva ───────────────────────────────────────
             cursor.execute("""
@@ -155,24 +158,25 @@ def rebuild_all(apps, schema_editor):
             cursor.execute('CREATE INDEX "core_archivocargamasiva_hash_contenido_45911657" ON "core_archivocargamasiva" ("hash_contenido")')
 
             # ── core_password_reset_token ─────────────────────────────────────
-            cursor.execute("""
-                CREATE TABLE "core_password_reset_token_new" (
-                    "id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
-                    "token" varchar(255) NOT NULL UNIQUE,
-                    "created_at" datetime NOT NULL,
-                    "is_used" bool NOT NULL,
-                    "user_id" varchar(50) NOT NULL REFERENCES "core_usuario" ("numero_doc") DEFERRABLE INITIALLY DEFERRED
-                )
-            """)
-            cursor.execute("""
-                INSERT INTO "core_password_reset_token_new" (id, token, created_at, is_used, user_id)
-                SELECT t.id, t.token, t.created_at, t.is_used, u.numero_doc
-                FROM "core_password_reset_token" t
-                JOIN "core_usuario" u ON u.id = t.user_id
-            """)
-            cursor.execute('DROP TABLE "core_password_reset_token"')
-            cursor.execute('ALTER TABLE "core_password_reset_token_new" RENAME TO "core_password_reset_token"')
-            cursor.execute('CREATE INDEX "core_password_reset_token_user_id_720ba657" ON "core_password_reset_token" ("user_id")')
+            if 'core_password_reset_token' in existing_tables:
+                cursor.execute("""
+                    CREATE TABLE "core_password_reset_token_new" (
+                        "id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        "token" varchar(255) NOT NULL UNIQUE,
+                        "created_at" datetime NOT NULL,
+                        "is_used" bool NOT NULL,
+                        "user_id" varchar(50) NOT NULL REFERENCES "core_usuario" ("numero_doc") DEFERRABLE INITIALLY DEFERRED
+                    )
+                """)
+                cursor.execute("""
+                    INSERT INTO "core_password_reset_token_new" (id, token, created_at, is_used, user_id)
+                    SELECT t.id, t.token, t.created_at, t.is_used, u.numero_doc
+                    FROM "core_password_reset_token" t
+                    JOIN "core_usuario" u ON u.id = t.user_id
+                """)
+                cursor.execute('DROP TABLE "core_password_reset_token"')
+                cursor.execute('ALTER TABLE "core_password_reset_token_new" RENAME TO "core_password_reset_token"')
+                cursor.execute('CREATE INDEX "core_password_reset_token_user_id_720ba657" ON "core_password_reset_token" ("user_id")')
 
             # ── core_empleadohospital ─────────────────────────────────────────
             cursor.execute("""

@@ -12,20 +12,9 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='LogActividad',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('accion', models.CharField(choices=[('LOGIN', 'Inicio de Sesión'), ('CARGA', 'Carga de Bien'), ('CARGA_MASIVA', 'Carga Masiva'), ('EDICION', 'Edición de Bien'), ('BAJA', 'Baja de Bien'), ('ELIMINACION', 'Eliminación Definitiva'), ('RESTABLECIMIENTO', 'Restablecimiento de Bien')], max_length=20, verbose_name='Acción')),
-                ('mensaje', models.TextField(verbose_name='Mensaje/Detalle')),
-                ('fecha', models.DateTimeField(auto_now_add=True, verbose_name='Fecha y Hora')),
-            ],
-            options={
-                'verbose_name': 'Log de Actividad',
-                'verbose_name_plural': 'Logs de Actividad',
-                'ordering': ['-fecha'],
-            },
-        ),
+        # LogActividad, ServicioExtra, Operador deletion, siem/fecha_registro/numero_compra
+        # alterations are all handled by Branch A (0007, 0014, 0015). Only
+        # PasswordResetToken is unique to this branch.
         migrations.CreateModel(
             name='PasswordResetToken',
             fields=[
@@ -38,55 +27,9 @@ class Migration(migrations.Migration):
                 'db_table': 'core_password_reset_token',
             },
         ),
-        migrations.CreateModel(
-            name='ServicioExtra',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('nombre', models.CharField(max_length=200, unique=True, verbose_name='Nombre del servicio')),
-            ],
-            options={
-                'verbose_name': 'Servicio Extra',
-                'verbose_name_plural': 'Servicios Extra',
-                'ordering': ['nombre'],
-            },
-        ),
-        # Removed id RemoveField to prevent SQLite foreign key mismatch
-        migrations.AddField(
-            model_name='bienpatrimonial',
-            name='fecha_registro',
-            field=models.DateTimeField(auto_now_add=True, null=True, verbose_name='Fecha de Registro en Sistema'),
-        ),
-        migrations.AlterField(
-            model_name='bienpatrimonial',
-            name='numero_compra',
-            field=models.CharField(blank=True, max_length=50, null=True, verbose_name='N° de Compra'),
-        ),
-        migrations.AlterField(
-            model_name='bienpatrimonial',
-            name='siem',
-            field=models.CharField(blank=True, choices=[('Si', 'Si'), ('No', 'No')], max_length=2, null=True, verbose_name='SIEM'),
-        ),
-        migrations.AlterField(
-            model_name='usuario',
-            name='numero_doc',
-            field=models.CharField(max_length=50, unique=True, verbose_name='Número de Documento'),
-        ),
-        migrations.AlterField(
-            model_name='usuario',
-            name='tipo_usuario',
-            field=models.CharField(choices=[('admin', 'Administrador'), ('supervisor', 'Supervisor'), ('empleado', 'Empleado Hospital'), ('operador', 'Operador'), ('supervisor', 'Supervisor')], default='empleado', max_length=10),
-        ),
-        migrations.DeleteModel(
-            name='Operador',
-        ),
         migrations.AddField(
             model_name='passwordresettoken',
             name='user',
             field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='password_reset_tokens', to=settings.AUTH_USER_MODEL),
-        ),
-        migrations.AddField(
-            model_name='logactividad',
-            name='usuario',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL, verbose_name='Usuario'),
         ),
     ]
