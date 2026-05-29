@@ -199,12 +199,8 @@
 
         </div>
 
-        <div class="form-buttons position-relative d-flex justify-content-center gap-3 flex-wrap align-items-center mt-4">
+        <div class="form-buttons position-relative d-flex justify-content-end gap-3 flex-wrap align-items-center mt-4">
           
-          <a href="{% if es_admin %}{% url 'lista_bienes' %}{% else %}{% url 'lista_bienes_operador' %}{% endif %}" class="btn btn-ver-lista" style="min-width: 160px;">
-            <i class="fa-solid fa-list me-1"></i> Ver lista
-          </a>
-
           <a href="{% if es_admin %}{% url 'lista_bienes' %}{% else %}{% url 'lista_bienes_operador' %}{% endif %}" class="btn btn-cancelar" style="min-width: 160px;">
             <i class="fa-solid fa-times me-1"></i> Cancelar
           </a>

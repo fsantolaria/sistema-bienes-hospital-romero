@@ -28,6 +28,8 @@
       <tr>
         <th>Clave</th>
         <th>Descripción</th>
+        <th>N° de ID</th>
+        <th>N° de Serie</th>
         <th>Servicios</th>
         <th>Estado</th>
         <th>Alta</th>
@@ -40,6 +42,8 @@
       <tr>
         <td class="text-nowrap">{{ b.clave_unica|default:"—" }}</td>
         <td>{{ b.descripcion|default:"—" }}</td>
+        <td class="text-nowrap">{{ b.numero_identificacion|default:"—" }}</td>
+        <td class="text-nowrap">{{ b.numero_serie|default:"—" }}</td>
         <td class="text-nowrap">{{ b.servicios|default:"—" }}</td>
         <td class="text-nowrap">{{ b.get_estado_display|default:b.estado|default:"—" }}</td>
         <td class="text-nowrap">{% if b.fecha_adquisicion %}{{ b.fecha_adquisicion|date:"d/m/Y" }}{% else %}—{% endif %}</td>
@@ -47,7 +51,7 @@
         <td class="text-end">{% if b.valor_adquisicion %}${{ b.valor_adquisicion|floatformat:0|intcomma }}{% else %}—{% endif %}</td>
       </tr>
       {% empty %}
-      <tr><td colspan="7" class="muted">Sin movimientos en {{ rango_desc|lower }}.</td></tr>
+      <tr><td colspan="9" class="muted">Sin movimientos en {{ rango_desc|lower }}.</td></tr>
       {% endfor %}
     </tbody>
   </table>

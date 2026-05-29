@@ -889,8 +889,8 @@ def reportes_pdf(request):
         elems.append(Spacer(1, 8))
  
         data = [[
-            P("Clave", True), P("Descripción", True), P("Servicios", True),
-            P("Estado", True), P("Alta", True), P("Baja", True), P("Valor", True),
+            P("Clave", True), P("Descripción", True), P("N° de ID", True), P("N° de Serie", True),
+            P("Servicios", True), P("Estado", True), P("Alta", True), P("Baja", True), P("Valor", True),
         ]]
 
         for b in bienes:
@@ -900,6 +900,8 @@ def reportes_pdf(request):
             data.append([
                 P(b.clave_unica or "—"),
                 P(b.descripcion or "—"),
+                P(b.numero_identificacion or "—"),
+                P(b.numero_serie or "—"),
                 P(b.servicios or "—"),
                 P(estado),
                 P(alta),
@@ -909,7 +911,7 @@ def reportes_pdf(request):
 
         page_w, _ = A4
         usable_w = page_w - (doc.leftMargin + doc.rightMargin)
-        base_col_cm = [2.2, 9.0, 2.2, 2.0, 2.0, 2.0, 1.8]
+        base_col_cm = [1.8, 6.5, 2.2, 2.2, 2.2, 1.8, 1.8, 1.8, 1.7]
         base_col_pts = [w * cm for w in base_col_cm]
         scale = float(usable_w) / float(sum(base_col_pts))
         col_widths = [w * scale for w in base_col_pts]
