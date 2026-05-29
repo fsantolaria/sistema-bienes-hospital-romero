@@ -1,0 +1,40 @@
+name: Django CI
+
+on:
+  push:
+    branches: [ "development", "fran23" ]
+  pull_request:
+    branches: [ "development" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run system checks
+        env:
+          DJANGO_SETTINGS_MODULE: sistema_bienes.settings.testing
+          SECRET_KEY: django-insecure-ci-only-key-not-for-production
+        run: python manage.py check
+
+      - name: Run migrations
+        env:
+          DJANGO_SETTINGS_MODULE: sistema_bienes.settings.testing
+          SECRET_KEY: django-insecure-ci-only-key-not-for-production
+        run: python manage.py migrate --run-syncdb
+
+      - name: Run tests
+        env:
+          DJANGO_SETTINGS_MODULE: sistema_bienes.settings.testing
+          SECRET_KEY: django-insecure-ci-only-key-not-for-production
+        run: python manage.py test
