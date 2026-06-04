@@ -57,8 +57,10 @@
     <table class="table table-striped table-bordered align-middle">
       <thead class="thead-turquesa">
         <tr>
-          <th>ID</th>
+          <th>Clave Única</th>
           <th>Descripción</th>
+          <th>N° de ID</th>
+          <th>N° de Serie</th>
           <th>Servicios</th>
           <th>Estado</th>
           <th style="width: 120px; text-align: center;">Fecha Alta</th>
@@ -69,8 +71,10 @@
       <tbody>
         {% for b in bienes %}
           <tr>
-            <td class="text-nowrap">{{ b.pk }}</td>
+            <td class="text-nowrap">{{ b.clave_unica }}</td>
             <td style="min-width:240px">{{ b.descripcion|default:"—" }}</td>
+            <td class="text-nowrap">{{ b.numero_identificacion|default:"—" }}</td>
+            <td class="text-nowrap">{{ b.numero_serie|default:"—" }}</td>
             <td class="text-nowrap">{{ b.servicios|default:"—" }}</td>
             <td class="text-nowrap">
               {% with label=b.get_estado_display|default:b.estado|default:"—" %}
@@ -103,7 +107,7 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="7" class="text-center text-muted py-4">No hay movimientos en {{ rango_desc|lower }}.</td>
+            <td colspan="9" class="text-center text-muted py-4">No hay movimientos en {{ rango_desc|lower }}.</td>
           </tr>
         {% endfor %}
       </tbody>
