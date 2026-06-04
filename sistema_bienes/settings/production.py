@@ -16,9 +16,11 @@ ALLOWED_HOSTS = config(
 _db_url = config('DATABASE_URL', default='')
 if _db_url:
     import dj_database_url
-    DATABASES = {
-        'default': dj_database_url.parse(_db_url, conn_max_age=600, ssl_require=True)
-    }
+    _db_config = dj_database_url.parse(_db_url, conn_max_age=600, ssl_require=True)
+    # Neon usa channel_binding=require en la URL; psycopg2 lo maneja via OPTIONS
+    _db_config.setdefault('OPTIONS', {})
+    _db_config['OPTIONS']['sslmode'] = 'require'
+    DATABASES = {'default': _db_config}
 else:
     DATABASES = {
         'default': {

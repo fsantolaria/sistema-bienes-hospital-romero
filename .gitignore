@@ -80,8 +80,6 @@ htmlcov/
 # Migrations: versionar todos los archivos de migración
 */migrations/*.pyc
 
-# Vercel
-vercel.json
 
 # Scripts personales / temporales
 merge_upstream.py
