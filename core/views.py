@@ -1851,6 +1851,31 @@ def marcar_notificacion_leida(request, pk):
 def crear_notificacion(usuario, mensaje):
     Notificacion.objects.create(usuario=usuario, mensaje=mensaje)
 
+    notificaciones = Notificacion.objects.filter(usuario=usuario).order_by("-fecha")
+    if notificaciones.count() > MAX_NOTIFICACIONES:
+        for n in notificaciones[MAX_NOTIFICACIONES:]:
+            n.delete()
+
+# ---------------------------
+# 💡 Vista: Recuperar contraseña
+# ---------------------------
+
+from django.contrib import messages
+from django.shortcuts import render, redirect
+from django.contrib.auth import get_user_model
+from django.db.models import Q
+
+
+def recuperar_password(request):
+    if request.method == "POST":
+        # Acá podrías enviar el correo o guardar el pedido en la base
+        messages.success(request, "✅ Solicitud enviada correctamente.")
+        return redirect('recuperar_password')
+
+    return render(request, 'recuperar_password.html')
+
+
+
 def crear_notificacion_admins(mensaje):
     UserModel = get_user_model()
     admins = UserModel.objects.filter(
