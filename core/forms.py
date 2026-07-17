@@ -41,6 +41,53 @@ class CargaMasivaForm(forms.Form):
     )
 
 
+# ========== FORMULARIO DE CARGA MASIVA v2 (relevamiento inteligente) ==========
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
+
+class RelevamientoUploadForm(forms.Form):
+    """
+    Formulario para subir un archivo de relevamiento Excel.
+    Valida extensión (.xlsx, .xls) y tamaño máximo (10 MB).
+    """
+    archivo = forms.FileField(
+        label='Archivo de relevamiento',
+        help_text='Formatos aceptados: .xlsx, .xls — Máximo 10 MB',
+        widget=forms.ClearableFileInput(attrs={
+            'class': 'form-control',
+            'accept': '.xlsx,.xls',
+        }),
+    )
+
+    def clean_archivo(self):
+        archivo = self.cleaned_data.get('archivo')
+        if not archivo:
+            raise ValidationError('Seleccioná un archivo.')
+
+        # Validar extensión
+        name = archivo.name.lower()
+        if not (name.endswith('.xlsx') or name.endswith('.xls')):
+            raise ValidationError('Solo se aceptan archivos .xlsx o .xls.')
+
+        # Validar content-type
+        valid_types = (
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-excel',
+            'application/octet-stream',  # algunos navegadores envían esto
+        )
+        if archivo.content_type not in valid_types:
+            raise ValidationError(
+                f'Tipo de archivo no válido ({archivo.content_type}). '
+                'Solo se aceptan archivos Excel.'
+            )
+
+        # Validar tamaño
+        if archivo.size > MAX_UPLOAD_SIZE:
+            mb = archivo.size / (1024 * 1024)
+            raise ValidationError(f'El archivo pesa {mb:.1f} MB. El máximo es 10 MB.')
+
+        return archivo
+
+
 # ========== FORMULARIO DE BIENES PATRIMONIALES ==========
 class BienPatrimonialForm(forms.ModelForm):
     numero_expediente = forms.CharField(label="N° de Expediente", max_length=50, required=False)

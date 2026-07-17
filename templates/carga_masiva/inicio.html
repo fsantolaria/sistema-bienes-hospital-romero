@@ -1,0 +1,360 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Carga Masiva - Sistema de Patrimonio{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'libs/fontawesome/css/all.min.css' %}">
+<style>
+  /* ── GBA Identity — Carga Masiva v2 ── */
+  .cm-container { max-width: 850px; margin: 0 auto; }
+
+  .cm-card {
+    background: #fff;
+    border: 2px solid #00aec3;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.10);
+    overflow: hidden;
+    font-family: 'Roboto', sans-serif;
+    margin-bottom: 28px;
+  }
+  .cm-card-header {
+    background: linear-gradient(135deg, #00aec3, #0097a7);
+    color: #fff;
+    font-family: 'Encode Sans', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    padding: 14px 22px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .cm-card-body { padding: 24px; }
+
+  /* Dropzone */
+  .dropzone-v2 {
+    border: 2px dashed #b0b0b0;
+    border-radius: 10px;
+    background: #fafafa;
+    padding: 44px 20px;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    transition: all .25s ease;
+  }
+  .dropzone-v2:hover,
+  .dropzone-v2.active {
+    background: #e0f7fa;
+    border-color: #00aec3;
+  }
+  .dropzone-v2 input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .dropzone-v2 .icon {
+    font-size: 44px;
+    color: #00aec3;
+    margin-bottom: 12px;
+  }
+  .dropzone-v2 p {
+    font-size: 15px;
+    color: #666;
+    margin: 0;
+  }
+  .dropzone-v2 .file-selected {
+    margin-top: 10px;
+    font-weight: 700;
+    color: #00838f;
+    font-size: 14px;
+  }
+
+  /* Botones */
+  .btn-gba {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 600;
+    padding: 10px 22px;
+    border-radius: 8px;
+    color: #fff;
+    border: none;
+    transition: background .2s;
+    cursor: pointer;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-gba-primary { background: #00aec3; }
+  .btn-gba-primary:hover { background: #00838f; color: #fff; }
+  .btn-gba-outline {
+    background: transparent;
+    border: 2px solid #00aec3;
+    color: #00aec3;
+  }
+  .btn-gba-outline:hover {
+    background: #00aec3;
+    color: #fff;
+  }
+  .btn-gba-danger { background: #ee5544; }
+  .btn-gba-danger:hover { background: #d43f31; color: #fff; }
+
+  /* Actions bar */
+  .cm-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid #eee;
+  }
+
+  /* Instrucciones */
+  .cm-instructions {
+    background: #f5f9fa;
+    border: 1px solid #d4ecef;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 18px;
+  }
+  .cm-instructions h6 {
+    font-family: 'Encode Sans', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 8px;
+  }
+  .cm-instructions ul {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 13px;
+    color: #555;
+    line-height: 1.7;
+  }
+
+  /* Tabla de historial */
+  .cm-history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .cm-history-table th {
+    background: #f0f0f0;
+    color: #444;
+    font-weight: 600;
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 2px solid #ddd;
+  }
+  .cm-history-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #eee;
+    color: #555;
+  }
+  .cm-history-table tr:hover td { background: #fafafa; }
+  .cm-history-table a { color: #00aec3; text-decoration: none; font-weight: 600; }
+  .cm-history-table a:hover { text-decoration: underline; }
+
+  /* Badge */
+  .badge-warn {
+    background: #fff3cd;
+    color: #856404;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  /* Progress */
+  .progress-v2 {
+    display: none;
+    margin-top: 16px;
+  }
+  .progress-v2 .bar-bg {
+    height: 6px;
+    background: #e0e0e0;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-v2 .bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #00aec3, #26c6da);
+    transition: width .3s ease;
+  }
+  .progress-v2 .bar-text {
+    font-size: 12px;
+    color: #777;
+    margin-top: 4px;
+    text-align: right;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4 mb-5 cm-container">
+
+  {# ── CARD: SUBIR RELEVAMIENTO ── #}
+  <div class="cm-card">
+    <div class="cm-card-header">
+      <i class="fa-solid fa-file-excel"></i>
+      CARGA MASIVA DE BIENES
+    </div>
+    <div class="cm-card-body">
+      <form id="formSubir" method="post" action="{% url 'subir_relevamiento' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert {% if 'error' in message.tags %}alert-danger{% elif 'warning' in message.tags %}alert-warning{% else %}alert-info{% endif %} mb-3">
+              {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        {% if form.errors %}
+          <div class="alert alert-danger mb-3">
+            {% for field, errors in form.errors.items %}
+              {% for error in errors %}
+                <div>{{ error }}</div>
+              {% endfor %}
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {# Dropzone #}
+        <label style="font-weight:600; color:#838383; margin-bottom:8px; display:block;">
+          Archivo de relevamiento (.xlsx / .xls)
+        </label>
+        <div class="dropzone-v2" id="dropzone">
+          <i class="fa-solid fa-cloud-arrow-up icon"></i>
+          <p>Arrastrá tu archivo Excel aquí o hacé clic para seleccionar</p>
+          <div class="file-selected" id="fileName"></div>
+          {{ form.archivo }}
+        </div>
+
+        {# Instrucciones #}
+        <div class="cm-instructions">
+          <h6><i class="fa-solid fa-circle-info me-1"></i> Instrucciones</h6>
+          <ul>
+            <li>Podés subir el Excel <strong>tal cual</strong>, sin modificarlo. El sistema detecta las columnas automáticamente.</li>
+            <li>Si tu archivo tiene los encabezados en una fila distinta a la primera (por ejemplo, hay un logo o título arriba), no hay problema.</li>
+            <li>Columnas no reconocidas se registran para mejora continua del sistema.</li>
+          </ul>
+        </div>
+
+        {# Progress bar #}
+        <div class="progress-v2" id="progressBox">
+          <div class="bar-bg"><div class="bar-fill" id="progressFill"></div></div>
+          <div class="bar-text" id="progressText">Procesando archivo…</div>
+        </div>
+
+        {# Botones #}
+        <div class="cm-actions">
+          <a href="{% url 'descargar_modelo' %}" class="btn-gba btn-gba-outline">
+            <i class="fa-solid fa-download"></i> Descargar modelo de referencia
+          </a>
+          <div style="display:flex; gap:10px;">
+            <a href="{% url 'lista_bienes' %}" class="btn-gba btn-gba-danger">
+              <i class="fa-solid fa-times"></i> Cancelar
+            </a>
+            <button type="submit" class="btn-gba btn-gba-primary" id="btnSubir">
+              <i class="fa-solid fa-upload"></i> Subir Relevamiento
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {# ── CARD: HISTORIAL ── #}
+  {% if ultimas_cargas %}
+  <div class="cm-card">
+    <div class="cm-card-header" style="font-size:15px;">
+      <i class="fa-solid fa-clock-rotate-left"></i>
+      ÚLTIMAS CARGAS
+    </div>
+    <div class="cm-card-body" style="padding:0;">
+      <table class="cm-history-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Archivo</th>
+            <th>Cargados</th>
+            <th>Omitidos</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for carga in ultimas_cargas %}
+          <tr>
+            <td>{{ carga.fecha|date:"d/m/Y H:i" }}</td>
+            <td>{{ carga.archivo_nombre|truncatechars:40 }}</td>
+            <td><strong>{{ carga.total_filas_cargadas }}</strong></td>
+            <td>
+              {{ carga.total_filas_omitidas }}
+              {% if carga.tiene_columnas_no_reconocidas %}
+                <span class="badge-warn">⚠ cols</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'resultado_carga' upload_id=carga.id %}">Ver detalle</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = dropzone.querySelector('input[type="file"]');
+  const fileName = document.getElementById('fileName');
+  const form = document.getElementById('formSubir');
+  const btnSubir = document.getElementById('btnSubir');
+  const progressBox = document.getElementById('progressBox');
+  const progressFill = document.getElementById('progressFill');
+
+  // Style the Django widget input
+  if (fileInput) {
+    fileInput.className = '';
+    fileInput.style.cssText = 'position:absolute;inset:0;opacity:0;cursor:pointer;';
+  }
+
+  fileInput.addEventListener('change', function() {
+    if (this.files && this.files.length > 0) {
+      fileName.textContent = '📄 ' + this.files[0].name;
+      dropzone.classList.add('active');
+    } else {
+      fileName.textContent = '';
+      dropzone.classList.remove('active');
+    }
+  });
+
+  form.addEventListener('submit', function() {
+    if (fileInput && fileInput.files.length > 0) {
+      setTimeout(() => {
+        btnSubir.disabled = true;
+        btnSubir.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando…';
+      }, 10);
+      progressBox.style.display = 'block';
+      let p = 0;
+      const iv = setInterval(() => {
+        p += 2;
+        if (p > 95) clearInterval(iv);
+        progressFill.style.width = p + '%';
+      }, 120);
+    }
+  });
+});
+</script>
+{% endblock %}

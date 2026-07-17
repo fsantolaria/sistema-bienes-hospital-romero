@@ -341,7 +341,7 @@
 
 {% block extra_js %}
 <script>
-  // Ocultar "Precio" si Origen ≠ COMPRA y mostrar "Fecha de Baja" si Estado = BAJA
+  // Mostrar "Fecha de Baja" si Estado = BAJA — Precio siempre habilitado para todos los orígenes
   (function () {
     const origen = document.getElementById('id_origen');
     const grupoPrecio = document.getElementById('grupo-precio');
@@ -350,29 +350,9 @@
     const colSiem = document.getElementById('col-siem');
     const colFechaAlta = document.getElementById('col-fecha-alta');
 
-    function togglePrecio() {
-      const v = (origen?.value || '').toUpperCase();
-      const esCompra = v === 'COMPRA' || v === 'COMPRA_MENOR';
-      if (esCompra) {
-        grupoPrecio?.classList.remove('d-none');
-        if (inputPrecio) inputPrecio.disabled = false;
-
-        colSiem?.classList.remove('col-md-6');
-        colSiem?.classList.add('col-md-4');
-        colFechaAlta?.classList.remove('col-md-6');
-        colFechaAlta?.classList.add('col-md-4');
-      } else {
-        grupoPrecio?.classList.add('d-none');
-        if (inputPrecio) { inputPrecio.disabled = true; }
-
-        colSiem?.classList.remove('col-md-4');
-        colSiem?.classList.add('col-md-6');
-        colFechaAlta?.classList.remove('col-md-4');
-        colFechaAlta?.classList.add('col-md-6');
-      }
-    }
-    togglePrecio();
-    origen?.addEventListener('change', togglePrecio);
+    // Precio siempre visible y editable, sin importar el origen
+    if (grupoPrecio) grupoPrecio.classList.remove('d-none');
+    if (inputPrecio) inputPrecio.disabled = false;
 
     // === Mostrar Fecha de Baja si Estado = BAJA ===
     const estado = document.getElementById('id_estado');

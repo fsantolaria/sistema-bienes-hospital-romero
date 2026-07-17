@@ -295,23 +295,9 @@
   const colSiem      = document.getElementById('col-siem');
   const colFechaAlta = document.getElementById('col-fecha-alta');
 
-  function togglePrecio() {
-    const v = (origen?.value || '').toUpperCase();
-    const esCompra = v === 'COMPRA' || v === 'COMPRA_MENOR';
-    if (esCompra) {
-      grupoPrecio?.classList.remove('d-none');
-      if (inputPrecio) inputPrecio.disabled = false;
-      colSiem?.classList.replace('col-md-6', 'col-md-4');
-      colFechaAlta?.classList.replace('col-md-6', 'col-md-4');
-    } else {
-      grupoPrecio?.classList.add('d-none');
-      if (inputPrecio) { inputPrecio.value = ''; inputPrecio.disabled = true; }
-      colSiem?.classList.replace('col-md-4', 'col-md-6');
-      colFechaAlta?.classList.replace('col-md-4', 'col-md-6');
-    }
-  }
-  togglePrecio();
-  origen?.addEventListener('change', togglePrecio);
+  // Precio siempre visible y editable, sin importar el origen
+  if (grupoPrecio) grupoPrecio.classList.remove('d-none');
+  if (inputPrecio) inputPrecio.disabled = false;
 
   const estado         = document.getElementById('id_estado');
   const grupoFechaBaja = document.getElementById('grupo-fecha-baja');

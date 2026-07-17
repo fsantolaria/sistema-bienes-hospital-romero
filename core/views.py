@@ -1777,15 +1777,11 @@ def carga_masiva_bienes(request):
                     except (ValueError, TypeError):
                         return 1
  
-                # Procesamiento de filas — una sola transacción por archivo
-                # para reducir el overhead de savepoints y queries a la DB.
+                # Procesamiento de filas
                 errores_previos = len(errores)
-                bienes_a_crear = []   # acumular para bulk_create
-                cache_expedientes = {}  # nro_exp -> Expediente obj
-
-                with transaction.atomic():
-                    for i, row in df.iterrows():
-                        try:
+                for i, row in df.iterrows():
+                    try:
+                        with transaction.atomic():
                             numero_id = get_first(row, ["n id", "numero identificacion", "id patrimonial", "id", "identificacion"])
                             nro_exp = get_first(row, ["n expediente", "numero expediente", "expediente", "exp", "nro exp"])
                             nro_compra = get_first(row, ["n compra", "numero compra", "compra", "nro compra", "orden de compra", "oc"])
@@ -1801,38 +1797,31 @@ def carga_masiva_bienes(request):
                             
                             serv_raw = get_first(row, ["servicios", "servicio", "sector"])
                             servicios = (serv_raw if serv_raw else "NO")[:200]
-
+ 
                             siem_raw = (get_first(row, ["siem", "estado siem"]) or "").strip().lower()
                             siem_val = "Si" if siem_raw and siem_raw not in ("no", "0", "false", "n") else "No"
-
+ 
                             fecha_alta = parse_date_any(get_first(row, ["fecha alta", "fecha de alta"])) or date.today()
                             fecha_baja = parse_date_any(get_first(row, ["fecha de baja"]))
                             
                             origen_val = map_origen(origen_txt)
                             estado_val = map_estado(estado_txt)
                             precio = parse_money(precio_raw)
-
-                            # Caché de expedientes: evitar get_or_create repetido
+ 
                             expediente_obj = None
                             if nro_exp and nro_exp.upper() != "NO":
-                                exp_key = nro_exp[:50]
-                                if exp_key not in cache_expedientes:
-                                    cache_expedientes[exp_key], _ = Expediente.objects.get_or_create(
-                                        numero_expediente=exp_key
-                                    )
-                                expediente_obj = cache_expedientes[exp_key]
+                                expediente_obj, _ = Expediente.objects.get_or_create(numero_expediente=nro_exp[:50])
                                 if nro_compra and nro_compra.upper() != "NO":
-                                    if expediente_obj.numero_compra != nro_compra[:50]:
-                                        expediente_obj.numero_compra = nro_compra[:50]
-                                        expediente_obj.save(update_fields=["numero_compra"])
-
+                                    expediente_obj.numero_compra = nro_compra[:50]
+                                    expediente_obj.save(update_fields=["numero_compra"])
+ 
                             nombre_bien = (descripcion[:200] if descripcion else (nro_serie[:200] if nro_serie != "NO" else "NO"))
                             numero_id_val = ((numero_id or "").strip() or None)
                             if numero_id_val and numero_id_val.upper() in ("NO", "-"):
                                 numero_id_val = None
                             if numero_id_val:
                                 numero_id_val = numero_id_val[:50]
-
+ 
                             defaults = {
                                 "nombre": nombre_bien,
                                 "descripcion": descripcion or "NO",
@@ -1856,7 +1845,7 @@ def carga_masiva_bienes(request):
                                 defaults["origen"] = ""
                             if estado_val:
                                 defaults["estado"] = estado_val
-
+ 
                             clave_fila = clave_fila_canonica(
                                 numero_id_val,
                                 nro_serie,
@@ -1868,7 +1857,7 @@ def carga_masiva_bienes(request):
                             if clave_fila in claves_filas_esta_carga:
                                 duplicados_omitidos += 1
                                 continue
-
+ 
                             bien_existente = None
                             if numero_id_val:
                                 bien_existente = BienPatrimonial.objects.filter(
@@ -1879,9 +1868,9 @@ def carga_masiva_bienes(request):
                                     numero_serie=nro_serie,
                                     descripcion=descripcion,
                                 ).first()
-
+ 
                             if bien_existente is None:
-                                bienes_a_crear.append(BienPatrimonial(**defaults))
+                                BienPatrimonial.objects.create(**defaults)
                                 creados += 1
                             else:
                                 campos_a_actualizar = []
@@ -1889,21 +1878,16 @@ def carga_masiva_bienes(request):
                                     if valores_distintos(getattr(bien_existente, campo), valor_nuevo):
                                         setattr(bien_existente, campo, valor_nuevo)
                                         campos_a_actualizar.append(campo)
-
+ 
                                 if campos_a_actualizar:
                                     bien_existente.save(update_fields=campos_a_actualizar)
                                     actualizados += 1
                                 else:
                                     sin_cambios += 1
-
+ 
                             claves_filas_esta_carga.add(clave_fila)
-                        except Exception as e:
-                            errores.append(f"Error en {nombre_archivo_completo} (fila {i+1}): {str(e)}")
-
-                    # Inserción masiva: un solo INSERT en lugar de N individuales
-                    if bienes_a_crear:
-                        BienPatrimonial.objects.bulk_create(bienes_a_crear, batch_size=50)
-
+                    except Exception as e:
+                        errores.append(f"Error en {nombre_archivo_completo} (fila {i+1}): {str(e)}")
                 if len(errores) == errores_previos:
                     ArchivoCargaMasiva.objects.create(
                         nombre_archivo=nombre_archivo_completo,

@@ -18,6 +18,7 @@ six==1.17.0
 sqlparse==0.5.3
 tzdata==2025.2
 whitenoise==6.6.0
+unidecode>=1.3.0
 
 # Soporte completo de formatos Excel
 xlrd>=2.0.1

@@ -101,7 +101,6 @@ core/views_cleaned.py
 # Archivos Excel de datos reales
 *.xls
 *.xlsx
-!core/plantillas/CARGA_MASIVA.xlsx
 *.ods
 *.xlsm
 *.xlsb

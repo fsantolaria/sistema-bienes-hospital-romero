@@ -62,9 +62,8 @@ urlpatterns = [
     path('bienes/restablecer-seleccionados/', views.restablecer_bienes_seleccionados, name='restablecer_bienes_seleccionados'),
     path('bienes/<int:pk>/eliminar-definitivo/', views.eliminar_bien_definitivo, name='eliminar_bien_definitivo'),
 
-    # Carga masiva
+    # ===== Carga masiva =====
     path('carga-masiva/', views.carga_masiva_bienes, name='carga_masiva'),
-    path('descargar-plantilla/', views.descargar_plantilla, name='descargar_plantilla'),
 
     # Formularios / vistas legacy
     path('bienes/', views.bienes, name='bienes'),

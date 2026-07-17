@@ -225,3 +225,29 @@ class ServicioExtraAdmin(admin.ModelAdmin):
 
 # ===== Notificacion Admin =====
 admin.site.register(Notificacion)
+
+
+# ===== Carga Masiva Upload Admin =====
+from .models.carga_masiva_upload import CargaMasivaUpload
+
+@admin.register(CargaMasivaUpload, site=custom_admin_site)
+class CargaMasivaUploadAdmin(admin.ModelAdmin):
+    list_display = [
+        'fecha', 'usuario', 'archivo_nombre',
+        'total_filas_cargadas', 'total_filas_omitidas',
+        'tiene_columnas_no_reconocidas',
+    ]
+    list_filter = ['fecha', 'usuario']
+    search_fields = ['archivo_nombre', 'usuario__username']
+    readonly_fields = [
+        'usuario', 'archivo_nombre', 'fecha',
+        'total_filas_leidas', 'total_filas_cargadas', 'total_filas_omitidas',
+        'columnas_no_reconocidas', 'warnings', 'resumen',
+    ]
+    ordering = ['-fecha']
+
+    def tiene_columnas_no_reconocidas(self, obj):
+        return bool(obj.columnas_no_reconocidas)
+    tiene_columnas_no_reconocidas.boolean = True
+    tiene_columnas_no_reconocidas.short_description = "¿Cols. no reconocidas?"
+
